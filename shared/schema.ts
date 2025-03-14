@@ -1,8 +1,8 @@
-import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, date } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// User Schema
+// User Schema (for admin accounts)
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
@@ -18,6 +18,31 @@ export const insertUserSchema = createInsertSchema(users).pick({
   fullName: true,
   role: true,
   isAuthorized: true,
+});
+
+// Personnel Schema (for staff who can check out items)
+export const personnel = pgTable("personnel", {
+  id: serial("id").primaryKey(),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
+  division: text("division").notNull(),
+  department: text("department").notNull(),
+  jDial: text("j_dial"),
+  rank: text("rank"),
+  lcpoName: text("lcpo_name"),
+  dateAdded: date("date_added").defaultNow(),
+  isActive: boolean("is_active").notNull().default(true),
+});
+
+export const insertPersonnelSchema = createInsertSchema(personnel).pick({
+  firstName: true,
+  lastName: true,
+  division: true,
+  department: true,
+  jDial: true,
+  rank: true,
+  lcpoName: true,
+  isActive: true,
 });
 
 // Category Schema
@@ -80,6 +105,9 @@ export const insertTransactionSchema = createInsertSchema(transactions).pick({
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
+
+export type Personnel = typeof personnel.$inferSelect;
+export type InsertPersonnel = z.infer<typeof insertPersonnelSchema>;
 
 export type Category = typeof categories.$inferSelect;
 export type InsertCategory = z.infer<typeof insertCategorySchema>;

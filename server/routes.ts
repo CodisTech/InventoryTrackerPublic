@@ -2,7 +2,13 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
-import { insertInventoryItemSchema, insertUserSchema, insertCategorySchema, insertTransactionSchema } from "@shared/schema";
+import { 
+  insertInventoryItemSchema, 
+  insertUserSchema, 
+  insertCategorySchema, 
+  insertTransactionSchema, 
+  insertPersonnelSchema 
+} from "@shared/schema";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 
@@ -252,6 +258,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Don't return the password hash
       const { password, ...userWithoutPassword } = updatedUser;
       res.json(userWithoutPassword);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Personnel
+  app.get("/api/personnel", ensureAuthenticated, async (req, res, next) => {
+    try {
+      const searchQuery = req.query.q as string | undefined;
+      
+      if (searchQuery && searchQuery.trim().length > 0) {
+        const results = await storage.searchPersonnel(searchQuery.trim());
+        res.json(results);
+      } else {
+        const personnel = await storage.getAllPersonnel();
+        res.json(personnel);
+      }
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/personnel/:id", ensureAuthenticated, async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid ID format" });
+      }
+      
+      const person = await storage.getPersonnel(id);
+      if (!person) {
+        return res.status(404).json({ message: "Personnel not found" });
+      }
+      
+      res.json(person);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/personnel", ensureAuthenticated, async (req, res, next) => {
+    try {
+      const validatedData = insertPersonnelSchema.parse(req.body);
+      const person = await storage.createPersonnel(validatedData);
+      res.status(201).json(person);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Validation error", 
+          errors: fromZodError(error).message 
+        });
+      }
+      next(error);
+    }
+  });
+
+  app.patch("/api/personnel/:id", ensureAuthenticated, async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid ID format" });
+      }
+      
+      const existingPerson = await storage.getPersonnel(id);
+      if (!existingPerson) {
+        return res.status(404).json({ message: "Personnel not found" });
+      }
+      
+      const updatedPerson = await storage.updatePersonnel(id, req.body);
+      res.json(updatedPerson);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.delete("/api/personnel/:id", ensureAuthenticated, async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid ID format" });
+      }
+      
+      const success = await storage.deletePersonnel(id);
+      if (!success) {
+        return res.status(404).json({ message: "Personnel not found" });
+      }
+      
+      res.status(204).end();
     } catch (error) {
       next(error);
     }

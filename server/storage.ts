@@ -1,6 +1,7 @@
 import { 
-  users, categories, inventoryItems, transactions,
+  users, categories, inventoryItems, transactions, personnel,
   type User, type InsertUser, 
+  type Personnel, type InsertPersonnel,
   type Category, type InsertCategory, 
   type InventoryItem, type InsertInventoryItem,
   type Transaction, type InsertTransaction, 
@@ -24,6 +25,14 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   getAllUsers(): Promise<User[]>;
   updateUser(id: number, user: Partial<InsertUser>): Promise<User | undefined>;
+  
+  // Personnel methods
+  getPersonnel(id: number): Promise<Personnel | undefined>;
+  getAllPersonnel(): Promise<Personnel[]>;
+  createPersonnel(person: InsertPersonnel): Promise<Personnel>;
+  updatePersonnel(id: number, person: Partial<InsertPersonnel>): Promise<Personnel | undefined>;
+  deletePersonnel(id: number): Promise<boolean>;
+  searchPersonnel(query: string): Promise<Personnel[]>;
   
   // Category methods
   createCategory(category: InsertCategory): Promise<Category>;
@@ -52,17 +61,20 @@ export interface IStorage {
 
 export class MemStorage implements IStorage {
   private usersDB: Map<number, User>;
+  private personnelDB: Map<number, Personnel>;
   private categoriesDB: Map<number, Category>;
   private itemsDB: Map<number, InventoryItem>;
   private transactionsDB: Map<number, Transaction>;
   sessionStore: session.Store;
   private userIdCounter: number;
+  private personnelIdCounter: number;
   private categoryIdCounter: number;
   private itemIdCounter: number;
   private transactionIdCounter: number;
 
   constructor() {
     this.usersDB = new Map();
+    this.personnelDB = new Map();
     this.categoriesDB = new Map();
     this.itemsDB = new Map();
     this.transactionsDB = new Map();
@@ -70,6 +82,7 @@ export class MemStorage implements IStorage {
       checkPeriod: 86400000,
     });
     this.userIdCounter = 1;
+    this.personnelIdCounter = 1;
     this.categoryIdCounter = 1;
     this.itemIdCounter = 1;
     this.transactionIdCounter = 1;
@@ -225,6 +238,69 @@ export class MemStorage implements IStorage {
     const updatedUser = { ...existingUser, ...userData };
     this.usersDB.set(id, updatedUser);
     return updatedUser;
+  }
+  
+  // Personnel methods
+  async getPersonnel(id: number): Promise<Personnel | undefined> {
+    return this.personnelDB.get(id);
+  }
+  
+  async getAllPersonnel(): Promise<Personnel[]> {
+    return Array.from(this.personnelDB.values());
+  }
+  
+  async createPersonnel(insertPersonnel: InsertPersonnel): Promise<Personnel> {
+    const id = this.personnelIdCounter++;
+    const now = new Date();
+    const person: Personnel = { 
+      ...insertPersonnel, 
+      id,
+      dateAdded: now,
+      isActive: insertPersonnel.isActive !== undefined ? insertPersonnel.isActive : true
+    };
+    this.personnelDB.set(id, person);
+    return person;
+  }
+  
+  async updatePersonnel(id: number, personnelData: Partial<InsertPersonnel>): Promise<Personnel | undefined> {
+    const existingPerson = this.personnelDB.get(id);
+    if (!existingPerson) {
+      return undefined;
+    }
+    
+    const updatedPerson = { ...existingPerson, ...personnelData };
+    this.personnelDB.set(id, updatedPerson);
+    return updatedPerson;
+  }
+  
+  async deletePersonnel(id: number): Promise<boolean> {
+    if (!this.personnelDB.has(id)) {
+      return false;
+    }
+    
+    // Instead of deleting, mark as inactive
+    const existingPerson = this.personnelDB.get(id)!;
+    this.personnelDB.set(id, { ...existingPerson, isActive: false });
+    return true;
+  }
+  
+  async searchPersonnel(query: string): Promise<Personnel[]> {
+    const searchTerm = query.toLowerCase();
+    return Array.from(this.personnelDB.values()).filter(person => {
+      // Only include active personnel in search results
+      if (!person.isActive) return false;
+      
+      // Search across multiple fields
+      return (
+        person.firstName.toLowerCase().includes(searchTerm) ||
+        person.lastName.toLowerCase().includes(searchTerm) ||
+        person.division.toLowerCase().includes(searchTerm) ||
+        person.department.toLowerCase().includes(searchTerm) ||
+        (person.rank && person.rank.toLowerCase().includes(searchTerm)) ||
+        (person.jDial && person.jDial.toLowerCase().includes(searchTerm)) ||
+        (person.lcpoName && person.lcpoName.toLowerCase().includes(searchTerm))
+      );
+    });
   }
 
   // Category methods
