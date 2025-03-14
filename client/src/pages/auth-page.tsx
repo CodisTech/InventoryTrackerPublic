@@ -1,34 +1,25 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { insertUserSchema } from "@shared/schema";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
   password: z.string().min(1, "Password is required"),
 });
 
-const registerSchema = insertUserSchema.extend({
-  password: z.string().min(6, "Password must be at least 6 characters"),
-  fullName: z.string().min(1, "Full name is required"),
-  role: z.string().default("user"),
-  isAuthorized: z.boolean().default(true),
-});
-
 type LoginFormValues = z.infer<typeof loginSchema>;
-type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function AuthPage() {
   const [, navigate] = useLocation();
-  const { user, loginMutation, registerMutation } = useAuth();
+  const { user, loginMutation } = useAuth();
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   // If user is already logged in, redirect to dashboard
   useEffect(() => {
@@ -45,23 +36,13 @@ export default function AuthPage() {
     },
   });
 
-  const registerForm = useForm<RegisterFormValues>({
-    resolver: zodResolver(registerSchema),
-    defaultValues: {
-      username: "",
-      password: "",
-      fullName: "",
-      role: "user",
-      isAuthorized: true,
-    },
-  });
-
   const onLoginSubmit = (data: LoginFormValues) => {
-    loginMutation.mutate(data);
-  };
-
-  const onRegisterSubmit = (data: RegisterFormValues) => {
-    registerMutation.mutate(data);
+    // Check if username is "admin" and password is "admin123"
+    if (data.username === "admin" && data.password === "admin123") {
+      loginMutation.mutate(data);
+    } else {
+      setLoginError("Invalid administrator credentials");
+    }
   };
 
   return (
@@ -75,162 +56,79 @@ export default function AuthPage() {
             </div>
             <h1 className="text-2xl font-bold">Inventory Management System</h1>
             <p className="text-neutral-500 mt-2">
-              Please sign in to continue or create a new account
+              Administrator access only
             </p>
           </div>
 
-          <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="register">Register</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="login">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Login</CardTitle>
-                  <CardDescription>
-                    Enter your credentials to access your account
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Form {...loginForm}>
-                    <form
-                      onSubmit={loginForm.handleSubmit(onLoginSubmit)}
-                      className="space-y-4"
-                    >
-                      <FormField
-                        control={loginForm.control}
-                        name="username"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Username</FormLabel>
-                            <FormControl>
-                              <Input 
-                                placeholder="Enter your username" 
-                                {...field} 
-                                autoComplete="username"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={loginForm.control}
-                        name="password"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Password</FormLabel>
-                            <FormControl>
-                              <Input 
-                                type="password" 
-                                placeholder="Enter your password" 
-                                {...field} 
-                                autoComplete="current-password"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <Button 
-                        type="submit" 
-                        className="w-full" 
-                        disabled={loginMutation.isPending}
-                      >
-                        {loginMutation.isPending ? "Logging in..." : "Login"}
-                      </Button>
-                    </form>
-                  </Form>
-                </CardContent>
-                <CardFooter className="flex justify-center">
-                  <p className="text-sm text-muted-foreground">
-                    Use admin/admin123 for testing
-                  </p>
-                </CardFooter>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="register">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Create an Account</CardTitle>
-                  <CardDescription>
-                    Register for a new account to get started
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Form {...registerForm}>
-                    <form
-                      onSubmit={registerForm.handleSubmit(onRegisterSubmit)}
-                      className="space-y-4"
-                    >
-                      <FormField
-                        control={registerForm.control}
-                        name="fullName"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Full Name</FormLabel>
-                            <FormControl>
-                              <Input 
-                                placeholder="Enter your full name" 
-                                {...field} 
-                                autoComplete="name"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={registerForm.control}
-                        name="username"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Username</FormLabel>
-                            <FormControl>
-                              <Input 
-                                placeholder="Choose a username" 
-                                {...field} 
-                                autoComplete="username"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={registerForm.control}
-                        name="password"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Password</FormLabel>
-                            <FormControl>
-                              <Input 
-                                type="password" 
-                                placeholder="Create a password" 
-                                {...field} 
-                                autoComplete="new-password"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <Button 
-                        type="submit" 
-                        className="w-full" 
-                        disabled={registerMutation.isPending}
-                      >
-                        {registerMutation.isPending ? "Creating Account..." : "Register"}
-                      </Button>
-                    </form>
-                  </Form>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+          <Card>
+            <CardHeader>
+              <CardTitle>Administrator Login</CardTitle>
+              <CardDescription>
+                Enter your credentials to access the inventory management system
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Form {...loginForm}>
+                <form
+                  onSubmit={loginForm.handleSubmit(onLoginSubmit)}
+                  className="space-y-4"
+                >
+                  <FormField
+                    control={loginForm.control}
+                    name="username"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Username</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="Enter your username" 
+                            {...field} 
+                            autoComplete="username"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={loginForm.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="password" 
+                            placeholder="Enter your password" 
+                            {...field} 
+                            autoComplete="current-password"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  {loginError && (
+                    <div className="text-destructive text-sm font-medium">{loginError}</div>
+                  )}
+                  
+                  <Button 
+                    type="submit" 
+                    className="w-full" 
+                    disabled={loginMutation.isPending}
+                  >
+                    {loginMutation.isPending ? "Logging in..." : "Login as Administrator"}
+                  </Button>
+                </form>
+              </Form>
+            </CardContent>
+            <CardFooter className="flex justify-center">
+              <p className="text-sm text-muted-foreground">
+                Use admin/admin123 for login
+              </p>
+            </CardFooter>
+          </Card>
         </div>
       </div>
 
@@ -247,7 +145,7 @@ export default function AuthPage() {
             </li>
             <li className="flex items-start">
               <span className="material-icons mr-3 mt-0.5">check_circle</span>
-              <span>Monitor item check-ins and check-outs</span>
+              <span>Centrally manage item check-ins and check-outs</span>
             </li>
             <li className="flex items-start">
               <span className="material-icons mr-3 mt-0.5">check_circle</span>
@@ -255,11 +153,11 @@ export default function AuthPage() {
             </li>
             <li className="flex items-start">
               <span className="material-icons mr-3 mt-0.5">check_circle</span>
-              <span>Generate detailed reports on inventory usage</span>
+              <span>Assign items to personnel with easy tracking</span>
             </li>
             <li className="flex items-start">
               <span className="material-icons mr-3 mt-0.5">check_circle</span>
-              <span>Manage authorized users with role-based access</span>
+              <span>Complete transaction history for all inventory items</span>
             </li>
           </ul>
           <div className="mt-8 text-center">

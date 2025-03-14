@@ -35,9 +35,8 @@ const MobileNav: React.FC<MobileNavProps> = ({ isOpen, onClose }) => {
     { name: "Dashboard", icon: "dashboard", path: "/" },
     { name: "Inventory", icon: "inventory", path: "/inventory" },
     { name: "Transactions", icon: "sync_alt", path: "/transactions" },
-    { name: "Users", icon: "people", path: "/users" },
+    { name: "Personnel", icon: "people", path: "/users" },
     { name: "Reports", icon: "assessment", path: "/reports" },
-    { name: "Settings", icon: "settings", path: "/settings" },
   ];
 
   return (

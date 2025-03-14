@@ -35,6 +35,9 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
   const [userId, setUserId] = useState<string>("");
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
   const [notes, setNotes] = useState<string>("");
+  
+  // New state to control the workflow
+  const [selectedPerson, setSelectedPerson] = useState<User | null>(null);
 
   const { data: items = [] } = useQuery<InventoryItemWithCategory[]>({
     queryKey: ["/api/inventory"],
@@ -53,16 +56,20 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
         // If item is checked out, default to check-in, otherwise default to check-out
         if (selectedItem.checkedOutBy) {
           setOperationType("check-in");
+          // If we're checking in, find the user who has this item checked out
+          if (selectedItem.checkedOutBy) {
+            setUserId(selectedItem.checkedOutBy.id.toString());
+            const personWithItem = users.find(u => u.id === selectedItem.checkedOutBy?.id);
+            if (personWithItem) {
+              setSelectedPerson(personWithItem);
+            }
+          }
         } else {
           setOperationType("check-out");
         }
       } else {
         setOperationType("check-out");
-      }
-      
-      // Default to current user
-      if (user) {
-        setUserId(user.id.toString());
+        setSelectedPerson(null);
       }
       
       // Set due date to 7 days from now
@@ -72,7 +79,7 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
       
       setNotes("");
     }
-  }, [isOpen, selectedItem, user]);
+  }, [isOpen, selectedItem, users]);
 
   const transactionMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -81,7 +88,7 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
     },
     onSuccess: () => {
       toast({
-        title: `Item ${operationType === "check-out" ? "checked out" : "checked in"} successfully`,
+        title: `Item ${operationType === "check-out" ? "checked out to" : "checked in from"} ${selectedPerson?.fullName}`,
         description: "The inventory has been updated.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
@@ -109,7 +116,7 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
 
     if (!userId) {
       toast({
-        title: "Please select a user",
+        title: "Please select a person",
         variant: "destructive",
       });
       return;
@@ -135,6 +142,15 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
     transactionMutation.mutate(transaction);
   };
 
+  // Handle user selection
+  const handleUserChange = (userId: string) => {
+    setUserId(userId);
+    const selectedUser = users.find(u => u.id.toString() === userId);
+    if (selectedUser) {
+      setSelectedPerson(selectedUser);
+    }
+  };
+
   // Filter available items for checkout, all items for checkin
   const availableItems = operationType === "check-out"
     ? items.filter(item => item.availableQuantity > 0)
@@ -144,7 +160,13 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Check In/Out Item</DialogTitle>
+          <DialogTitle>
+            {selectedItem ? 
+              (selectedItem.checkedOutBy ? 
+                `Check In Item from ${selectedItem.checkedOutBy.fullName}` : 
+                "Check Out Item") : 
+              "Check In/Out Item"}
+          </DialogTitle>
         </DialogHeader>
         
         <div className="grid gap-4 py-4">
@@ -167,6 +189,32 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
           </div>
           
           <div className="space-y-2">
+            <Label htmlFor="user-select">Select Person</Label>
+            <Select
+              value={userId}
+              onValueChange={handleUserChange}
+              disabled={!!selectedItem?.checkedOutBy}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select a person..." />
+              </SelectTrigger>
+              <SelectContent>
+                {users.map((user) => (
+                  <SelectItem key={user.id} value={user.id.toString()}>
+                    {user.fullName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {selectedPerson && (
+              <p className="text-xs text-muted-foreground">
+                {operationType === "check-out" ? "Checking out to: " : "Checking in from: "}
+                <span className="font-medium">{selectedPerson.fullName}</span>
+              </p>
+            )}
+          </div>
+          
+          <div className="space-y-2">
             <Label htmlFor="item-select">Select Item</Label>
             <Select
               value={itemId}
@@ -184,25 +232,9 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
                 ))}
               </SelectContent>
             </Select>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="user-select">Assigned To</Label>
-            <Select
-              value={userId}
-              onValueChange={setUserId}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select a user..." />
-              </SelectTrigger>
-              <SelectContent>
-                {users.map((user) => (
-                  <SelectItem key={user.id} value={user.id.toString()}>
-                    {user.fullName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {operationType === "check-out" && availableItems.length === 0 && (
+              <p className="text-xs text-destructive">No items available for checkout</p>
+            )}
           </div>
           
           {operationType === "check-out" && (
@@ -253,10 +285,13 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
           <Button 
             onClick={handleSubmit}
             disabled={transactionMutation.isPending}
+            className={operationType === "check-out" ? "bg-primary" : "bg-secondary"}
           >
             {transactionMutation.isPending 
               ? "Processing..." 
-              : operationType === "check-out" ? "Check Out" : "Check In"}
+              : operationType === "check-out" 
+                ? `Check Out to ${selectedPerson?.fullName || "..."}` 
+                : `Check In from ${selectedPerson?.fullName || "..."}`}
           </Button>
         </DialogFooter>
       </DialogContent>

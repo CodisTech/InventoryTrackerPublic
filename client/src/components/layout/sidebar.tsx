@@ -12,9 +12,8 @@ const Sidebar: React.FC = () => {
     { name: "Dashboard", icon: "dashboard", path: "/" },
     { name: "Inventory", icon: "inventory", path: "/inventory" },
     { name: "Transactions", icon: "sync_alt", path: "/transactions" },
-    { name: "Users", icon: "people", path: "/users" },
+    { name: "Personnel", icon: "people", path: "/users" },
     { name: "Reports", icon: "assessment", path: "/reports" },
-    { name: "Settings", icon: "settings", path: "/settings" },
   ];
 
   const handleLogout = () => {
@@ -53,12 +52,12 @@ const Sidebar: React.FC = () => {
         <div className="flex items-center">
           <Avatar className="mr-3">
             <AvatarFallback className="bg-primary text-white">
-              {user?.fullName?.charAt(0) || "U"}
+              A
             </AvatarFallback>
           </Avatar>
           <div>
-            <p className="text-sm font-medium text-neutral-900">{user?.fullName || "User"}</p>
-            <p className="text-xs text-neutral-500">{user?.role || "User"}</p>
+            <p className="text-sm font-medium text-neutral-900">Administrator</p>
+            <p className="text-xs text-neutral-500">System Admin</p>
           </div>
           <button className="ml-auto" onClick={handleLogout}>
             <LogOut className="h-5 w-5 text-neutral-500" />
