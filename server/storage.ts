@@ -102,6 +102,62 @@ export class MemStorage implements IStorage {
       isAuthorized: true
     });
 
+    // Create sample personnel
+    await this.createPersonnel({
+      firstName: "John",
+      lastName: "Smith",
+      division: "Operations",
+      department: "Deck",
+      rank: "PO1",
+      jDial: "555-1234",
+      lcpoName: "CPO Johnson",
+      isActive: true
+    });
+    
+    await this.createPersonnel({
+      firstName: "Sarah",
+      lastName: "Rodriguez",
+      division: "Engineering",
+      department: "Mechanical",
+      rank: "PO2",
+      jDial: "555-2345",
+      lcpoName: "CPO Thompson",
+      isActive: true
+    });
+    
+    await this.createPersonnel({
+      firstName: "Michael",
+      lastName: "Chen",
+      division: "Logistics",
+      department: "Supply",
+      rank: "PO3",
+      jDial: "555-3456",
+      lcpoName: "CPO Williams",
+      isActive: true
+    });
+    
+    await this.createPersonnel({
+      firstName: "Jessica",
+      lastName: "Wilson",
+      division: "Medical",
+      department: "Administration",
+      rank: "HM2",
+      jDial: "555-4567",
+      lcpoName: "CPO Martinez",
+      isActive: true
+    });
+    
+    await this.createPersonnel({
+      firstName: "Robert",
+      lastName: "Davis",
+      division: "Operations",
+      department: "Communications",
+      rank: "IT1",
+      jDial: "555-5678",
+      lcpoName: "CPO Johnson",
+      isActive: false
+    });
+
     // Create some sample categories
     const laptops = await this.createCategory({ name: "Laptops" });
     const desktops = await this.createCategory({ name: "Desktops" });
