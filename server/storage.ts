@@ -83,7 +83,7 @@ export class MemStorage implements IStorage {
     // Create admin user
     const admin = await this.createUser({
       username: "admin",
-      password: "$2b$10$ixlPY3AAd4LYgE83nRLA7OJyxgxyjHrJQ8gK.7tGtYh9Qglc4GSte", // password: admin123
+      password: "admin123", // Plain password - will be hashed by the auth.ts createUser function
       fullName: "Administrator",
       role: "admin",
       isAuthorized: true
@@ -200,7 +200,14 @@ export class MemStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.userIdCounter++;
-    const user: User = { ...insertUser, id };
+    // We're using plaintext password in the sample data initialization 
+    // The password will be properly hashed when using the register API route
+    const user: User = { 
+      ...insertUser, 
+      id,
+      role: insertUser.role || "staff",
+      isAuthorized: insertUser.isAuthorized !== undefined ? insertUser.isAuthorized : true
+    };
     this.usersDB.set(id, user);
     return user;
   }

@@ -37,12 +37,12 @@ export default function AuthPage() {
   });
 
   const onLoginSubmit = (data: LoginFormValues) => {
-    // Check if username is "admin" and password is "admin123"
-    if (data.username === "admin" && data.password === "admin123") {
-      loginMutation.mutate(data);
-    } else {
-      setLoginError("Invalid administrator credentials");
-    }
+    setLoginError(null);
+    loginMutation.mutate(data, {
+      onError: (error) => {
+        setLoginError(error.message || "Invalid administrator credentials");
+      }
+    });
   };
 
   return (
