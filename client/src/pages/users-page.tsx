@@ -14,14 +14,14 @@ const UsersPage: React.FC = () => {
   const { toast } = useToast();
   const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
 
-  const { data: users = [], isLoading, error } = useQuery<User[]>({
+  const { data: personnel = [], isLoading, error } = useQuery<User[]>({
     queryKey: ["/api/users"],
   });
 
   React.useEffect(() => {
     if (error) {
       toast({
-        title: "Error loading users",
+        title: "Error loading personnel data",
         description: error.message,
         variant: "destructive",
       });
@@ -30,29 +30,29 @@ const UsersPage: React.FC = () => {
 
   const columns = [
     {
-      header: "User",
+      header: "Name",
       accessorKey: "fullName",
-      cell: (user: User) => (
+      cell: (person: User) => (
         <div className="flex items-center">
           <Avatar className="h-8 w-8 mr-3">
             <AvatarFallback className="bg-primary text-white">
-              {user.fullName.charAt(0)}
+              {person.fullName.charAt(0)}
             </AvatarFallback>
           </Avatar>
           <div>
-            <p className="font-medium">{user.fullName}</p>
-            <p className="text-sm text-muted-foreground">{user.username}</p>
+            <p className="font-medium">{person.fullName}</p>
+            <p className="text-sm text-muted-foreground">{person.username}</p>
           </div>
         </div>
       ),
       sortable: true,
     },
     {
-      header: "Role",
+      header: "Department",
       accessorKey: "role",
-      cell: (user: User) => (
-        <Badge variant={user.role === "admin" ? "default" : "secondary"}>
-          {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+      cell: (person: User) => (
+        <Badge variant="secondary">
+          {person.role.charAt(0).toUpperCase() + person.role.slice(1)}
         </Badge>
       ),
       sortable: true,
@@ -60,9 +60,9 @@ const UsersPage: React.FC = () => {
     {
       header: "Status",
       accessorKey: "isAuthorized",
-      cell: (user: User) => (
-        <Badge variant={user.isAuthorized ? "success" : "error"}>
-          {user.isAuthorized ? "Authorized" : "Unauthorized"}
+      cell: (person: User) => (
+        <Badge variant={person.isAuthorized ? "success" : "error"}>
+          {person.isAuthorized ? "Active" : "Inactive"}
         </Badge>
       ),
       sortable: true,
@@ -70,8 +70,11 @@ const UsersPage: React.FC = () => {
     {
       header: "Actions",
       accessorKey: "id",
-      cell: (user: User) => (
-        <Button variant="link">Manage</Button>
+      cell: (person: User) => (
+        <div className="flex space-x-2">
+          <Button variant="outline" size="sm">View Items</Button>
+          <Button variant="link" size="sm">Edit</Button>
+        </div>
       ),
     },
   ];
@@ -80,22 +83,22 @@ const UsersPage: React.FC = () => {
     <div>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-2xl font-medium text-neutral-900">Users</CardTitle>
+          <CardTitle className="text-2xl font-medium text-neutral-900">Personnel</CardTitle>
           <Button onClick={() => setIsAddUserModalOpen(true)} className="flex items-center">
             <Plus className="mr-2 h-4 w-4" />
-            Add User
+            Add Person
           </Button>
         </CardHeader>
         <CardContent>
           <DataTable
-            data={users}
+            data={personnel}
             columns={columns}
-            searchPlaceholder="Search users..."
+            searchPlaceholder="Search personnel..."
           />
         </CardContent>
       </Card>
 
-      {/* Add User Modal */}
+      {/* Add Person Modal */}
       <AddUserModal
         isOpen={isAddUserModalOpen}
         onClose={() => setIsAddUserModalOpen(false)}

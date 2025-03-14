@@ -20,18 +20,18 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const [role, setRole] = useState("user");
+  const [role, setRole] = useState("staff");
   const [isAuthorized, setIsAuthorized] = useState(true);
 
-  const addUserMutation = useMutation({
+  const addPersonMutation = useMutation({
     mutationFn: async (data: any) => {
       const res = await apiRequest("POST", "/api/users", data);
       return await res.json();
     },
     onSuccess: () => {
       toast({
-        title: "User added successfully",
-        description: "The new user has been created.",
+        title: "Person added successfully",
+        description: "The new personnel record has been created.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
@@ -40,7 +40,7 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose }) => {
     },
     onError: (error: Error) => {
       toast({
-        title: "Failed to add user",
+        title: "Failed to add personnel record",
         description: error.message,
         variant: "destructive",
       });
@@ -51,7 +51,7 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose }) => {
     setUsername("");
     setPassword("");
     setFullName("");
-    setRole("user");
+    setRole("staff");
     setIsAuthorized(true);
   };
 
@@ -59,7 +59,7 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose }) => {
     // Basic validation
     if (!username.trim()) {
       toast({
-        title: "Username is required",
+        title: "ID/Username is required",
         variant: "destructive",
       });
       return;
@@ -89,7 +89,7 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose }) => {
       return;
     }
 
-    const newUser = {
+    const newPerson = {
       username,
       password,
       fullName,
@@ -97,14 +97,14 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose }) => {
       isAuthorized,
     };
 
-    addUserMutation.mutate(newUser);
+    addPersonMutation.mutate(newPerson);
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Add New User</DialogTitle>
+          <DialogTitle>Add New Personnel</DialogTitle>
         </DialogHeader>
         
         <div className="grid gap-4 py-4">
@@ -119,12 +119,12 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose }) => {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="username">Username</Label>
+            <Label htmlFor="username">ID/Username</Label>
             <Input
               id="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="Enter username"
+              placeholder="Enter ID or employee number"
             />
           </div>
           
@@ -141,23 +141,27 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose }) => {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="role">Role</Label>
+            <Label htmlFor="role">Department</Label>
             <Select
               value={role}
               onValueChange={setRole}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select role" />
+                <SelectValue placeholder="Select department" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="user">User</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
+                <SelectItem value="staff">Staff</SelectItem>
+                <SelectItem value="engineering">Engineering</SelectItem>
+                <SelectItem value="operations">Operations</SelectItem>
+                <SelectItem value="management">Management</SelectItem>
+                <SelectItem value="it">IT</SelectItem>
+                <SelectItem value="admin">Administration</SelectItem>
               </SelectContent>
             </Select>
           </div>
           
           <div className="flex items-center justify-between">
-            <Label htmlFor="authorized">User is authorized</Label>
+            <Label htmlFor="authorized">Active Status</Label>
             <Switch
               id="authorized"
               checked={isAuthorized}
@@ -170,9 +174,9 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose }) => {
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button 
             onClick={handleSubmit}
-            disabled={addUserMutation.isPending}
+            disabled={addPersonMutation.isPending}
           >
-            {addUserMutation.isPending ? "Adding..." : "Add User"}
+            {addPersonMutation.isPending ? "Adding..." : "Add Person"}
           </Button>
         </DialogFooter>
       </DialogContent>

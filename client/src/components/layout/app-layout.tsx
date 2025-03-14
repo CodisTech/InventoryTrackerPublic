@@ -33,7 +33,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         
         {/* Mobile navigation footer */}
         <nav className="md:hidden bg-white border-t border-neutral-100 fixed bottom-0 left-0 right-0 z-10">
-          <div className="grid grid-cols-5 h-16">
+          <div className="grid grid-cols-4 h-16">
             <a href="/" className="flex flex-col items-center justify-center text-primary">
               <span className="material-icons">dashboard</span>
               <span className="text-xs mt-1">Dashboard</span>
@@ -48,11 +48,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             </a>
             <a href="/users" className="flex flex-col items-center justify-center text-neutral-500">
               <span className="material-icons">people</span>
-              <span className="text-xs mt-1">Users</span>
-            </a>
-            <a href="#more" className="flex flex-col items-center justify-center text-neutral-500">
-              <span className="material-icons">more_horiz</span>
-              <span className="text-xs mt-1">More</span>
+              <span className="text-xs mt-1">Personnel</span>
             </a>
           </div>
         </nav>
