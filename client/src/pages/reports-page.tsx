@@ -1,10 +1,119 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Info } from "lucide-react";
+import { Info, AlertCircle, ClockIcon, UserCircle, Package, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useQuery } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import { TransactionWithDetails } from "@shared/schema";
+import { Badge } from "@/components/ui/badge";
+import { formatDistanceToNow } from "date-fns";
+
+// Overdue Reports Tab Component
+const OverdueReportsTab: React.FC = () => {
+  const { toast } = useToast();
+  
+  const { data: overdueItems = [], isLoading, error } = useQuery<TransactionWithDetails[]>({
+    queryKey: ["/api/overdue-items"],
+    refetchInterval: 60000, // Refetch every minute to keep the list updated
+  });
+
+  React.useEffect(() => {
+    if (error) {
+      toast({
+        title: "Error fetching overdue items",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  }, [error, toast]);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-lg font-medium">24-Hour Overdue Items Report</h3>
+        <Badge variant="outline" className="bg-red-50 text-red-700 hover:bg-red-50">
+          {isLoading ? "Loading..." : `${overdueItems.length} Overdue Items`}
+        </Badge>
+      </div>
+
+      {isLoading ? (
+        <Card className="border-neutral-200 bg-neutral-50 shadow-sm">
+          <CardContent className="p-6 flex justify-center items-center">
+            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span>Loading overdue items data...</span>
+          </CardContent>
+        </Card>
+      ) : !overdueItems.length ? (
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex flex-col items-center justify-center text-center py-6">
+              <div className="rounded-full bg-green-50 p-3 mb-3">
+                <CheckCircle2 className="h-6 w-6 text-green-500" />
+              </div>
+              <h3 className="text-lg font-medium mb-1">No Overdue Items</h3>
+              <p className="text-neutral-500 max-w-md">
+                All items are currently within the 24-hour checkout limit. This report will update as items become overdue.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {overdueItems.map((transaction) => (
+            <Card key={transaction.id} className="border-red-100 shadow-sm">
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start">
+                    <div className="mr-3 mt-1 p-2 rounded-full bg-red-100">
+                      <Package className="h-5 w-5 text-red-600" />
+                    </div>
+                    <div>
+                      <div className="flex items-center">
+                        <p className="font-medium text-neutral-900">{transaction.item.name}</p>
+                        <Badge variant="destructive" className="ml-3">
+                          <ClockIcon className="h-3 w-3 mr-1" />
+                          {transaction.dueDate
+                            ? `Overdue by ${formatDistanceToNow(new Date(transaction.dueDate))}`
+                            : "Overdue"}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center text-sm text-neutral-600 mt-1">
+                        <UserCircle className="h-4 w-4 mr-1" />
+                        <span>Checked out by: {transaction.user.fullName}</span>
+                      </div>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        <div className="text-xs bg-neutral-100 px-2 py-1 rounded">
+                          Item code: {transaction.item.itemCode}
+                        </div>
+                        <div className="text-xs bg-neutral-100 px-2 py-1 rounded">
+                          Transaction ID: TRX-{transaction.id.toString().padStart(4, '0')}
+                        </div>
+                        <div className="text-xs bg-neutral-100 px-2 py-1 rounded">
+                          Checkout date: {new Date(transaction.checkoutDate).toLocaleDateString()}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+          <div className="flex justify-end">
+            <Button variant="outline" className="text-xs">
+              Export Overdue Report
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const ReportsPage: React.FC = () => {
   return (
@@ -34,12 +143,21 @@ const ReportsPage: React.FC = () => {
         </div>
       </div>
 
-      <Tabs defaultValue="inventory" className="mb-6">
-        <TabsList>
+      <Tabs defaultValue="overdueItems" className="mb-6">
+        <TabsList className="w-full">
+          <TabsTrigger value="overdueItems" className="relative">
+            <span>Overdue Items</span>
+            <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-[10px]">
+              !
+            </Badge>
+          </TabsTrigger>
           <TabsTrigger value="inventory">Inventory Analytics</TabsTrigger>
           <TabsTrigger value="transactions">Transaction History</TabsTrigger>
           <TabsTrigger value="personnel">Personnel Activity</TabsTrigger>
         </TabsList>
+        <TabsContent value="overdueItems" className="pt-4">
+          <OverdueReportsTab />
+        </TabsContent>
         <TabsContent value="inventory" className="pt-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
