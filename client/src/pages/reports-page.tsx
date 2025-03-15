@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { TransactionWithDetails, PersonnelActivity, DepartmentUsage } from "@shared/schema";
+import { TransactionWithDetails, PersonnelActivity, DepartmentUsage, InventoryItemWithCategory } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 import { useLocation } from "wouter";
@@ -2183,9 +2183,9 @@ const TopItemsUsageChart: React.FC = () => {
     .sort((a, b) => b.totalUsage - a.totalUsage)
     .slice(0, 5); // Get top 5 items
   
-  // Format for the bar chart
+  // Format for the bar chart - shorten names even more to prevent overlap
   const chartData = itemUsage.map(item => ({
-    item: item.item.length > 15 ? item.item.substring(0, 15) + '...' : item.item,
+    item: item.item.length > 10 ? item.item.substring(0, 10) + '...' : item.item,
     checkouts: item.checkouts,
     returns: item.returns
   }));
@@ -2197,8 +2197,8 @@ const TopItemsUsageChart: React.FC = () => {
           data={chartData}
           keys={["checkouts", "returns"]}
           indexBy="item"
-          margin={{ top: 10, right: 20, bottom: 50, left: 60 }}
-          padding={0.3}
+          margin={{ top: 10, right: 20, bottom: 70, left: 60 }}
+          padding={0.2}
           groupMode="grouped"
           valueScale={{ type: "linear" }}
           indexScale={{ type: "band", round: true }}
@@ -2208,10 +2208,10 @@ const TopItemsUsageChart: React.FC = () => {
           axisRight={null}
           axisBottom={{
             tickSize: 5,
-            tickPadding: 5,
+            tickPadding: 10,
             tickRotation: -45,
             legendPosition: "middle",
-            legendOffset: 32,
+            legendOffset: 45,
             truncateTickAt: 0
           }}
           axisLeft={{
@@ -2381,8 +2381,8 @@ const InventoryTrendChart: React.FC = () => {
           data={chartData}
           keys={["Items Checked Out", "Items Returned"]}
           indexBy="month"
-          margin={{ top: 10, right: 20, bottom: 50, left: 60 }}
-          padding={0.3}
+          margin={{ top: 10, right: 20, bottom: 70, left: 60 }}
+          padding={0.2}
           groupMode="grouped"
           valueScale={{ type: "linear" }}
           indexScale={{ type: "band", round: true }}
@@ -2392,10 +2392,10 @@ const InventoryTrendChart: React.FC = () => {
           axisRight={null}
           axisBottom={{
             tickSize: 5,
-            tickPadding: 5,
+            tickPadding: 10,
             tickRotation: -45,
             legendPosition: "middle",
-            legendOffset: 32,
+            legendOffset: 45,
             truncateTickAt: 0
           }}
           axisLeft={{
