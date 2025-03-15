@@ -1,10 +1,9 @@
 import React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { DataTable } from "@/components/ui/data-table";
+import { DataTable, Column } from "@/components/ui/data-table";
 import { Search, Package, LogOut, CheckCircle2, Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import { InventoryItemWithCategory, Personnel } from "@shared/schema";
 import ItemDetailModal from "@/components/inventory/item-detail-modal";
 import PersonnelDetailModal from "@/components/users/personnel-detail-modal";
@@ -16,9 +15,6 @@ interface ListModalProps {
   listType: "total" | "checked-out" | "available" | "personnel";
   inventory?: InventoryItemWithCategory[];
   personnel?: Personnel[];
-  selectMode?: boolean;
-  selectedItems?: InventoryItemWithCategory[];
-  onItemSelect?: (item: InventoryItemWithCategory, isSelected: boolean) => void;
 }
 
 const ListModal: React.FC<ListModalProps> = ({
@@ -27,9 +23,6 @@ const ListModal: React.FC<ListModalProps> = ({
   listType,
   inventory = [],
   personnel = [],
-  selectMode = false,
-  selectedItems = [],
-  onItemSelect,
 }) => {
   const [searchTerm, setSearchTerm] = React.useState("");
   const [selectedItem, setSelectedItem] = React.useState<InventoryItemWithCategory | null>(null);
@@ -59,6 +52,11 @@ const ListModal: React.FC<ListModalProps> = ({
           title: "All Personnel",
           icon: <Users className="h-5 w-5 mr-2 text-indigo-500" />,
         };
+      default:
+        return {
+          title: "Items List",
+          icon: <Package className="h-5 w-5 mr-2 text-primary" />,
+        };
     }
   };
 
@@ -74,7 +72,7 @@ const ListModal: React.FC<ListModalProps> = ({
           `${person.firstName} ${person.lastName}`.toLowerCase().includes(search) ||
           (person.division && person.division.toLowerCase().includes(search)) ||
           (person.department && person.department.toLowerCase().includes(search)) ||
-          (person.jDial && person.jDial.toLowerCase().includes(search)) ||
+          (person.jDial && person.jDial && person.jDial.toLowerCase().includes(search)) ||
           (person.lcpoName && person.lcpoName.toLowerCase().includes(search))
         );
       });
@@ -82,13 +80,13 @@ const ListModal: React.FC<ListModalProps> = ({
       // Filter inventory items based on list type
       let filteredItems = inventory;
       if (listType === "checked-out") {
-        // Only show fully checked out items that have a person assigned
+        // Only show checked out items that have a person assigned
         filteredItems = inventory.filter(item => 
           item.checkedOutBy !== null && 
           item.checkedOutBy !== undefined
         );
       } else if (listType === "available") {
-        // Show items that are not fully checked out
+        // Show items that are available
         filteredItems = inventory.filter(item => item.availableQuantity > 0);
       }
 
@@ -107,102 +105,75 @@ const ListModal: React.FC<ListModalProps> = ({
   };
 
   // Define columns for personnel table
-  const personnelColumns = [
+  const personnelColumns: Column<Personnel>[] = [
     {
       header: "Name",
-      accessorKey: "name",
-      cell: (row: Personnel) => `${row.firstName} ${row.lastName}`,
+      accessorKey: "firstName" as keyof Personnel,
+      cell: (person: Personnel) => `${person.firstName} ${person.lastName}`,
     },
     {
       header: "Division",
-      accessorKey: "division",
-      cell: (row: Personnel) => row.division || "-",
+      accessorKey: "division" as keyof Personnel,
+      cell: (person: Personnel) => person.division || "-",
     },
     {
       header: "Department",
-      accessorKey: "department",
-      cell: (row: Personnel) => row.department || "-",
+      accessorKey: "department" as keyof Personnel,
+      cell: (person: Personnel) => person.department || "-",
     },
     {
       header: "J-Dial",
-      accessorKey: "jDial",
-      cell: (row: Personnel) => row.jDial || "-",
+      accessorKey: "jDial" as keyof Personnel,
+      cell: (person: Personnel) => person.jDial || "-",
     },
     {
       header: "LCPO",
-      accessorKey: "lcpoName",
-      cell: (row: Personnel) => row.lcpoName || "-",
+      accessorKey: "lcpoName" as keyof Personnel,
+      cell: (person: Personnel) => person.lcpoName || "-",
     },
   ];
 
-  // Check if an item is in the selected items array
-  const isItemSelected = (item: InventoryItemWithCategory) => {
-    return selectedItems.some(selectedItem => selectedItem.id === item.id);
-  };
-
   // Define columns for inventory table
-  const inventoryColumns = [
-    ...(selectMode && listType !== "personnel" ? [
-      {
-        header: "",
-        accessorKey: "select",
-        cell: (row: InventoryItemWithCategory) => {
-          const isDisabled = row.availableQuantity === 0;
-          const selected = isItemSelected(row);
-          return (
-            <Checkbox 
-              checked={selected}
-              disabled={isDisabled}
-              onCheckedChange={(checked) => {
-                if (onItemSelect && row.availableQuantity > 0) {
-                  onItemSelect(row, checked as boolean);
-                }
-              }}
-              onClick={(e) => e.stopPropagation()}
-            />
-          );
-        },
-      },
-    ] : []),
+  const inventoryColumns: Column<InventoryItemWithCategory>[] = [
     {
       header: "Item Code",
-      accessorKey: "itemCode",
+      accessorKey: "itemCode" as keyof InventoryItemWithCategory,
     },
     {
       header: "Name",
-      accessorKey: "name",
+      accessorKey: "name" as keyof InventoryItemWithCategory,
     },
     {
       header: "Category",
-      accessorKey: "category",
-      cell: (row: InventoryItemWithCategory) => row.category.name,
+      accessorKey: "category" as keyof InventoryItemWithCategory,
+      cell: (item: InventoryItemWithCategory) => item.category.name,
     },
     {
       header: "Available / Total",
-      accessorKey: "availableQuantity",
-      cell: (row: InventoryItemWithCategory) => `${row.availableQuantity} / ${row.totalQuantity}`,
+      accessorKey: "availableQuantity" as keyof InventoryItemWithCategory,
+      cell: (item: InventoryItemWithCategory) => `${item.availableQuantity} / ${item.totalQuantity}`,
     },
     {
       header: "Status",
-      accessorKey: "status",
-      cell: (row: InventoryItemWithCategory) => {
+      accessorKey: "status" as keyof InventoryItemWithCategory,
+      cell: (item: InventoryItemWithCategory) => {
         // If the item has no available quantity and is assigned to someone
-        if (row.availableQuantity === 0 && row.checkedOutBy) {
+        if (item.availableQuantity === 0 && item.checkedOutBy) {
           return <span className="text-amber-500 font-medium">Checked Out</span>;
         }
         
         // If the item has no available quantity but is not assigned
-        if (row.availableQuantity === 0) {
+        if (item.availableQuantity === 0) {
           return <span className="text-destructive font-medium">Out of Stock</span>;
         }
         
         // If someone has this item checked out but some quantity is still available
-        if (row.checkedOutBy && row.availableQuantity > 0) {
+        if (item.checkedOutBy && item.availableQuantity > 0) {
           return <span className="text-blue-500 font-medium">Partially Checked Out</span>;
         }
         
         // Low stock warning
-        if (row.availableQuantity < (row.minStockLevel || 3)) {
+        if (item.availableQuantity < (item.minStockLevel || 3)) {
           return <span className="text-amber-500 font-medium">Low Stock</span>;
         }
         
@@ -212,13 +183,13 @@ const ListModal: React.FC<ListModalProps> = ({
     },
     {
       header: "Checked Out By",
-      accessorKey: "checkedOutBy",
-      cell: (row: InventoryItemWithCategory) => {
-        if (!row.checkedOutBy) return "-";
-        const quantityCheckedOut = row.totalQuantity - row.availableQuantity;
+      accessorKey: "checkedOutBy" as keyof InventoryItemWithCategory,
+      cell: (item: InventoryItemWithCategory) => {
+        if (!item.checkedOutBy) return "-";
+        const quantityCheckedOut = item.totalQuantity - item.availableQuantity;
         return (
           <div className="flex flex-col">
-            <span className="font-medium">{row.checkedOutBy.fullName}</span>
+            <span className="font-medium">{item.checkedOutBy.fullName}</span>
             {quantityCheckedOut > 1 && (
               <span className="text-sm text-muted-foreground">
                 Qty: {quantityCheckedOut}
@@ -260,13 +231,7 @@ const ListModal: React.FC<ListModalProps> = ({
             data={filteredData}
             columns={columns}
             onRowClick={(item) => {
-              if (selectMode && listType !== "personnel") {
-                const inventoryItem = item as InventoryItemWithCategory;
-                if (inventoryItem.availableQuantity > 0 && onItemSelect) {
-                  const isSelected = isItemSelected(inventoryItem);
-                  onItemSelect(inventoryItem, !isSelected);
-                }
-              } else if (listType === "personnel") {
+              if (listType === "personnel") {
                 setSelectedPersonnel(item as Personnel);
               } else {
                 setSelectedItem(item as InventoryItemWithCategory);
@@ -276,14 +241,6 @@ const ListModal: React.FC<ListModalProps> = ({
         </div>
 
         <DialogFooter className="flex justify-between">
-          {selectMode && listType !== "personnel" && selectedItems && selectedItems.length > 0 && (
-            <Button 
-              onClick={() => setIsCheckInOutOpen(true)} 
-              className="bg-primary text-white"
-            >
-              Checkout Selected Items ({selectedItems.length})
-            </Button>
-          )}
           <Button onClick={onClose}>Close</Button>
         </DialogFooter>
       </DialogContent>
@@ -316,13 +273,9 @@ const ListModal: React.FC<ListModalProps> = ({
           isOpen={isCheckInOutOpen}
           onClose={() => {
             setIsCheckInOutOpen(false);
-            // If we're in select mode, also close the list modal after a successful checkout
-            if (selectMode) {
-              onClose();
-            }
+            onClose();
           }}
           selectedItem={selectedItem}
-          selectedItems={selectMode ? selectedItems : undefined}
         />
       )}
     </Dialog>
