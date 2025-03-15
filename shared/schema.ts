@@ -105,6 +105,8 @@ export const insertTransactionSchema = createInsertSchema(transactions).pick({
 }).extend({
   // Make dueDate optional to avoid validation errors during check-in
   dueDate: z.string().datetime().optional(),
+  // Allow returnDate for check-in operations
+  returnDate: z.date().optional(),
 });
 
 // Types

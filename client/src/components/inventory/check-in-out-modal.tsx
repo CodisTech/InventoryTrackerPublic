@@ -151,10 +151,13 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
       notes,
     };
 
-    // Only include dueDate for check-out operations to avoid validation errors
+    // Handle dates based on transaction type
     if (operationType === "check-out" && dueDate) {
+      // For check-out, include due date (timestamp is added automatically on server)
       transaction.dueDate = dueDate.toISOString();
     }
+    // For check-in, no need to include dates (returnDate is set automatically on server)
+    // timestamp is also set automatically on server
 
     // Process the transaction immediately without checking agreements
     transactionMutation.mutate(transaction);

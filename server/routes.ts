@@ -169,13 +169,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         quantity: req.body.quantity || 1
       };
       
-      // Only require dueDate for check-out transactions
-      if (dataWithDefaults.type === 'check-in' && dataWithDefaults.dueDate === undefined) {
-        // No issue - dueDate is optional for check-in
-      } else if (dataWithDefaults.type === 'check-out' && !dataWithDefaults.dueDate) {
-        return res.status(400).json({ 
-          message: "Due date is required for check-out transactions"
-        });
+      // Transaction dates:
+      // 1. timestamp - automatically set to current time on both check-in and check-out
+      // 2. dueDate - only required for check-out transactions
+      // 3. returnDate - automatically set on check-in transactions
+      
+      const now = new Date();
+      
+      if (dataWithDefaults.type === 'check-in') {
+        // For check-in, set returnDate to now
+        dataWithDefaults.returnDate = now;
+      } else if (dataWithDefaults.type === 'check-out') {
+        // For check-out, ensure there's a dueDate
+        if (!dataWithDefaults.dueDate) {
+          return res.status(400).json({ 
+            message: "Due date is required for check-out transactions"
+          });
+        }
       }
       
       const validatedData = insertTransactionSchema.parse(dataWithDefaults);
