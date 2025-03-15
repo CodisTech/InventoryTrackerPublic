@@ -27,19 +27,22 @@ const DashboardPage: React.FC = () => {
   const [isAddItemModalOpen, setIsAddItemModalOpen] = React.useState(false);
   const [listModalType, setListModalType] = React.useState<"total" | "checked-out" | "available" | "personnel" | null>(null);
 
-  // Fetch dashboard stats
+  // Fetch dashboard stats with automatic refetching
   const { data: stats, isLoading, error } = useQuery<DashboardStats>({
     queryKey: ["/api/dashboard/stats"],
+    refetchInterval: 5000, // Refetch every 5 seconds
   });
   
-  // Fetch inventory data for the modal
+  // Fetch inventory data for the modal with automatic refetching
   const { data: inventory = [] } = useQuery<InventoryItemWithCategory[]>({
     queryKey: ["/api/inventory"],
+    refetchInterval: 5000, // Refetch every 5 seconds
   });
   
   // Fetch personnel data for the modal
   const { data: personnel = [] } = useQuery<Personnel[]>({
     queryKey: ["/api/personnel"],
+    refetchInterval: 5000, // Refetch every 5 seconds
   });
 
   React.useEffect(() => {

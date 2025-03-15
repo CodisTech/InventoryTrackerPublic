@@ -472,6 +472,24 @@ const TransactionsPage: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      {/* Item Detail Modal */}
+      <ItemDetailModal 
+        isOpen={viewModalOpen}
+        onClose={() => setViewModalOpen(false)}
+        item={selectedItem!}
+        onCheckInOut={() => {
+          setViewModalOpen(false);
+          setIsCheckInOutModalOpen(true);
+        }}
+      />
+      
+      {/* Check In/Out Modal */}
+      <CheckInOutModal
+        isOpen={isCheckInOutModalOpen}
+        onClose={() => setIsCheckInOutModalOpen(false)}
+        selectedItem={selectedItem}
+      />
     </div>
   );
 };

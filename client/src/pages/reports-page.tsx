@@ -26,6 +26,7 @@ const TransactionDetail: React.FC<TransactionDetailProps> = ({ transactionId, on
   
   const { data: overdueItems = [], isLoading, error } = useQuery<TransactionWithDetails[]>({
     queryKey: ["/api/overdue-items"],
+    refetchInterval: 5000, // Refetch every 5 seconds to keep data current
   });
 
   React.useEffect(() => {
