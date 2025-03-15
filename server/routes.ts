@@ -160,6 +160,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       next(error);
     }
   });
+  
+  app.get("/api/transactions/details", ensureAuthenticated, async (req, res, next) => {
+    try {
+      const transactions = await storage.getAllTransactionsWithDetails();
+      res.json(transactions);
+    } catch (error) {
+      next(error);
+    }
+  });
 
   app.post("/api/transactions", ensureAuthenticated, async (req, res, next) => {
     try {

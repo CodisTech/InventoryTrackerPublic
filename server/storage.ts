@@ -633,6 +633,41 @@ export class MemStorage implements IStorage {
     return overdueTransactions;
   }
   
+  // Get all transactions with details
+  async getAllTransactionsWithDetails(): Promise<TransactionWithDetails[]> {
+    const allTransactions = await this.getAllTransactions();
+    const result: TransactionWithDetails[] = [];
+    
+    for (const transaction of allTransactions) {
+      const item = this.itemsDB.get(transaction.itemId);
+      // We're using personnel instead of users for transactions
+      const user = this.personnelDB.get(transaction.userId);
+      
+      if (item && user) {
+        result.push({
+          ...transaction,
+          item,
+          user: {
+            id: user.id,
+            username: `${user.firstName.toLowerCase()}.${user.lastName.toLowerCase()}`,
+            fullName: `${user.firstName} ${user.lastName}`,
+            role: 'personnel',
+            isAuthorized: true,
+            password: '' // We don't actually store passwords for personnel
+          }
+        });
+      }
+    }
+    
+    // Sort by timestamp, newest first
+    result.sort((a, b) => {
+      if (!a.timestamp || !b.timestamp) return 0;
+      return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+    });
+    
+    return result;
+  }
+  
   // Get all overdue items
   async getOverdueItems(): Promise<TransactionWithDetails[]> {
     // First check and update overdue status
