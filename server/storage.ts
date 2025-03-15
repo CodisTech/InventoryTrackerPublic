@@ -124,7 +124,7 @@ export class MemStorage implements IStorage {
     // Create super admin user
     const superAdmin = await this.createUser({
       username: "superadmin",
-      password: "superadmin123", // Plain password - will be hashed by the auth.ts createUser function
+      password: "superadmin123", // This will NOT be hashed by auth.ts since we're calling createUser directly
       fullName: "Super Administrator",
       role: "super_admin",
       isAuthorized: true
@@ -133,7 +133,7 @@ export class MemStorage implements IStorage {
     // Create admin user
     const admin = await this.createUser({
       username: "admin",
-      password: "admin123", // Plain password - will be hashed by the auth.ts createUser function
+      password: "admin123", // This will NOT be hashed by auth.ts since we're calling createUser directly
       fullName: "Administrator",
       role: "admin",
       isAuthorized: true

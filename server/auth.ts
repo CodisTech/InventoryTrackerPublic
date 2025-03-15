@@ -22,17 +22,27 @@ async function hashPassword(password: string) {
 }
 
 async function comparePasswords(supplied: string, stored: string) {
+  // Debugging
+  console.log(`[AUTH DEBUG] Comparing passwords`);
+  console.log(`[AUTH DEBUG] Supplied length: ${supplied.length}, Stored length: ${stored.length}`);
+  console.log(`[AUTH DEBUG] Stored contains period: ${stored.includes('.')}`);
+  
   // Check if the stored password is using our scrypt format (contains a period separating hash and salt)
   if (stored.includes('.')) {
     const [hashed, salt] = stored.split(".");
     const hashedBuf = Buffer.from(hashed, "hex");
     const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
-    return timingSafeEqual(hashedBuf, suppliedBuf);
+    const result = timingSafeEqual(hashedBuf, suppliedBuf);
+    console.log(`[AUTH DEBUG] Hashed password comparison result: ${result}`);
+    return result;
   } 
   // For testing purposes, we also support plain text comparison for sample data
   // This should never be used in production
   else {
-    return supplied === stored;
+    const result = supplied === stored;
+    console.log(`[AUTH DEBUG] Plain text comparison result: ${result}`);
+    console.log(`[AUTH DEBUG] Supplied: ${supplied}, Stored: ${stored}`);
+    return result;
   }
 }
 
