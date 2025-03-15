@@ -4,13 +4,15 @@ import { useToast } from "@/hooks/use-toast";
 import { DataTable, Column } from "@/components/ui/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Plus, Edit, Trash2, Search, Upload } from "lucide-react";
+import { Plus, Edit, Trash2, Search, Upload, UserPlus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AddPersonnelModal from "@/components/users/add-personnel-modal";
 import EditPersonnelModal from "@/components/users/edit-personnel-modal";
 import { BulkUploadModal } from "@/components/users/bulk-upload-modal";
+import AddAdminForm from "@/components/users/add-admin-form";
 import { Personnel } from "@shared/schema";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -189,41 +191,94 @@ const UsersPage: React.FC = () => {
 
   return (
     <div>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-2xl font-medium text-neutral-900">Personnel Management</CardTitle>
-          <div className="flex space-x-2">
-            <Button 
-              variant="outline" 
-              onClick={() => setIsBulkUploadOpen(true)} 
-              className="flex items-center"
-            >
-              <Upload className="mr-2 h-4 w-4" />
-              Bulk Upload
-            </Button>
-            <Button onClick={() => setIsAddModalOpen(true)} className="flex items-center">
-              <Plus className="mr-2 h-4 w-4" />
-              Add Personnel
-            </Button>
+      <Tabs defaultValue="personnel" className="mb-8">
+        <TabsList className="mb-4">
+          <TabsTrigger value="personnel">Personnel Management</TabsTrigger>
+          <TabsTrigger value="administrators">Administrators</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="personnel">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-2xl font-medium text-neutral-900">Personnel Management</CardTitle>
+              <div className="flex space-x-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsBulkUploadOpen(true)} 
+                  className="flex items-center"
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  Bulk Upload
+                </Button>
+                <Button onClick={() => setIsAddModalOpen(true)} className="flex items-center">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Personnel
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="mb-4 relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name, division, department..."
+                  className="pl-10"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              <DataTable
+                data={personnel}
+                columns={columns}
+                searchable={false}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="administrators">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <AddAdminForm />
+            </div>
+            <div>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-xl flex items-center gap-2">
+                    <UserPlus className="h-5 w-5" />
+                    Administrator Instructions
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <h3 className="font-semibold">About Administrators</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Administrators have the ability to check-in and check-out inventory items
+                      on behalf of personnel. Each transaction will be tied to the administrator
+                      who performed it for accountability.
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <h3 className="font-semibold">Administrator Responsibilities</h3>
+                    <ul className="text-sm text-muted-foreground space-y-1 list-disc pl-5">
+                      <li>Process check-in and check-out transactions</li>
+                      <li>Verify personnel information during transactions</li>
+                      <li>Manage equipment and inventory records</li>
+                      <li>Track and report on inventory status</li>
+                      <li>Ensure accountability for all equipment</li>
+                    </ul>
+                  </div>
+                  
+                  <div className="text-sm mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md text-yellow-800">
+                    <p className="font-medium">Important Note</p>
+                    <p>Administrators you create here will appear in the administrator dropdown during check-in/out transactions. Their information will be tied to each transaction they process.</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="mb-4 relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by name, division, department..."
-              className="pl-10"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          <DataTable
-            data={personnel}
-            columns={columns}
-            searchable={false}
-          />
-        </CardContent>
-      </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Add Personnel Modal */}
       <AddPersonnelModal
