@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { USER_ROLES } from "@shared/schema";
 
 import {
   Dialog,
@@ -35,7 +36,7 @@ const formSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
   password: z.string().min(6, "Password must be at least 6 characters"),
   fullName: z.string().min(3, "Full name is required"),
-  role: z.enum(["admin", "super_admin"]),
+  role: z.enum([USER_ROLES.STANDARD_USER, USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN]),
   isAuthorized: z.boolean().default(true),
 });
 
@@ -51,7 +52,7 @@ export default function AddAdminModal({ isOpen, onClose }: AddAdminModalProps) {
       username: "",
       password: "",
       fullName: "",
-      role: "admin",
+      role: USER_ROLES.ADMIN,
       isAuthorized: true,
     },
   });
@@ -61,10 +62,16 @@ export default function AddAdminModal({ isOpen, onClose }: AddAdminModalProps) {
       const res = await apiRequest("POST", "/api/users", data);
       return await res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      const roleText = data.role === USER_ROLES.SUPER_ADMIN 
+        ? "Super Administrator" 
+        : data.role === USER_ROLES.ADMIN 
+          ? "Administrator" 
+          : "Standard User";
+          
       toast({
-        title: "Administrator added",
-        description: "The new administrator account has been created successfully",
+        title: `${roleText} added`,
+        description: `The new ${roleText.toLowerCase()} account has been created successfully`,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       form.reset();
@@ -72,7 +79,7 @@ export default function AddAdminModal({ isOpen, onClose }: AddAdminModalProps) {
     },
     onError: (error: Error) => {
       toast({
-        title: "Error adding administrator",
+        title: "Error adding user",
         description: error.message,
         variant: "destructive",
       });
@@ -88,7 +95,7 @@ export default function AddAdminModal({ isOpen, onClose }: AddAdminModalProps) {
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
-            Add New Administrator
+            Add New User
             <Button
               variant="ghost"
               size="sm"
@@ -164,8 +171,9 @@ export default function AddAdminModal({ isOpen, onClose }: AddAdminModalProps) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="admin">Administrator</SelectItem>
-                      <SelectItem value="super_admin">Super Administrator</SelectItem>
+                      <SelectItem value={USER_ROLES.STANDARD_USER}>Standard User</SelectItem>
+                      <SelectItem value={USER_ROLES.ADMIN}>Administrator</SelectItem>
+                      <SelectItem value={USER_ROLES.SUPER_ADMIN}>Super Administrator</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -186,7 +194,7 @@ export default function AddAdminModal({ isOpen, onClose }: AddAdminModalProps) {
                 type="submit"
                 disabled={addUserMutation.isPending}
               >
-                {addUserMutation.isPending ? "Adding..." : "Add Administrator"}
+                {addUserMutation.isPending ? "Adding..." : "Add User"}
               </Button>
             </DialogFooter>
           </form>
