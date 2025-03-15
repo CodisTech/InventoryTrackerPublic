@@ -457,6 +457,364 @@ const OverdueReportsTab: React.FC = () => {
   );
 };
 
+// Transaction Reports Tab Component
+const TransactionReportsTab: React.FC = () => {
+  const { toast } = useToast();
+  const [dateRange, setDateRange] = React.useState<string>("thisMonth");
+  const [searchTerm, setSearchTerm] = React.useState<string>("");
+  const [selectedTransaction, setSelectedTransaction] = React.useState<number | null>(null);
+  
+  // Fetch transaction data
+  const { data: transactions = [], isLoading, error } = useQuery<TransactionWithDetails[]>({
+    queryKey: ["/api/transactions/details"],
+    refetchInterval: 30000, // Refetch every 30 seconds
+  });
+  
+  React.useEffect(() => {
+    if (error) {
+      toast({
+        title: "Error fetching transaction history",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  }, [error, toast]);
+  
+  // Filter transactions based on search term
+  const filteredTransactions = React.useMemo(() => {
+    if (!searchTerm.trim()) return transactions;
+    
+    const term = searchTerm.toLowerCase();
+    return transactions.filter(transaction => 
+      transaction.item.name.toLowerCase().includes(term) ||
+      transaction.item.itemCode.toLowerCase().includes(term) ||
+      transaction.user.fullName.toLowerCase().includes(term) ||
+      (transaction.notes && transaction.notes.toLowerCase().includes(term))
+    );
+  }, [transactions, searchTerm]);
+  
+  // Get transaction type badge variant
+  const getTransactionTypeVariant = (type: string) => {
+    switch (type) {
+      case 'check-out':
+        return 'outline';
+      case 'check-in':
+        return 'secondary';
+      default:
+        return 'default';
+    }
+  };
+  
+  // Format transaction date
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleString();
+  };
+  
+  if (selectedTransaction !== null) {
+    const transaction = transactions.find(t => t.id === selectedTransaction);
+    
+    if (!transaction) {
+      return (
+        <div className="flex flex-col items-center justify-center py-8">
+          <div className="rounded-full bg-orange-50 p-3 mb-3">
+            <AlertCircle className="h-6 w-6 text-orange-500" />
+          </div>
+          <h3 className="text-lg font-medium mb-2">Transaction Not Found</h3>
+          <p className="text-neutral-500 mb-4">The transaction you are looking for could not be found.</p>
+          <Button onClick={() => setSelectedTransaction(null)}>
+            Back to Transactions
+          </Button>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center mb-4">
+          <Button variant="ghost" onClick={() => setSelectedTransaction(null)} className="mr-2 p-2">
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h3 className="text-lg font-medium">Transaction Details</h3>
+        </div>
+        
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex justify-between items-center">
+              <CardTitle className="text-lg">
+                TRX-{transaction.id.toString().padStart(4, '0')}
+              </CardTitle>
+              <Badge variant={transaction.type === 'check-out' ? 'outline' : 'secondary'}>
+                {transaction.type === 'check-out' ? 'Checked Out' : 'Checked In'}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div>
+                  <h4 className="text-sm font-medium text-neutral-500 mb-1">Item Information</h4>
+                  <div className="bg-neutral-50 rounded-lg p-4 border">
+                    <div className="flex items-center mb-2">
+                      <div className="mr-3 p-2 rounded-full bg-primary/10">
+                        <Package className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <h5 className="font-medium">{transaction.item.name}</h5>
+                        <p className="text-sm text-neutral-500">Code: {transaction.item.itemCode}</p>
+                      </div>
+                    </div>
+                    <div className="mt-3 pt-3 border-t grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <p className="text-neutral-500">Status:</p>
+                        <p className="font-medium">{transaction.item.status}</p>
+                      </div>
+                      <div>
+                        <p className="text-neutral-500">Available/Total:</p>
+                        <p className="font-medium">{transaction.item.availableQuantity}/{transaction.item.totalQuantity}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <h4 className="text-sm font-medium text-neutral-500 mb-1">Transaction Timeline</h4>
+                  <div className="bg-neutral-50 rounded-lg p-4 border space-y-3">
+                    <div className="flex">
+                      <div className="mr-3 p-1">
+                        <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center">
+                          <Clock className="h-4 w-4 text-white" />
+                        </div>
+                      </div>
+                      <div>
+                        <p className="font-medium">Transaction Time</p>
+                        <p className="text-sm text-neutral-500">
+                          {formatDate(transaction.timestamp)}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {transaction.type === 'check-out' && (
+                      <div className="flex">
+                        <div className="mr-3 p-1">
+                          <div className="h-6 w-6 rounded-full bg-yellow-500 flex items-center justify-center">
+                            <Clock className="h-4 w-4 text-white" />
+                          </div>
+                        </div>
+                        <div>
+                          <p className="font-medium">Due Date</p>
+                          <p className="text-sm text-neutral-500">
+                            {formatDate(transaction.dueDate)}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {transaction.type === 'check-in' && transaction.returnDate && (
+                      <div className="flex">
+                        <div className="mr-3 p-1">
+                          <div className="h-6 w-6 rounded-full bg-green-500 flex items-center justify-center">
+                            <CheckCircle2 className="h-4 w-4 text-white" />
+                          </div>
+                        </div>
+                        <div>
+                          <p className="font-medium">Return Date</p>
+                          <p className="text-sm text-neutral-500">
+                            {formatDate(transaction.returnDate)}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {transaction.isOverdue && (
+                      <div className="flex">
+                        <div className="mr-3 p-1">
+                          <div className="h-6 w-6 rounded-full bg-red-500 flex items-center justify-center">
+                            <AlertTriangle className="h-4 w-4 text-white" />
+                          </div>
+                        </div>
+                        <div>
+                          <p className="font-medium">Overdue Status</p>
+                          <p className="text-sm text-neutral-500">This item is overdue</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <h4 className="text-sm font-medium text-neutral-500 mb-1">User Information</h4>
+                  <div className="bg-neutral-50 rounded-lg p-4 border">
+                    <div className="flex items-center mb-2">
+                      <div className="mr-3 p-2 rounded-full bg-blue-50">
+                        <User className="h-5 w-5 text-blue-500" />
+                      </div>
+                      <div>
+                        <h5 className="font-medium">{transaction.user.fullName}</h5>
+                        <p className="text-sm text-neutral-500">User ID: {transaction.user.id}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <h4 className="text-sm font-medium text-neutral-500 mb-1">Transaction Notes</h4>
+                  <div className="bg-neutral-50 rounded-lg p-4 border min-h-[100px]">
+                    <p className="text-sm">
+                      {transaction.notes || "No notes provided for this transaction."}
+                    </p>
+                  </div>
+                </div>
+                
+                <div>
+                  <h4 className="text-sm font-medium text-neutral-500 mb-1">Actions</h4>
+                  <div className="bg-neutral-50 rounded-lg p-4 border">
+                    <div className="grid grid-cols-2 gap-3">
+                      <Button variant="outline" className="border-blue-200 text-blue-600 hover:bg-blue-50">
+                        Export Details
+                      </Button>
+                      <Button variant="outline" className="border-green-200 text-green-600 hover:bg-green-50">
+                        Print Transaction
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-lg font-medium">Transaction History</h3>
+        <Badge variant="outline" className="font-medium">
+          {isLoading ? "Loading..." : `${filteredTransactions.length} Transactions`}
+        </Badge>
+      </div>
+      
+      <div className="flex flex-col md:flex-row gap-4 items-center mb-4">
+        <div className="relative w-full md:w-auto flex-1">
+          <input
+            type="text"
+            placeholder="Search transactions..."
+            className="w-full h-10 px-3 pl-10 rounded-md border border-input bg-background text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-500">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
+          </div>
+        </div>
+        
+        <Select
+          value={dateRange}
+          onValueChange={setDateRange}
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Select period" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="today">Today</SelectItem>
+            <SelectItem value="thisWeek">This Week</SelectItem>
+            <SelectItem value="thisMonth">This Month</SelectItem>
+            <SelectItem value="lastMonth">Last Month</SelectItem>
+            <SelectItem value="allTime">All Time</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {isLoading ? (
+        <Card className="border-neutral-200 bg-neutral-50 shadow-sm">
+          <CardContent className="p-6 flex justify-center items-center">
+            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span>Loading transaction history...</span>
+          </CardContent>
+        </Card>
+      ) : filteredTransactions.length === 0 ? (
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex flex-col items-center justify-center text-center py-6">
+              <div className="rounded-full bg-neutral-100 p-3 mb-3">
+                <Package className="h-6 w-6 text-neutral-500" />
+              </div>
+              <h3 className="text-lg font-medium mb-1">No Transactions Found</h3>
+              <p className="text-neutral-500 max-w-md">
+                {searchTerm ? 'No transactions match your search criteria.' : 'There are no transactions recorded in the system yet.'}
+              </p>
+              {searchTerm && (
+                <Button variant="outline" className="mt-4" onClick={() => setSearchTerm("")}>
+                  Clear Search
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-3">
+          {filteredTransactions.map(transaction => (
+            <Card 
+              key={transaction.id} 
+              className="border-neutral-200 hover:border-neutral-300 cursor-pointer transition-colors" 
+              onClick={() => setSelectedTransaction(transaction.id)}
+            >
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className="flex-shrink-0">
+                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        {transaction.type === 'check-out' ? (
+                          <Package className="h-5 w-5 text-primary" />
+                        ) : (
+                          <CheckCircle2 className="h-5 w-5 text-primary" />
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="font-medium">
+                        TRX-{transaction.id.toString().padStart(4, '0')} • {transaction.item.name}
+                      </h4>
+                      <div className="flex items-center text-sm text-neutral-500">
+                        <User className="h-3 w-3 mr-1" />
+                        <span>{transaction.user.fullName}</span>
+                        <span className="mx-2">•</span>
+                        <Clock className="h-3 w-3 mr-1" />
+                        <span>{formatDate(transaction.timestamp)}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <Badge variant={getTransactionTypeVariant(transaction.type)}>
+                      {transaction.type === 'check-out' ? 'Out' : 'In'}
+                    </Badge>
+                    <ChevronRight className="h-5 w-5 text-neutral-400" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+          <div className="flex justify-end mt-2">
+            <Button variant="outline" className="text-xs">
+              Export Transaction History
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const ReportsPage: React.FC = () => {
   const [location] = useLocation();
   
