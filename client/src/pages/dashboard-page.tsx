@@ -1,7 +1,15 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { 
+  Loader2, 
+  RotateCw, 
+  Plus, 
+  Package, 
+  LogOut, 
+  CheckCircle2, 
+  Users 
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SummaryCard from "@/components/dashboard/summary-card";
 import RecentActivity from "@/components/dashboard/recent-activity";
@@ -45,15 +53,15 @@ const DashboardPage: React.FC = () => {
         <h2 className="text-2xl font-medium text-neutral-900">Dashboard</h2>
         <div className="flex">
           <Button 
-            variant="secondary" 
-            className="mr-2"
+            variant="outline" 
+            className="mr-2 border-2 border-primary/20 text-primary hover:bg-primary/10 hover:text-primary"
             onClick={() => setIsCheckInOutModalOpen(true)}
           >
-            <span className="material-icons mr-1">sync_alt</span>
+            <RotateCw className="w-4 h-4 mr-2" />
             <span>Check In/Out</span>
           </Button>
           <Button onClick={() => setIsAddItemModalOpen(true)}>
-            <span className="material-icons mr-1">add</span>
+            <Plus className="w-4 h-4 mr-2" />
             <span>Add Item</span>
           </Button>
         </div>
@@ -67,30 +75,30 @@ const DashboardPage: React.FC = () => {
         <SummaryCard
           title="Total Items"
           value={stats?.totalItems || 0}
-          icon="inventory"
+          icon={<Package className="w-6 h-6" />}
           iconColor="text-primary"
-          iconBgColor="bg-primary-light bg-opacity-10"
+          iconBgColor="bg-primary/10"
         />
         <SummaryCard
           title="Checked Out"
           value={stats?.checkedOutItems || 0}
-          icon="logout"
-          iconColor="text-warning"
-          iconBgColor="bg-warning bg-opacity-10"
+          icon={<LogOut className="w-6 h-6" />}
+          iconColor="text-amber-500"
+          iconBgColor="bg-amber-50"
         />
         <SummaryCard
           title="Available"
           value={stats?.availableItems || 0}
-          icon="check_circle"
-          iconColor="text-success"
-          iconBgColor="bg-success bg-opacity-10"
+          icon={<CheckCircle2 className="w-6 h-6" />}
+          iconColor="text-emerald-500"
+          iconBgColor="bg-emerald-50"
         />
         <SummaryCard
-          title="Users"
+          title="Personnel"
           value={stats?.totalUsers || 0}
-          icon="people"
-          iconColor="text-primary-dark"
-          iconBgColor="bg-primary-dark bg-opacity-10"
+          icon={<Users className="w-6 h-6" />}
+          iconColor="text-indigo-500"
+          iconBgColor="bg-indigo-50"
         />
       </div>
 

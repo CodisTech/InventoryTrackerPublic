@@ -1,10 +1,11 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import { LucideIcon } from "lucide-react";
 
 interface SummaryCardProps {
   title: string;
   value: number;
-  icon: string;
+  icon: React.ReactNode;
   iconColor: string;
   iconBgColor: string;
 }
@@ -17,15 +18,15 @@ const SummaryCard: React.FC<SummaryCardProps> = ({
   iconBgColor,
 }) => {
   return (
-    <Card>
-      <CardContent className="p-4">
+    <Card className="overflow-hidden border-none shadow-md">
+      <CardContent className="p-5">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-neutral-500 text-sm">{title}</p>
-            <p className="text-2xl font-medium text-neutral-900">{value.toLocaleString()}</p>
+            <p className="text-neutral-500 text-sm font-medium">{title}</p>
+            <p className="text-2xl font-bold text-neutral-900 mt-1">{value.toLocaleString()}</p>
           </div>
-          <div className={`w-12 h-12 rounded-full ${iconBgColor} flex items-center justify-center`}>
-            <span className={`material-icons ${iconColor}`}>{icon}</span>
+          <div className={`w-14 h-14 rounded-full ${iconBgColor} flex items-center justify-center`}>
+            <div className={`${iconColor}`}>{icon}</div>
           </div>
         </div>
       </CardContent>

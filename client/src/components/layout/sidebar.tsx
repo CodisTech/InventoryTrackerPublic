@@ -2,18 +2,25 @@ import React from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { LogOut } from "lucide-react";
+import { 
+  LogOut, 
+  LayoutDashboard, 
+  Package, 
+  RotateCw, 
+  Users, 
+  BarChart3 
+} from "lucide-react";
 
 const Sidebar: React.FC = () => {
   const [location] = useLocation();
   const { user, logoutMutation } = useAuth();
 
   const navItems = [
-    { name: "Dashboard", icon: "dashboard", path: "/" },
-    { name: "Inventory", icon: "inventory", path: "/inventory" },
-    { name: "Transactions", icon: "sync_alt", path: "/transactions" },
-    { name: "Personnel", icon: "people", path: "/users" },
-    { name: "Reports", icon: "assessment", path: "/reports" },
+    { name: "Dashboard", icon: <LayoutDashboard className="w-5 h-5" />, path: "/" },
+    { name: "Inventory", icon: <Package className="w-5 h-5" />, path: "/inventory" },
+    { name: "Transactions", icon: <RotateCw className="w-5 h-5" />, path: "/transactions" },
+    { name: "Personnel", icon: <Users className="w-5 h-5" />, path: "/users" },
+    { name: "Reports", icon: <BarChart3 className="w-5 h-5" />, path: "/reports" },
   ];
 
   const handleLogout = () => {
@@ -22,24 +29,25 @@ const Sidebar: React.FC = () => {
 
   return (
     <aside className="hidden md:block w-64 bg-white border-r border-neutral-100 shadow-sm">
-      <div className="p-4 flex items-center justify-center border-b border-neutral-100">
-        <span className="material-icons mr-2 text-primary">inventory_2</span>
-        <h1 className="text-xl font-medium text-neutral-900">Inventory System</h1>
+      <div className="p-6 flex items-center justify-center border-b border-neutral-100">
+        <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary-dark bg-clip-text text-transparent">
+          Inventory System
+        </h1>
       </div>
 
-      <nav className="py-4">
-        <ul>
+      <nav className="py-6">
+        <ul className="space-y-1 px-2">
           {navItems.map((item) => (
             <li key={item.name}>
               <Link href={item.path}>
                 <a
-                  className={`flex items-center px-4 py-3 ${
+                  className={`flex items-center px-4 py-3 rounded-md transition-colors ${
                     location === item.path
-                      ? "bg-primary-light text-white"
-                      : "text-neutral-500 hover:bg-neutral-50"
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "text-neutral-600 hover:bg-neutral-50 hover:text-primary"
                   }`}
                 >
-                  <span className="material-icons mr-3">{item.icon}</span>
+                  <span className="mr-3">{item.icon}</span>
                   <span>{item.name}</span>
                 </a>
               </Link>
@@ -59,7 +67,11 @@ const Sidebar: React.FC = () => {
             <p className="text-sm font-medium text-neutral-900">Administrator</p>
             <p className="text-xs text-neutral-500">System Admin</p>
           </div>
-          <button className="ml-auto" onClick={handleLogout}>
+          <button 
+            className="ml-auto hover:bg-neutral-100 p-2 rounded-full transition-colors" 
+            onClick={handleLogout}
+            title="Logout"
+          >
             <LogOut className="h-5 w-5 text-neutral-500" />
           </button>
         </div>
