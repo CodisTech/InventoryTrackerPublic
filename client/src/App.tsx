@@ -9,6 +9,7 @@ import InventoryPage from "@/pages/inventory-page";
 import TransactionsPage from "@/pages/transactions-page";
 import UsersPage from "@/pages/users-page";
 import ReportsPage from "@/pages/reports-page";
+import CheckedOutPage from "@/pages/checked-out-page";
 import { ProtectedRoute } from "./lib/protected-route";
 import { AuthProvider } from "./hooks/use-auth";
 import AppLayout from "./components/layout/app-layout";
@@ -54,6 +55,14 @@ function Router() {
         component={() => (
           <AppLayout>
             <ReportsPage />
+          </AppLayout>
+        )} 
+      />
+      <ProtectedRoute 
+        path="/checked-out" 
+        component={() => (
+          <AppLayout>
+            <CheckedOutPage />
           </AppLayout>
         )} 
       />

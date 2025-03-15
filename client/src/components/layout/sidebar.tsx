@@ -8,7 +8,8 @@ import {
   Package, 
   RotateCw, 
   Users, 
-  BarChart3 
+  BarChart3,
+  ShoppingBag
 } from "lucide-react";
 import codisLogoLight from "../../assets/images/codis-logo-light.svg";
 
@@ -19,6 +20,7 @@ const Sidebar: React.FC = () => {
   const navItems = [
     { name: "Dashboard", icon: <LayoutDashboard className="w-5 h-5" />, path: "/" },
     { name: "Inventory", icon: <Package className="w-5 h-5" />, path: "/inventory" },
+    { name: "Checked Out", icon: <ShoppingBag className="w-5 h-5" />, path: "/checked-out" },
     { name: "Transactions", icon: <RotateCw className="w-5 h-5" />, path: "/transactions" },
     { name: "Personnel", icon: <Users className="w-5 h-5" />, path: "/users" },
     { name: "Reports", icon: <BarChart3 className="w-5 h-5" />, path: "/reports" },
