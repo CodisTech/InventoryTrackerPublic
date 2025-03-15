@@ -108,9 +108,25 @@ const InventoryPage: React.FC = () => {
       header: "Actions",
       accessorKey: "id",
       cell: (item: InventoryItemWithCategory) => (
-        <Button variant="link" onClick={() => handleViewItem(item)}>
-          View
-        </Button>
+        <div className="flex space-x-2">
+          <Button 
+            variant={item.checkedOutBy ? "secondary" : "default"} 
+            size="sm" 
+            className={item.checkedOutBy ? "bg-amber-100 text-amber-900 hover:bg-amber-200" : ""}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleViewItem(item);
+            }}
+          >
+            {item.checkedOutBy ? 'Check In' : 'Check Out'}
+          </Button>
+          <Button variant="outline" size="sm" onClick={(e) => {
+            e.stopPropagation();
+            handleViewItem(item);
+          }}>
+            Details
+          </Button>
+        </div>
       ),
     },
   ];
@@ -129,11 +145,27 @@ const InventoryPage: React.FC = () => {
     return categoryMap[category] || "inventory";
   }
 
+  // Count how many items are checked out and need returning
+  const checkedOutItemsCount = inventoryItems.filter(
+    item => item.checkedOutBy !== null
+  ).length;
+
   return (
     <div>
       <Card>
         <CardHeader className="flex flex-col md:flex-row md:items-center justify-between">
-          <CardTitle className="text-2xl font-medium text-neutral-900">Inventory</CardTitle>
+          <div>
+            <CardTitle className="text-2xl font-medium text-neutral-900">Inventory</CardTitle>
+            <div className="mt-2 text-sm text-muted-foreground">
+              {checkedOutItemsCount > 0 && (
+                <div className="flex items-center">
+                  <Badge variant="outline" className="mr-2 bg-amber-100">
+                    {checkedOutItemsCount} item{checkedOutItemsCount !== 1 ? 's' : ''} checked out
+                  </Badge>
+                </div>
+              )}
+            </div>
+          </div>
           
           <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 mt-4 md:mt-0">
             <Button variant="outline" className="flex items-center">
@@ -151,6 +183,7 @@ const InventoryPage: React.FC = () => {
             data={inventoryItems}
             columns={columns}
             searchPlaceholder="Search inventory..."
+            onRowClick={handleViewItem}
           />
         </CardContent>
       </Card>
@@ -162,7 +195,10 @@ const InventoryPage: React.FC = () => {
       />
       <CheckInOutModal
         isOpen={isCheckInOutModalOpen}
-        onClose={() => setIsCheckInOutModalOpen(false)}
+        onClose={() => {
+          setIsCheckInOutModalOpen(false);
+          setSelectedItem(null); // Clear selected item when closing modal
+        }}
         selectedItem={selectedItem}
       />
     </div>
