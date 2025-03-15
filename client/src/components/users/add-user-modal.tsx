@@ -173,7 +173,7 @@ export default function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
                     <SelectContent>
                       <SelectItem value={USER_ROLES.STANDARD_USER}>Standard User</SelectItem>
                       <SelectItem value={USER_ROLES.ADMIN}>Administrator</SelectItem>
-                      <SelectItem value={USER_ROLES.SUPER_ADMIN}>Super Administrator</SelectItem>
+                      {/* Only super admins can create other super admins, this role should be rare */}
                     </SelectContent>
                   </Select>
                   <FormMessage />

@@ -238,40 +238,78 @@ const UsersPage: React.FC = () => {
         <TabsContent value="administrators">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <AddAdminForm />
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-xl flex items-center gap-2">
+                    <UserPlus className="h-5 w-5" />
+                    User Management
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <h3 className="font-semibold">User Structure</h3>
+                    <p className="text-sm text-muted-foreground">
+                      This system uses a two-tier user model:
+                    </p>
+                    <ul className="text-sm text-muted-foreground space-y-1 list-disc pl-5">
+                      <li><span className="font-semibold">Super Admin (you)</span>: Has full access to create and manage users and all system functions</li>
+                      <li><span className="font-semibold">Regular Users</span>: Can perform check-in/out transactions and are linked to each transaction they manage</li>
+                    </ul>
+                  </div>
+                  
+                  <p className="text-sm text-muted-foreground">
+                    For complete user management including creation of standard users or additional administrator accounts, please visit:
+                  </p>
+                  
+                  <div className="flex justify-center pt-2">
+                    <Button 
+                      variant="default" 
+                      className="w-full"
+                      asChild
+                    >
+                      <a href="/admin/management">
+                        Go to User Management
+                      </a>
+                    </Button>
+                  </div>
+                  
+                  <div className="text-sm mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md text-blue-800">
+                    <p className="font-medium">User-Transaction Relationship</p>
+                    <p>In this system, any standard user or admin can process transactions, and their information will be tied to each transaction for accountability.</p>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
             <div>
               <Card>
                 <CardHeader>
                   <CardTitle className="text-xl flex items-center gap-2">
                     <UserPlus className="h-5 w-5" />
-                    Administrator Instructions
+                    Administrator Role
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <h3 className="font-semibold">About Administrators</h3>
+                    <h3 className="font-semibold">About Regular Users</h3>
                     <p className="text-sm text-muted-foreground">
-                      Administrators have the ability to check-in and check-out inventory items
-                      on behalf of personnel. Each transaction will be tied to the administrator
-                      who performed it for accountability.
+                      Regular users can check-in and check-out inventory items on behalf of personnel. 
+                      Each transaction will record who processed it for accountability.
                     </p>
                   </div>
                   
                   <div className="space-y-2">
-                    <h3 className="font-semibold">Administrator Responsibilities</h3>
+                    <h3 className="font-semibold">User Responsibilities</h3>
                     <ul className="text-sm text-muted-foreground space-y-1 list-disc pl-5">
                       <li>Process check-in and check-out transactions</li>
                       <li>Verify personnel information during transactions</li>
-                      <li>Manage equipment and inventory records</li>
-                      <li>Track and report on inventory status</li>
-                      <li>Ensure accountability for all equipment</li>
+                      <li>Handle equipment and inventory transfers</li>
+                      <li>Maintain accountability for all transactions</li>
                     </ul>
                   </div>
                   
                   <div className="text-sm mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md text-yellow-800">
                     <p className="font-medium">Important Note</p>
-                    <p>Administrators you create here will appear in the administrator dropdown during check-in/out transactions. Their information will be tied to each transaction they process.</p>
+                    <p>Only super admins (you) can create, edit, and manage users. Regular users cannot create other accounts.</p>
                   </div>
                 </CardContent>
               </Card>
