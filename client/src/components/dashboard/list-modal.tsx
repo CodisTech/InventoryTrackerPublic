@@ -5,6 +5,9 @@ import { DataTable } from "@/components/ui/data-table";
 import { Search, Package, LogOut, CheckCircle2, Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { InventoryItemWithCategory, Personnel } from "@shared/schema";
+import ItemDetailModal from "@/components/inventory/item-detail-modal";
+import PersonnelDetailModal from "@/components/users/personnel-detail-modal";
+import CheckInOutModal from "@/components/inventory/check-in-out-modal";
 
 interface ListModalProps {
   isOpen: boolean;
@@ -22,6 +25,9 @@ const ListModal: React.FC<ListModalProps> = ({
   personnel = [],
 }) => {
   const [searchTerm, setSearchTerm] = React.useState("");
+  const [selectedItem, setSelectedItem] = React.useState<InventoryItemWithCategory | null>(null);
+  const [selectedPersonnel, setSelectedPersonnel] = React.useState<Personnel | null>(null);
+  const [isCheckInOutOpen, setIsCheckInOutOpen] = React.useState(false);
 
   // Configure modal title and icon based on list type
   const getModalConfig = () => {
@@ -186,6 +192,13 @@ const ListModal: React.FC<ListModalProps> = ({
           <DataTable
             data={filteredData}
             columns={columns}
+            onRowClick={(item) => {
+              if (listType === "personnel") {
+                setSelectedPersonnel(item as Personnel);
+              } else {
+                setSelectedItem(item as InventoryItemWithCategory);
+              }
+            }}
           />
         </div>
 
@@ -193,6 +206,37 @@ const ListModal: React.FC<ListModalProps> = ({
           <Button onClick={onClose}>Close</Button>
         </DialogFooter>
       </DialogContent>
+      
+      {/* Item Detail Modal */}
+      {selectedItem && (
+        <ItemDetailModal
+          isOpen={!!selectedItem}
+          onClose={() => setSelectedItem(null)}
+          item={selectedItem}
+          onCheckInOut={() => {
+            setSelectedItem(null);
+            setIsCheckInOutOpen(true);
+          }}
+        />
+      )}
+      
+      {/* Personnel Detail Modal */}
+      {selectedPersonnel && (
+        <PersonnelDetailModal
+          isOpen={!!selectedPersonnel}
+          onClose={() => setSelectedPersonnel(null)}
+          personnel={selectedPersonnel}
+        />
+      )}
+      
+      {/* Check In/Out Modal */}
+      {isCheckInOutOpen && (
+        <CheckInOutModal
+          isOpen={isCheckInOutOpen}
+          onClose={() => setIsCheckInOutOpen(false)}
+          selectedItem={selectedItem}
+        />
+      )}
     </Dialog>
   );
 };

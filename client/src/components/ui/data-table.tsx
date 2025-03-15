@@ -30,13 +30,15 @@ type DataTableProps<T> = {
   columns: Column<T>[];
   searchable?: boolean;
   searchPlaceholder?: string;
+  onRowClick?: (item: T) => void;
 };
 
 export function DataTable<T>({ 
   data,
   columns,
   searchable = true,
-  searchPlaceholder = "Search..."
+  searchPlaceholder = "Search...",
+  onRowClick
 }: DataTableProps<T>) {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
@@ -155,7 +157,11 @@ export function DataTable<T>({
           <TableBody>
             {paginatedData.length > 0 ? (
               paginatedData.map((item, rowIndex) => (
-                <TableRow key={rowIndex}>
+                <TableRow 
+                  key={rowIndex}
+                  className={onRowClick ? "cursor-pointer hover:bg-muted/50" : ""}
+                  onClick={() => onRowClick && onRowClick(item)}
+                >
                   {columns.map((column, cellIndex) => (
                     <TableCell key={cellIndex}>
                       {column.cell
