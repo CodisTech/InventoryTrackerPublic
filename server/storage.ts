@@ -669,15 +669,15 @@ export class MemStorage implements IStorage {
     
     // Calculate stats - count unique items, not quantities
     const totalItems = items.length;
-    const itemsWithNoAvailability = items.filter(item => item.availableQuantity === 0).length;
-    const availableItems = totalItems - itemsWithNoAvailability;
     
-    // Count items that have at least one checked out (available < total)
-    const checkedOutItems = items.filter(item => {
-      const availableQty = item.availableQuantity || 0;
-      const totalQty = item.totalQuantity || 0;
-      return availableQty < totalQty;
-    }).length;
+    // Count items that are available to be checked out (have at least one available)
+    const availableItems = items.filter(item => item.availableQuantity > 0).length;
+    
+    // Only count items that have been assigned to a user (have checkedOutBy property)
+    // This gets the actual checked out items, not just ones with quantity differences
+    const checkedOutItems = (await this.getAllInventoryItemsWithCategory())
+      .filter(item => !!item.checkedOutBy)
+      .length;
     
     // Get low stock items
     const lowStockItems = await Promise.all(
