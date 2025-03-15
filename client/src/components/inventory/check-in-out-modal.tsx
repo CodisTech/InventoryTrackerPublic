@@ -6,16 +6,17 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
-import { Search, User as UserIcon, Users as UsersIcon, Minus as MinusIcon, Plus as PlusIcon } from "lucide-react";
+import { Search, User as UserIcon, Users as UsersIcon, Minus as MinusIcon, Plus as PlusIcon, Printer } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { InventoryItemWithCategory, User, Personnel } from "@shared/schema";
+import { InventoryItemWithCategory, User, Personnel, Transaction } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { format } from "date-fns";
 
 interface CheckInOutModalProps {
   isOpen: boolean;
