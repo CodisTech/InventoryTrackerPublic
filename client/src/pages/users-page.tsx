@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { DataTable } from "@/components/ui/data-table";
+import { DataTable, Column } from "@/components/ui/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Plus, Edit, Trash2, Search, Upload } from "lucide-react";
@@ -107,7 +107,7 @@ const UsersPage: React.FC = () => {
     }
   }, [error, toast]);
 
-  const columns = [
+  const columns: Column<Personnel>[] = [
     {
       header: "Name",
       accessorKey: "firstName",
@@ -185,7 +185,7 @@ const UsersPage: React.FC = () => {
         </div>
       ),
     },
-  ];
+  ] as Column<Personnel>[];
 
   return (
     <div>
