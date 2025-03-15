@@ -187,8 +187,26 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
     jDial: p.jDial
   }));
   
+  // Get list of personnel who have items checked out
+  const personnelWithItems = operationType === "check-in" 
+    ? items
+        .filter(item => item.checkedOutBy)
+        .map(item => item.checkedOutBy)
+        .filter((value, index, self) => 
+          index === self.findIndex(p => p!.id === value!.id)
+        )
+        .map(user => user!.id)
+    : [];
+  
+  // Filter personnel based on operation type
+  // For check-in: Only show personnel with items checked out
+  // For check-out: Show all personnel
+  const eligiblePeople = operationType === "check-in"
+    ? allPeople.filter(person => personnelWithItems.includes(person.id))
+    : allPeople;
+  
   // Filter people based on search term
-  const filteredPeople = allPeople.filter(person => {
+  const filteredPeople = eligiblePeople.filter(person => {
     if (!searchTerm) return true;
     const search = searchTerm.toLowerCase();
     return (
@@ -199,10 +217,17 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
     );
   });
 
-  // Filter available items for checkout, all items for checkin
+  // Filter items based on operation type:
+  // For check-out: Only show items with available quantity
+  // For check-in: Only show items that are checked out to the selected person
   const availableItems = operationType === "check-out"
     ? items.filter(item => item.availableQuantity > 0)
-    : items;
+    : selectedPerson
+      ? items.filter(item => 
+          item.checkedOutBy && 
+          item.checkedOutBy.id === selectedPerson.id
+        )
+      : [];
 
   return (
     <>
@@ -224,7 +249,16 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
               <Label>Operation Type</Label>
               <RadioGroup
                 value={operationType}
-                onValueChange={(v) => setOperationType(v as "check-in" | "check-out")}
+                onValueChange={(v) => {
+                  const newType = v as "check-in" | "check-out";
+                  setOperationType(newType);
+                  // Reset selections when switching operation types
+                  if (!selectedItem) {
+                    setItemId("");
+                    setSelectedPerson(null);
+                    setUserId("");
+                  }
+                }}
                 className="flex space-x-4"
               >
                 <div className="flex items-center space-x-2">
@@ -315,8 +349,14 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
                   ))}
                 </SelectContent>
               </Select>
-              {operationType === "check-out" && availableItems.length === 0 && (
-                <p className="text-xs text-destructive">No items available for checkout</p>
+              {availableItems.length === 0 && (
+                <p className="text-xs text-destructive">
+                  {operationType === "check-out" 
+                    ? "No items available for checkout" 
+                    : selectedPerson
+                      ? `${selectedPerson.fullName} has no items checked out` 
+                      : "Please select a person with checked out items"}
+                </p>
               )}
             </div>
             
