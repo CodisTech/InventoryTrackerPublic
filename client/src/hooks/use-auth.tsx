@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useContext } from "react";
+import { createContext, ReactNode, useContext, useState, useEffect } from "react";
 import {
   useQuery,
   useMutation,
@@ -38,11 +38,14 @@ type AuthContextType = {
   user: SelectUser | null;
   isLoading: boolean;
   error: Error | null;
+  activeRole: UserRole | null;
   loginMutation: UseMutationResult<SelectUser, Error, LoginData>;
   logoutMutation: UseMutationResult<void, Error, void>;
   registerMutation: UseMutationResult<SelectUser, Error, InsertUser>;
+  switchRoleMutation: UseMutationResult<void, Error, UserRole>;
   hasPermission: (permission: Permission) => boolean;
   getUserRole: () => UserRole | null;
+  getHighestRole: () => UserRole | null;
 };
 
 type LoginData = Pick<InsertUser, "username" | "password">;
@@ -50,6 +53,8 @@ type LoginData = Pick<InsertUser, "username" | "password">;
 export const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
+  const [activeRole, setActiveRole] = useState<UserRole | null>(null);
+  
   const {
     data: user,
     error,
@@ -58,6 +63,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryKey: ["/api/user"],
     queryFn: getQueryFn({ on401: "returnNull" }),
   });
+  
+  // Initialize active role when user data changes
+  useEffect(() => {
+    if (user && !activeRole) {
+      setActiveRole(user.role as UserRole);
+    }
+  }, [user, activeRole]);
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
@@ -66,6 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
+      setActiveRole(user.role as UserRole);
       toast({
         title: "Login successful",
         description: `Welcome back, ${user.fullName}!`,
@@ -87,6 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: (user: SelectUser) => {
       queryClient.setQueryData(["/api/user"], user);
+      setActiveRole(user.role as UserRole);
       toast({
         title: "Registration successful",
         description: `Welcome, ${user.fullName}!`,
@@ -107,6 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: () => {
       queryClient.setQueryData(["/api/user"], null);
+      setActiveRole(null);
       toast({
         title: "Logged out",
         description: "You have been successfully logged out.",
@@ -120,10 +135,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     },
   });
+  
+  // Switch role mutation - this just updates the activeRole state locally
+  // since we're doing client-side role switching without server updates
+  const switchRoleMutation = useMutation({
+    mutationFn: async (newRole: UserRole) => {
+      // We're not actually making a server request here,
+      // but we'll keep the async pattern for consistency
+      return Promise.resolve();
+    },
+    onSuccess: (_, newRole) => {
+      setActiveRole(newRole);
+      
+      // Invalidate relevant queries that might depend on user permissions
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      
+      // No need to invalidate user data since the actual user record isn't changing
+    }
+  });
 
-  // Check if user has the specified permission based on their role
+  // Check if user has the specified permission based on their active role
   const hasPermission = (permission: Permission): boolean => {
-    if (!user) return false;
+    if (!user || !activeRole) return false;
     
     // Define permission mapping by role
     const rolePermissions = {
@@ -155,14 +188,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       ],
     };
 
-    // Get permissions for the current user's role
-    const userPermissions = rolePermissions[user.role as UserRole] || [];
+    // Get permissions for the active role (not the user's actual role)
+    const userPermissions = rolePermissions[activeRole] || [];
     
     return userPermissions.includes(permission);
   };
   
-  // Get the current user's role or null if not logged in
+  // Get the current active role or null if not logged in
   const getUserRole = (): UserRole | null => {
+    return activeRole;
+  };
+  
+  // Get the highest role the user has access to
+  const getHighestRole = (): UserRole | null => {
     if (!user) return null;
     return user.role as UserRole;
   };
@@ -173,11 +211,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user: user ?? null,
         isLoading,
         error,
+        activeRole,
         loginMutation,
         logoutMutation,
         registerMutation,
+        switchRoleMutation,
         hasPermission,
-        getUserRole
+        getUserRole,
+        getHighestRole
       }}
     >
       {children}
