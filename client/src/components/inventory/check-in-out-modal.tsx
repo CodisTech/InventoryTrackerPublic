@@ -97,9 +97,11 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
         title: `Item ${operationType === "check-out" ? "checked out to" : "checked in from"} ${selectedPerson?.fullName}`,
         description: "The inventory has been updated.",
       });
+      // Invalidate all necessary queries to ensure data consistency
       queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
       queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/overdue-items"] });
       onClose();
     },
     onError: (error: Error) => {
