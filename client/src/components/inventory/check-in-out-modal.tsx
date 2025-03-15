@@ -13,9 +13,10 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { InventoryItemWithCategory, User } from "@shared/schema";
+import { InventoryItemWithCategory, User, Personnel } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
+import { AgreementChecker } from "@/components/users/agreement-checker";
 
 interface CheckInOutModalProps {
   isOpen: boolean;
@@ -35,6 +36,8 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
   const [userId, setUserId] = useState<string>("");
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
   const [notes, setNotes] = useState<string>("");
+  const [showAgreementChecker, setShowAgreementChecker] = useState(false);
+  const [pendingTransaction, setPendingTransaction] = useState<any>(null);
   
   // New state to control the workflow
   const [selectedPerson, setSelectedPerson] = useState<User | null>(null);
@@ -139,7 +142,36 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
       notes,
     };
 
-    transactionMutation.mutate(transaction);
+    // For check-in operations, we don't need to verify agreements
+    if (operationType === "check-in") {
+      transactionMutation.mutate(transaction);
+      return;
+    }
+
+    // For check-out operations, we need to verify EULA and Privacy Agreement acceptance
+    // Store the transaction for later use after agreements are confirmed
+    setPendingTransaction(transaction);
+    setShowAgreementChecker(true);
+  };
+  
+  // Handle completion of agreement checks
+  const handleAgreementsComplete = () => {
+    // User has accepted all agreements, proceed with the transaction
+    if (pendingTransaction) {
+      transactionMutation.mutate(pendingTransaction);
+      setShowAgreementChecker(false);
+    }
+  };
+  
+  // Handle cancellation of agreement checks
+  const handleAgreementsCancel = () => {
+    toast({
+      title: "Agreements Required",
+      description: "EULA and Privacy Agreement must be accepted before checking out equipment.",
+      variant: "destructive",
+    });
+    setShowAgreementChecker(false);
+    setPendingTransaction(null);
   };
 
   // Handle user selection
@@ -157,145 +189,166 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
     : items;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>
-            {selectedItem ? 
-              (selectedItem.checkedOutBy ? 
-                `Check In Item from ${selectedItem.checkedOutBy.fullName}` : 
-                "Check Out Item") : 
-              "Check In/Out Item"}
-          </DialogTitle>
-        </DialogHeader>
-        
-        <div className="grid gap-4 py-4">
-          <div className="space-y-2">
-            <Label>Operation Type</Label>
-            <RadioGroup
-              value={operationType}
-              onValueChange={(v) => setOperationType(v as "check-in" | "check-out")}
-              className="flex space-x-4"
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="check-out" id="checkout" />
-                <Label htmlFor="checkout">Check Out</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="check-in" id="checkin" />
-                <Label htmlFor="checkin">Check In</Label>
-              </div>
-            </RadioGroup>
-          </div>
+    <>
+      {/* Agreement Checker Modal */}
+      {showAgreementChecker && selectedPerson && (
+        <AgreementChecker 
+          personnelId={parseInt(userId)}
+          onComplete={handleAgreementsComplete}
+          onCancel={handleAgreementsCancel}
+        />
+      )}
+
+      {/* Main Dialog */}
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedItem ? 
+                (selectedItem.checkedOutBy ? 
+                  `Check In Item from ${selectedItem.checkedOutBy.fullName}` : 
+                  "Check Out Item") : 
+                "Check In/Out Item"}
+            </DialogTitle>
+          </DialogHeader>
           
-          <div className="space-y-2">
-            <Label htmlFor="user-select">Select Person</Label>
-            <Select
-              value={userId}
-              onValueChange={handleUserChange}
-              disabled={!!selectedItem?.checkedOutBy}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select a person..." />
-              </SelectTrigger>
-              <SelectContent>
-                {users.map((user) => (
-                  <SelectItem key={user.id} value={user.id.toString()}>
-                    {user.fullName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {selectedPerson && (
-              <p className="text-xs text-muted-foreground">
-                {operationType === "check-out" ? "Checking out to: " : "Checking in from: "}
-                <span className="font-medium">{selectedPerson.fullName}</span>
-              </p>
-            )}
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="item-select">Select Item</Label>
-            <Select
-              value={itemId}
-              onValueChange={setItemId}
-              disabled={!!selectedItem}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select an item..." />
-              </SelectTrigger>
-              <SelectContent>
-                {availableItems.map((item) => (
-                  <SelectItem key={item.id} value={item.id.toString()}>
-                    {item.itemCode}: {item.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {operationType === "check-out" && availableItems.length === 0 && (
-              <p className="text-xs text-destructive">No items available for checkout</p>
-            )}
-          </div>
-          
-          {operationType === "check-out" && (
+          <div className="grid gap-4 py-4">
             <div className="space-y-2">
-              <Label>Due Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !dueDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dueDate ? format(dueDate, "PPP") : "Select a date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={dueDate}
-                    onSelect={setDueDate}
-                    initialFocus
-                    disabled={(date) => date < new Date()}
-                  />
-                </PopoverContent>
-              </Popover>
+              <Label>Operation Type</Label>
+              <RadioGroup
+                value={operationType}
+                onValueChange={(v) => setOperationType(v as "check-in" | "check-out")}
+                className="flex space-x-4"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="check-out" id="checkout" />
+                  <Label htmlFor="checkout">Check Out</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="check-in" id="checkin" />
+                  <Label htmlFor="checkin">Check In</Label>
+                </div>
+              </RadioGroup>
             </div>
-          )}
-          
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
-            <Textarea
-              id="notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Add notes about condition, purpose, etc."
-              rows={3}
-            />
+            
+            <div className="space-y-2">
+              <Label htmlFor="user-select">Select Person</Label>
+              <Select
+                value={userId}
+                onValueChange={handleUserChange}
+                disabled={!!selectedItem?.checkedOutBy}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a person..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {users.map((user) => (
+                    <SelectItem key={user.id} value={user.id.toString()}>
+                      {user.fullName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {selectedPerson && (
+                <p className="text-xs text-muted-foreground">
+                  {operationType === "check-out" ? "Checking out to: " : "Checking in from: "}
+                  <span className="font-medium">{selectedPerson.fullName}</span>
+                </p>
+              )}
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="item-select">Select Item</Label>
+              <Select
+                value={itemId}
+                onValueChange={setItemId}
+                disabled={!!selectedItem}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select an item..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableItems.map((item) => (
+                    <SelectItem key={item.id} value={item.id.toString()}>
+                      {item.itemCode}: {item.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {operationType === "check-out" && availableItems.length === 0 && (
+                <p className="text-xs text-destructive">No items available for checkout</p>
+              )}
+            </div>
+            
+            {operationType === "check-out" && (
+              <div className="space-y-2">
+                <Label>Due Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !dueDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dueDate ? format(dueDate, "PPP") : "Select a date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={dueDate}
+                      onSelect={setDueDate}
+                      initialFocus
+                      disabled={(date) => date < new Date()}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            )}
+            
+            <div className="space-y-2">
+              <Label htmlFor="notes">Notes</Label>
+              <Textarea
+                id="notes"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Add notes about condition, purpose, etc."
+                rows={3}
+              />
+            </div>
+            
+            {operationType === "check-out" && (
+              <div className="space-y-2 rounded-md border p-3 bg-muted/30">
+                <p className="text-xs text-muted-foreground">
+                  <strong>Note:</strong> By checking out equipment, the user must agree to the EULA and Privacy Agreement.
+                  These agreements will be presented for review and acceptance during the checkout process.
+                </p>
+              </div>
+            )}
           </div>
-        </div>
-        
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button variant="outline">Cancel</Button>
-          </DialogClose>
-          <Button 
-            onClick={handleSubmit}
-            disabled={transactionMutation.isPending}
-            className={operationType === "check-out" ? "bg-primary" : "bg-secondary"}
-          >
-            {transactionMutation.isPending 
-              ? "Processing..." 
-              : operationType === "check-out" 
-                ? `Check Out to ${selectedPerson?.fullName || "..."}` 
-                : `Check In from ${selectedPerson?.fullName || "..."}`}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button 
+              onClick={handleSubmit}
+              disabled={transactionMutation.isPending}
+              className={operationType === "check-out" ? "bg-primary" : "bg-secondary"}
+            >
+              {transactionMutation.isPending 
+                ? "Processing..." 
+                : operationType === "check-out" 
+                  ? `Check Out to ${selectedPerson?.fullName || "..."}` 
+                  : `Check In from ${selectedPerson?.fullName || "..."}`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
