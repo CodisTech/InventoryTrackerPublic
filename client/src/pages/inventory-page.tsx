@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import AddItemModal from "@/components/inventory/add-item-modal";
 import CheckInOutModal from "@/components/inventory/check-in-out-modal";
-import MultiItemCheckoutModal from "@/components/inventory/multi-item-checkout-modal";
+// Multi-item checkout is now handled in CheckInOutModal
 import { InventoryItemWithCategory } from "@shared/schema";
 import { format } from "date-fns";
 
@@ -17,7 +17,7 @@ const InventoryPage: React.FC = () => {
   const { toast } = useToast();
   const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
   const [isCheckInOutModalOpen, setIsCheckInOutModalOpen] = useState(false);
-  const [isMultiCheckoutModalOpen, setIsMultiCheckoutModalOpen] = useState(false);
+  // We now use CheckInOutModal for both single and multi-item operations
   const [selectedItem, setSelectedItem] = useState<InventoryItemWithCategory | null>(null);
   const [selectedItems, setSelectedItems] = useState<InventoryItemWithCategory[]>([]);
   const [selectMode, setSelectMode] = useState(false);
@@ -84,8 +84,10 @@ const InventoryPage: React.FC = () => {
       });
     }
     
+    // Update selectedItems array with only available items and open modal
     setSelectedItems(availableItems);
-    setIsMultiCheckoutModalOpen(true);
+    setSelectedItem(null); // Set to null to ensure we're in multi-item mode
+    setIsCheckInOutModalOpen(true);
   };
 
   const handleViewItem = (item: InventoryItemWithCategory) => {
@@ -334,15 +336,7 @@ const InventoryPage: React.FC = () => {
         selectedItem={selectedItem}
         selectedItems={selectedItems}
       />
-      <MultiItemCheckoutModal
-        isOpen={isMultiCheckoutModalOpen}
-        onClose={() => {
-          setIsMultiCheckoutModalOpen(false);
-          // Only exit select mode if explicitly requested by user
-          // to allow for multiple batch checkouts
-        }}
-        selectedItems={selectedItems}
-      />
+      {/* We now use the unified CheckInOutModal for both single and multi-item operations */}
     </div>
   );
 };
