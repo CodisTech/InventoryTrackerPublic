@@ -29,7 +29,9 @@ const Sidebar: React.FC = () => {
   
   // Admin menu items shown only for admin users
   const adminItems = user?.role === 'admin' || user?.role === 'super_admin' ? [
-    { name: "Admin Management", icon: <ShieldCheck className="w-5 h-5" />, path: "/admin/management" }
+    { name: "Admin Management", icon: <ShieldCheck className="w-5 h-5" />, path: "/admin/management" },
+    { name: "Activity Logs", icon: <RotateCw className="w-5 h-5" />, path: "/admin/activity" },
+    { name: "Transfer Ownership", icon: <Users className="w-5 h-5" />, path: "/admin/transfers" }
   ] : [];
 
   const handleLogout = () => {

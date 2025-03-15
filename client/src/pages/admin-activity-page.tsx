@@ -278,12 +278,17 @@ const AdminActivityPage: React.FC = () => {
                             </Button>
                           </PopoverTrigger>
                           <PopoverContent className="w-auto p-0" align="start">
-                            <CalendarComponent
-                              mode="range"
-                              selected={dateRange}
-                              onSelect={setDateRange as any}
-                              initialFocus
-                            />
+                            <div className="p-3">
+                              <CalendarComponent
+                                mode="range"
+                                selected={{
+                                  from: dateRange?.from,
+                                  to: dateRange?.to
+                                }}
+                                onSelect={setDateRange as any}
+                                initialFocus
+                              />
+                            </div>
                           </PopoverContent>
                         </Popover>
                       </div>
