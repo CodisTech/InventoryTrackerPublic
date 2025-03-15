@@ -64,6 +64,8 @@ export interface IStorage {
   getTransactionsByUser(userId: number): Promise<Transaction[]>;
   getTransactionsByItem(itemId: number): Promise<Transaction[]>;
   getAllTransactionsWithDetails(): Promise<TransactionWithDetails[]>;
+  checkOverdueItems(): Promise<Transaction[]>;
+  getOverdueItems(): Promise<TransactionWithDetails[]>;
   
   // Dashboard stats
   getDashboardStats(): Promise<DashboardStats>;

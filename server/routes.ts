@@ -1,4 +1,4 @@
-import type { Express, Request, Response } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
@@ -16,6 +16,8 @@ import { fromZodError } from "zod-validation-error";
 import multer from "multer";
 import { parse } from "csv-parse";
 import { Readable } from "stream";
+import { promisify } from "util";
+import { scrypt, randomBytes } from "crypto";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication routes
