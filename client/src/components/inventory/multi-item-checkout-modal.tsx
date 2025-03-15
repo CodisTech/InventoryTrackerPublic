@@ -80,8 +80,10 @@ const MultiItemCheckoutModal: React.FC<MultiItemCheckoutModalProps> = ({
       setNotes("");
       setPersonnelSearchTerm("");
       setItemSearchTerm("");
+      // Set current user as default administrator
+      setSelectedAdministrator(user?.id || null);
     }
-  }, [isOpen]);
+  }, [isOpen, user]);
 
   // Generate Person objects from personnel data
   const allPeople: Person[] = personnel.map(p => ({
@@ -301,6 +303,15 @@ const MultiItemCheckoutModal: React.FC<MultiItemCheckoutModalProps> = ({
       });
       return;
     }
+    
+    if (!selectedAdministrator) {
+      toast({
+        title: "Please select an administrator",
+        description: "An administrator is required to process this transaction",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setIsSubmitting(true);
     
@@ -315,6 +326,7 @@ const MultiItemCheckoutModal: React.FC<MultiItemCheckoutModalProps> = ({
         const transaction = {
           itemId: selectedItem.id,
           userId: selectedPerson.id,
+          administratorId: selectedAdministrator, // Add administrator ID
           type: "check-out" as const,
           quantity: selectedItem.quantity,
           notes,
@@ -568,6 +580,37 @@ const MultiItemCheckoutModal: React.FC<MultiItemCheckoutModalProps> = ({
               )}
             </div>
             
+            {/* Administrator selection */}
+            <div className="space-y-2">
+              <Label htmlFor="administrator">Administrator</Label>
+              <Select 
+                value={selectedAdministrator?.toString()} 
+                onValueChange={(value) => setSelectedAdministrator(parseInt(value))}
+              >
+                <SelectTrigger id="administrator" className="w-full">
+                  <SelectValue placeholder="Select administrator" />
+                </SelectTrigger>
+                <SelectContent>
+                  {adminUsers.map((admin) => (
+                    <SelectItem key={admin.id} value={admin.id.toString()}>
+                      <div className="flex items-center">
+                        <UserCheck className="h-4 w-4 mr-2 text-primary" />
+                        <span>{admin.fullName}</span>
+                        {admin.id === user?.id && (
+                          <span className="text-xs text-muted-foreground ml-2">(You)</span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {selectedAdministrator && (
+                <p className="text-xs text-muted-foreground">
+                  This transaction will be recorded under your administrator account.
+                </p>
+              )}
+            </div>
+            
             {/* Notes */}
             <div className="space-y-2">
               <Label htmlFor="notes">Notes</Label>
@@ -587,7 +630,7 @@ const MultiItemCheckoutModal: React.FC<MultiItemCheckoutModalProps> = ({
             </DialogClose>
             <Button 
               onClick={handleSubmit}
-              disabled={isSubmitting || selectedItems.length === 0 || !selectedPerson}
+              disabled={isSubmitting || selectedItems.length === 0 || !selectedPerson || !selectedAdministrator}
               className="bg-primary"
             >
               {isSubmitting ? (
