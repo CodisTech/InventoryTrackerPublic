@@ -1,12 +1,10 @@
-# Git Commands to Execute:
-git add .
-git commit -m "feat: Add automatic print functionality to checkout flows
+# To commit and push the changes to your repository, run these commands:
 
-- Implemented automatic print dialog prompt after successful checkouts
-- Added detailed print layout for single-item checkout receipts 
-- Ensured consistent formatting between single and multi-item receipts
-- Added user-friendly print confirmation dialog with skip option
-- Enhanced receipts with personnel and item details
-- Added transaction timestamps and signature lines for physical records
-- Updated Docker configuration for containerized deployment"
-git push
+# Add all the modified files to staging
+git add Dockerfile docker-compose.yml docker-entrypoint.sh setup-db.js
+
+# Commit the changes with the message from commit_message.txt
+git commit -F commit_message.txt
+
+# Push to your repository (adjust branch name if needed)
+git push origin main

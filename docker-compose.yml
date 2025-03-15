@@ -11,7 +11,7 @@ services:
     environment:
       - NODE_ENV=production
       - DATABASE_URL=postgres://postgres:postgres@db:5432/inventory_db
-      - SESSION_SECRET=your_secret_key_here
+      - SESSION_SECRET=D8cX7bPs3qR9tU2vW4yZ6aE1fG5hJ7kL
       # Now we're using the database for storage
     depends_on:
       - db

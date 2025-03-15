@@ -129,12 +129,19 @@ async function main() {
     if (parseInt(userCount.rows[0].count) === 0) {
       console.log('Seeding database with initial data...');
       
-      // Create admin user with password 'admin123'
-      const hashedPassword = await hashPassword('admin123');
+      // Create super admin user with password 'superadmin123'
+      const superAdminPassword = await hashPassword('superadmin123');
       await client.query(`
         INSERT INTO users (username, password, fullName, role, isAuthorized)
         VALUES ($1, $2, $3, $4, $5);
-      `, ['admin', hashedPassword, 'Administrator', 'admin', true]);
+      `, ['superadmin', superAdminPassword, 'Super Administrator', 'super_admin', true]);
+      
+      // Create admin user with password 'admin123'
+      const adminPassword = await hashPassword('admin123');
+      await client.query(`
+        INSERT INTO users (username, password, fullName, role, isAuthorized)
+        VALUES ($1, $2, $3, $4, $5);
+      `, ['admin', adminPassword, 'Administrator', 'admin', true]);
       
       // Add sample categories
       const categoryNames = ['Laptops', 'Desktops', 'Mobile Devices', 'Storage', 'A/V Equipment', 'Accessories'];

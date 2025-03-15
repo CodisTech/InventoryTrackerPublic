@@ -1,11 +1,8 @@
-# Commit message
-feat: Add automatic print functionality to checkout flows
+Update Docker deployment configurations and add super admin
 
-- Implemented automatic print dialog prompt after successful checkouts
-- Added detailed print layout for single-item checkout receipts 
-- Ensured consistent formatting between single and multi-item receipts
-- Added user-friendly print confirmation dialog with skip option
-- Enhanced receipts with personnel and item details
-- Added transaction timestamps and signature lines for physical records
-- Updated Docker configuration for containerized deployment
-
+- Add super admin user creation in setup-db.js with default credentials
+- Improve docker-entrypoint.sh with robust database connection retry
+- Enhance Dockerfile with multi-stage build for smaller image size
+- Use non-root user in Docker container for better security
+- Update session secret in docker-compose.yml
+- General deployment improvements for production readiness
