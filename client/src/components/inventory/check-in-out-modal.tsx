@@ -80,7 +80,11 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
   // Reset form when modal is opened/closed or when selected item changes
   useEffect(() => {
     if (isOpen) {
-      // Check if we have multiple selected items
+      // Always reset user/personnel selection
+      setSelectedPerson(null);
+      setUserId("");
+      
+      // Check if we have multiple selected items (multi-item mode)
       if (selectedItems && selectedItems.length > 0) {
         setOperationType("check-out"); // Multi-item mode only supports check-out for now
         
@@ -116,7 +120,6 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
         }
       } else {
         setOperationType("check-out");
-        setSelectedPerson(null);
       }
       
       setQuantity(1);
@@ -404,7 +407,7 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
                       "w-full justify-between",
                       operationType === "check-in" && eligiblePeople.length > 0 && "bg-amber-50 border-amber-200 text-amber-900"
                     )}
-                    disabled={!!selectedItem?.checkedOutBy}
+                    // Don't disable selection based on the existence of checkedOutBy
                   >
                     {selectedPerson 
                       ? selectedPerson.fullName 
