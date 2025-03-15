@@ -56,6 +56,7 @@ export interface IStorage {
   getAllTransactions(): Promise<Transaction[]>;
   getTransactionsByUser(userId: number): Promise<Transaction[]>;
   getTransactionsByItem(itemId: number): Promise<Transaction[]>;
+  getAllTransactionsWithDetails(): Promise<TransactionWithDetails[]>;
   
   // Dashboard stats
   getDashboardStats(): Promise<DashboardStats>;
