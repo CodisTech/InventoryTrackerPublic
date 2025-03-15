@@ -1998,7 +1998,15 @@ const CategoryDistributionChart: React.FC = () => {
   }
 
   // Group inventory by category
-  const categoryMap = new Map();
+  interface CategoryData {
+    id: string;
+    label: string;
+    totalQuantity: number;
+    availableQuantity: number;
+    itemCount: number;
+  }
+  
+  const categoryMap = new Map<number, CategoryData>();
   
   inventory.forEach(item => {
     const categoryId = item.category.id;
@@ -2015,9 +2023,11 @@ const CategoryDistributionChart: React.FC = () => {
     }
     
     const category = categoryMap.get(categoryId);
-    category.totalQuantity += item.totalQuantity;
-    category.availableQuantity += item.availableQuantity;
-    category.itemCount += 1;
+    if (category) {
+      category.totalQuantity += item.totalQuantity;
+      category.availableQuantity += item.availableQuantity;
+      category.itemCount += 1;
+    }
   });
   
   // Convert map to array for chart
@@ -2152,7 +2162,13 @@ const TopItemsUsageChart: React.FC = () => {
   });
   
   // Group transactions by item
-  const itemUsageMap = new Map();
+  interface ItemUsage {
+    item: string;
+    checkouts: number;
+    returns: number;
+  }
+  
+  const itemUsageMap = new Map<number, ItemUsage>();
   
   filteredTransactions.forEach(trx => {
     const itemId = trx.item.id;
@@ -2167,10 +2183,12 @@ const TopItemsUsageChart: React.FC = () => {
     }
     
     const itemUsage = itemUsageMap.get(itemId);
-    if (trx.type === "checkout") {
-      itemUsage.checkouts += 1;
-    } else if (trx.type === "checkin") {
-      itemUsage.returns += 1;
+    if (itemUsage) {
+      if (trx.type === "checkout") {
+        itemUsage.checkouts += 1;
+      } else if (trx.type === "checkin") {
+        itemUsage.returns += 1;
+      }
     }
   });
   
@@ -2332,7 +2350,13 @@ const InventoryTrendChart: React.FC = () => {
   });
   
   // Group transactions by month and type (checkout or checkin)
-  const monthlyDataMap = new Map();
+  interface MonthlyData {
+    month: string;
+    checkouts: number;
+    checkins: number;
+  }
+  
+  const monthlyDataMap = new Map<string, MonthlyData>();
   
   filteredTransactions.forEach(trx => {
     if (!trx.timestamp) return;
@@ -2350,10 +2374,12 @@ const InventoryTrendChart: React.FC = () => {
     }
     
     const monthData = monthlyDataMap.get(monthKey);
-    if (trx.type === "checkout") {
-      monthData.checkouts += 1;
-    } else if (trx.type === "checkin") {
-      monthData.checkins += 1;
+    if (monthData) {
+      if (trx.type === "checkout") {
+        monthData.checkouts += 1;
+      } else if (trx.type === "checkin") {
+        monthData.checkins += 1;
+      }
     }
   });
   
