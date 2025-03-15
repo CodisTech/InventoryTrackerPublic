@@ -233,6 +233,15 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
   const eligiblePeople = operationType === "check-in" 
     ? allPeople.filter(person => personnelWithItems.includes(person.id))
     : allPeople;
+  
+  // Automatic selection for check-in when there's only one person with items
+  useEffect(() => {
+    if (operationType === "check-in" && !selectedPerson && eligiblePeople.length === 1) {
+      const onlyPerson = eligiblePeople[0];
+      setUserId(onlyPerson.id.toString());
+      setSelectedPerson(onlyPerson);
+    }
+  }, [operationType, eligiblePeople, selectedPerson]);
     
   // Debug log the personnel filtering for check-in
   if (operationType === "check-in") {
@@ -286,6 +295,23 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
                   "Check Out Item") : 
                 "Check In/Out Item"}
             </DialogTitle>
+            {selectedItem && (
+              <div className="text-sm text-muted-foreground mt-1">
+                {selectedItem.checkedOutBy ? (
+                  <div className="flex items-center">
+                    <div className="h-2 w-2 rounded-full bg-yellow-500 mr-2"></div>
+                    <span>
+                      Currently checked out to <strong>{selectedItem.checkedOutBy.fullName}</strong>
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex items-center">
+                    <div className="h-2 w-2 rounded-full bg-green-500 mr-2"></div>
+                    <span>Available for checkout</span>
+                  </div>
+                )}
+              </div>
+            )}
           </DialogHeader>
           
           <div className="grid gap-4 py-4">
@@ -317,17 +343,29 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="user-select">Search Person</Label>
+              <Label htmlFor="user-select">
+                {operationType === "check-in" 
+                  ? "Select Person to Check In From" 
+                  : "Select Person to Check Out To"}
+              </Label>
               <Popover open={isPersonnelSelectOpen} onOpenChange={setIsPersonnelSelectOpen}>
                 <PopoverTrigger asChild>
                   <Button
-                    variant="outline"
+                    variant={operationType === "check-in" ? "secondary" : "outline"}
                     role="combobox"
                     aria-expanded={isPersonnelSelectOpen}
-                    className="w-full justify-between"
+                    className={cn(
+                      "w-full justify-between",
+                      operationType === "check-in" && eligiblePeople.length > 0 && "bg-amber-50 border-amber-200 text-amber-900"
+                    )}
                     disabled={!!selectedItem?.checkedOutBy}
                   >
-                    {selectedPerson ? selectedPerson.fullName : "Select person..."}
+                    {selectedPerson 
+                      ? selectedPerson.fullName 
+                      : operationType === "check-in" 
+                        ? `Select from ${eligiblePeople.length} personnel with items...`
+                        : "Select person..."
+                    }
                     <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
@@ -341,24 +379,52 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
                     <CommandList>
                       <CommandEmpty>No person found.</CommandEmpty>
                       <CommandGroup heading="Personnel">
-                        {filteredPeople.map((person) => (
-                          <CommandItem
-                            key={`personnel-${person.id}`}
-                            value={person.id.toString()}
-                            onSelect={handlePersonnelSelect}
-                            className="flex items-center"
-                          >
-                            <div className="mr-2 flex items-center justify-center rounded-full bg-primary/10 p-1">
-                              <UsersIcon className="h-3 w-3" />
-                            </div>
-                            <span>{person.fullName}</span>
-                            {person.division && (
-                              <span className="ml-auto text-xs text-muted-foreground">
-                                {person.division}
-                              </span>
-                            )}
-                          </CommandItem>
-                        ))}
+                        {filteredPeople.map((person) => {
+                          // For check-in, find items this person has checked out
+                          const checkedOutItemsByPerson = operationType === "check-in" ? 
+                            items.filter(item => 
+                              item.checkedOutBy && item.checkedOutBy.id === person.id
+                            ) : [];
+                            
+                          return (
+                            <CommandItem
+                              key={`personnel-${person.id}`}
+                              value={person.id.toString()}
+                              onSelect={handlePersonnelSelect}
+                              className="flex flex-col items-start py-3"
+                            >
+                              <div className="flex w-full items-center">
+                                <div className="mr-2 flex items-center justify-center rounded-full bg-primary/10 p-1">
+                                  <UsersIcon className="h-3 w-3" />
+                                </div>
+                                <span className="font-medium">{person.fullName}</span>
+                                {person.division && (
+                                  <span className="ml-auto text-xs text-muted-foreground">
+                                    {person.division}
+                                  </span>
+                                )}
+                              </div>
+                              
+                              {/* Show department and j-dial if available */}
+                              {(person.department || person.jDial) && (
+                                <div className="pl-6 mt-1 text-xs text-muted-foreground">
+                                  {person.department && <span>{person.department}</span>}
+                                  {person.department && person.jDial && <span> • </span>}
+                                  {person.jDial && <span>J-Dial: {person.jDial}</span>}
+                                </div>
+                              )}
+                              
+                              {/* For check-in, show which items this person has */}
+                              {operationType === "check-in" && checkedOutItemsByPerson.length > 0 && (
+                                <div className="pl-6 mt-1 text-xs">
+                                  <span className="text-amber-600 font-medium">
+                                    Has {checkedOutItemsByPerson.length} item{checkedOutItemsByPerson.length > 1 ? 's' : ''} checked out
+                                  </span>
+                                </div>
+                              )}
+                            </CommandItem>
+                          );
+                        })}
                       </CommandGroup>
                     </CommandList>
                   </Command>
@@ -403,6 +469,23 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
                         ? `${selectedPerson.fullName} has no items checked out` 
                         : "Please select a person with checked out items"}
                 </p>
+              )}
+              
+              {/* Additional information about the selected item */}
+              {itemId && items.find(i => i.id.toString() === itemId) && (
+                <div className="mt-2 p-2 bg-muted/50 rounded-md">
+                  <div className="text-sm font-medium">
+                    {items.find(i => i.id.toString() === itemId)?.name}
+                  </div>
+                  <div className="text-xs text-muted-foreground flex items-center space-x-2">
+                    <span className="bg-primary/10 px-2 py-1 rounded">
+                      {items.find(i => i.id.toString() === itemId)?.itemCode}
+                    </span>
+                    <span>
+                      Category: {items.find(i => i.id.toString() === itemId)?.category.name}
+                    </span>
+                  </div>
+                </div>
               )}
             </div>
             
