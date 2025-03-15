@@ -171,7 +171,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Transaction dates:
       // 1. timestamp - automatically set to current time on both check-in and check-out
-      // 2. dueDate - only required for check-out transactions
+      // 2. dueDate - for check-out, set to 24 hours from now (overriding any provided value)
       // 3. returnDate - automatically set on check-in transactions
       
       const now = new Date();
@@ -180,12 +180,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // For check-in, set returnDate to now
         dataWithDefaults.returnDate = now;
       } else if (dataWithDefaults.type === 'check-out') {
-        // For check-out, ensure there's a dueDate
-        if (!dataWithDefaults.dueDate) {
-          return res.status(400).json({ 
-            message: "Due date is required for check-out transactions"
-          });
-        }
+        // For check-out, set dueDate to 24 hours from now
+        const dueDate = new Date(now);
+        dueDate.setHours(dueDate.getHours() + 24);
+        dataWithDefaults.dueDate = dueDate.toISOString();
       }
       
       const validatedData = insertTransactionSchema.parse(dataWithDefaults);
@@ -196,10 +194,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Item not found" });
       }
       
-      // Check if user exists
-      const user = await storage.getUser(validatedData.userId);
-      if (!user) {
-        return res.status(400).json({ message: "User not found" });
+      // Check if personnel exists instead of user
+      const personnel = await storage.getPersonnel(validatedData.userId);
+      if (!personnel) {
+        return res.status(400).json({ message: "Personnel not found" });
       }
       
       // For check-out, verify that enough quantity is available

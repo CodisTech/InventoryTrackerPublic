@@ -36,13 +36,12 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
   const [operationType, setOperationType] = useState<"check-in" | "check-out">("check-out");
   const [itemId, setItemId] = useState<string>("");
   const [userId, setUserId] = useState<string>("");
-  const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
   const [notes, setNotes] = useState<string>("");
-  // We removed EULA/Privacy agreement verification from checkout process
+  // We removed due date selection - server handles it automatically (24hr)
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [isPersonnelSelectOpen, setIsPersonnelSelectOpen] = useState(false);
   
-  // New state to control the workflow using our Person type
+  // Person state to control the workflow
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
 
   const { data: items = [] } = useQuery<InventoryItemWithCategory[]>({
@@ -151,13 +150,10 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
       notes,
     };
 
-    // Handle dates based on transaction type
-    if (operationType === "check-out" && dueDate) {
-      // For check-out, include due date (timestamp is added automatically on server)
-      transaction.dueDate = dueDate.toISOString();
-    }
-    // For check-in, no need to include dates (returnDate is set automatically on server)
-    // timestamp is also set automatically on server
+    // The server handles all date logic:
+  // 1. For check-out: dueDate is set to 24 hours from time of checkout
+  // 2. For check-in: returnDate is set to current time
+  // 3. timestamp is automatically set on server
 
     // Process the transaction immediately without checking agreements
     transactionMutation.mutate(transaction);
@@ -185,31 +181,23 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
     }
   };
   
-  // Combined array of users and personnel with a common interface
+  // Interface for personnel that can check out items
   type Person = {
     id: number;
     fullName: string;
     division?: string;
     department?: string;
     jDial?: string | null;
-    isPersonnel?: boolean;
   };
   
-  const allPeople: Person[] = [
-    ...users.map(u => ({
-      id: u.id,
-      fullName: u.fullName,
-      isPersonnel: false
-    })),
-    ...personnel.map(p => ({
-      id: p.id,
-      fullName: `${p.firstName} ${p.lastName}`,
-      division: p.division,
-      department: p.department,
-      jDial: p.jDial,
-      isPersonnel: true
-    }))
-  ];
+  // Only use personnel from the personnel database, not users
+  const allPeople: Person[] = personnel.map(p => ({
+    id: p.id,
+    fullName: `${p.firstName} ${p.lastName}`,
+    division: p.division,
+    department: p.department,
+    jDial: p.jDial
+  }));
   
   // Filter people based on search term
   const filteredPeople = allPeople.filter(person => {
@@ -280,14 +268,14 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
                 <PopoverContent className="w-[350px] p-0">
                   <Command>
                     <CommandInput 
-                      placeholder="Search personnel or users..." 
+                      placeholder="Search personnel by name, division, or department..." 
                       value={searchTerm}
                       onValueChange={setSearchTerm}
                     />
                     <CommandList>
                       <CommandEmpty>No person found.</CommandEmpty>
                       <CommandGroup heading="Personnel">
-                        {filteredPeople.filter(p => p.isPersonnel).map((person) => (
+                        {filteredPeople.map((person) => (
                           <CommandItem
                             key={`personnel-${person.id}`}
                             value={person.id.toString()}
@@ -303,20 +291,6 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
                                 {person.division}
                               </span>
                             )}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                      <CommandGroup heading="System Users">
-                        {filteredPeople.filter(p => !p.isPersonnel).map((person) => (
-                          <CommandItem
-                            key={`user-${person.id}`}
-                            value={person.id.toString()}
-                            onSelect={handlePersonnelSelect}
-                          >
-                            <div className="mr-2 flex items-center justify-center rounded-full bg-secondary/10 p-1">
-                              <UserIcon className="h-3 w-3" />
-                            </div>
-                            <span>{person.fullName}</span>
                           </CommandItem>
                         ))}
                       </CommandGroup>
@@ -358,34 +332,7 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
               )}
             </div>
             
-            {operationType === "check-out" && (
-              <div className="space-y-2">
-                <Label>Due Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !dueDate && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {dueDate ? format(dueDate, "PPP") : "Select a date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={dueDate}
-                      onSelect={setDueDate}
-                      initialFocus
-                      disabled={(date) => date < new Date()}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-            )}
+            {/* Due date field removed - server sets due date to 24 hours automatically */}
             
             <div className="space-y-2">
               <Label htmlFor="notes">Notes</Label>
