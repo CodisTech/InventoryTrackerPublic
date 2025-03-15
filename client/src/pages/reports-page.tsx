@@ -738,10 +738,79 @@ const TransactionReportsTab: React.FC = () => {
                   <h4 className="text-sm font-medium text-neutral-500 mb-1">Actions</h4>
                   <div className="bg-neutral-50 rounded-lg p-4 border">
                     <div className="grid grid-cols-2 gap-3">
-                      <Button variant="outline" className="border-blue-200 text-blue-600 hover:bg-blue-50">
-                        <Phone className="h-4 w-4 mr-2" />
-                        Contact User
-                      </Button>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button variant="outline" className="border-blue-200 text-blue-600 hover:bg-blue-50">
+                            <Phone className="h-4 w-4 mr-2" />
+                            Contact User
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-md">
+                          <DialogHeader>
+                            <DialogTitle>Contact {transactionDetail.user.fullName}</DialogTitle>
+                            <DialogDescription>
+                              Personnel contact information
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="space-y-4 py-4">
+                            <div className="flex items-center gap-4">
+                              <div className="bg-blue-100 p-3 rounded-full">
+                                <User className="h-6 w-6 text-blue-600" />
+                              </div>
+                              <div>
+                                <h3 className="font-medium text-lg">{transactionDetail.user.fullName}</h3>
+                                <p className="text-sm text-muted-foreground">Personnel ID: {transactionDetail.user.id}</p>
+                              </div>
+                            </div>
+                            
+                            <div className="border rounded-md p-4 bg-gray-50">
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <p className="text-sm font-medium text-gray-500">Phone</p>
+                                  <p className="font-medium">
+                                    {transactionDetail.person?.jDial ? `J-Dial: ${transactionDetail.person.jDial}` : "Not available"}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-sm font-medium text-gray-500">Email</p>
+                                  <p className="font-medium">
+                                    {`${transactionDetail.user.username}@codis.tech`}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-sm font-medium text-gray-500">Division</p>
+                                  <p className="font-medium">
+                                    {transactionDetail.person?.division || "Not assigned"}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-sm font-medium text-gray-500">Department</p>
+                                  <p className="font-medium">
+                                    {transactionDetail.person?.department || "Not assigned"}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {transactionDetail.person?.lcpoName && (
+                              <div className="border rounded-md p-4 bg-gray-50">
+                                <p className="text-sm font-medium text-gray-500 mb-1">LCPO Contact</p>
+                                <p className="font-medium">{transactionDetail.person.lcpoName}</p>
+                              </div>
+                            )}
+                          </div>
+                          <DialogFooter>
+                            <Button type="button" variant="secondary">
+                              <CopyIcon className="h-4 w-4 mr-2" />
+                              Copy Contact Info
+                            </Button>
+                            <Button type="button">
+                              <Mail className="h-4 w-4 mr-2" />
+                              Send Email
+                            </Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
                       <Button variant="outline" className="border-green-200 text-green-600 hover:bg-green-50">
                         <RotateCw className="h-4 w-4 mr-2" />
                         Print Receipt
