@@ -213,7 +213,7 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
       person.fullName.toLowerCase().includes(search) ||
       (person.division && person.division.toLowerCase().includes(search)) ||
       (person.department && person.department.toLowerCase().includes(search)) ||
-      (person.jDial && person.jDial.toLowerCase().includes(search))
+      (person.jDial && person.jDial && person.jDial.toLowerCase().includes(search))
     );
   });
 

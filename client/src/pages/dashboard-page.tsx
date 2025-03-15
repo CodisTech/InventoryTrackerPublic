@@ -17,16 +17,29 @@ import LowStockItems from "@/components/dashboard/low-stock-items";
 import OverdueItemsAlert from "@/components/dashboard/overdue-items-alert";
 import CheckInOutModal from "@/components/inventory/check-in-out-modal";
 import AddItemModal from "@/components/inventory/add-item-modal";
-import { DashboardStats } from "@shared/schema";
+import ListModal from "@/components/dashboard/list-modal";
+import { DashboardStats, InventoryItemWithCategory, Personnel } from "@shared/schema";
 import { Link } from "wouter";
 
 const DashboardPage: React.FC = () => {
   const { toast } = useToast();
   const [isCheckInOutModalOpen, setIsCheckInOutModalOpen] = React.useState(false);
   const [isAddItemModalOpen, setIsAddItemModalOpen] = React.useState(false);
+  const [listModalType, setListModalType] = React.useState<"total" | "checked-out" | "available" | "personnel" | null>(null);
 
+  // Fetch dashboard stats
   const { data: stats, isLoading, error } = useQuery<DashboardStats>({
     queryKey: ["/api/dashboard/stats"],
+  });
+  
+  // Fetch inventory data for the modal
+  const { data: inventory = [] } = useQuery<InventoryItemWithCategory[]>({
+    queryKey: ["/api/inventory"],
+  });
+  
+  // Fetch personnel data for the modal
+  const { data: personnel = [] } = useQuery<Personnel[]>({
+    queryKey: ["/api/personnel"],
   });
 
   React.useEffect(() => {
@@ -78,6 +91,7 @@ const DashboardPage: React.FC = () => {
           icon={<Package className="w-6 h-6" />}
           iconColor="text-primary"
           iconBgColor="bg-primary/10"
+          onClick={() => setListModalType("total")}
         />
         <SummaryCard
           title="Checked Out"
@@ -85,6 +99,7 @@ const DashboardPage: React.FC = () => {
           icon={<LogOut className="w-6 h-6" />}
           iconColor="text-amber-500"
           iconBgColor="bg-amber-50"
+          onClick={() => setListModalType("checked-out")}
         />
         <SummaryCard
           title="Available"
@@ -92,6 +107,7 @@ const DashboardPage: React.FC = () => {
           icon={<CheckCircle2 className="w-6 h-6" />}
           iconColor="text-emerald-500"
           iconBgColor="bg-emerald-50"
+          onClick={() => setListModalType("available")}
         />
         <SummaryCard
           title="Personnel"
@@ -99,6 +115,7 @@ const DashboardPage: React.FC = () => {
           icon={<Users className="w-6 h-6" />}
           iconColor="text-indigo-500"
           iconBgColor="bg-indigo-50"
+          onClick={() => setListModalType("personnel")}
         />
       </div>
 
@@ -117,6 +134,15 @@ const DashboardPage: React.FC = () => {
         isOpen={isAddItemModalOpen}
         onClose={() => setIsAddItemModalOpen(false)}
       />
+      {listModalType && (
+        <ListModal
+          isOpen={!!listModalType}
+          onClose={() => setListModalType(null)}
+          listType={listModalType}
+          inventory={inventory}
+          personnel={personnel}
+        />
+      )}
     </div>
   );
 };
