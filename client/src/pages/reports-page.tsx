@@ -472,6 +472,220 @@ const TransactionReportsTab: React.FC = () => {
     );
   }, [transactions, searchTerm]);
   
+  // Find selected transaction details
+  const transactionDetail = React.useMemo(() => {
+    if (selectedTransaction === null) return null;
+    return transactions.find(t => t.id === selectedTransaction);
+  }, [selectedTransaction, transactions]);
+  
+  // Handle back from transaction detail
+  const handleBackToList = () => {
+    setSelectedTransaction(null);
+  };
+  
+  // If a transaction is selected, show the detail view
+  if (selectedTransaction !== null) {
+    if (!transactionDetail) {
+      return (
+        <div className="space-y-4">
+          <div className="flex items-center mb-4">
+            <Button variant="ghost" onClick={handleBackToList} className="mr-2 p-2">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <h3 className="text-lg font-medium">Transaction Not Found</h3>
+          </div>
+          
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex flex-col items-center justify-center text-center py-6">
+                <div className="rounded-full bg-orange-50 p-3 mb-3">
+                  <AlertCircle className="h-6 w-6 text-orange-500" />
+                </div>
+                <h3 className="text-lg font-medium mb-1">Transaction Not Found</h3>
+                <p className="text-neutral-500 max-w-md mb-4">
+                  The transaction you are looking for could not be found. It may have been deleted.
+                </p>
+                <Button variant="outline" onClick={handleBackToList}>
+                  Back to Transaction History
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center mb-4">
+          <Button variant="ghost" onClick={handleBackToList} className="mr-2 p-2">
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h3 className="text-lg font-medium">Transaction Details</h3>
+        </div>
+
+        <Card className={`overflow-hidden ${transactionDetail.type === 'check-in' ? 'border-green-200' : 'border-blue-200'}`}>
+          <CardHeader className={`pb-3 ${transactionDetail.type === 'check-in' ? 'bg-green-50' : 'bg-blue-50'}`}>
+            <div className="flex justify-between items-center">
+              <CardTitle className="text-lg">
+                TRX-{transactionDetail.id.toString().padStart(4, '0')}
+              </CardTitle>
+              <Badge variant={transactionDetail.type === 'check-in' ? 'default' : 'outline'} className="capitalize font-medium">
+                {transactionDetail.type}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div>
+                  <h4 className="text-sm font-medium text-neutral-500 mb-1">Item Information</h4>
+                  <div className="bg-neutral-50 rounded-lg p-4 border">
+                    <div className="flex items-center mb-2">
+                      <div className="mr-3 p-2 rounded-full bg-primary/10">
+                        <Package className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <h5 className="font-medium">{transactionDetail.item.name}</h5>
+                        <p className="text-sm text-neutral-500">Code: {transactionDetail.item.itemCode}</p>
+                      </div>
+                    </div>
+                    <div className="mt-3 pt-3 border-t grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <p className="text-neutral-500">Category:</p>
+                        <p className="font-medium">{transactionDetail.item.category?.name || "Uncategorized"}</p>
+                      </div>
+                      <div>
+                        <p className="text-neutral-500">Status:</p>
+                        <p className="font-medium">{transactionDetail.item.status || "Available"}</p>
+                      </div>
+                      <div>
+                        <p className="text-neutral-500">Total Quantity:</p>
+                        <p className="font-medium">{transactionDetail.item.totalQuantity}</p>
+                      </div>
+                      <div>
+                        <p className="text-neutral-500">Available:</p>
+                        <p className="font-medium">{transactionDetail.item.availableQuantity}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <h4 className="text-sm font-medium text-neutral-500 mb-1">Transaction Timeline</h4>
+                  <div className="bg-neutral-50 rounded-lg p-4 border space-y-3">
+                    <div className="flex">
+                      <div className="mr-3 p-1">
+                        <div className={`h-6 w-6 rounded-full ${transactionDetail.type === 'check-in' ? 'bg-green-500' : 'bg-blue-500'} flex items-center justify-center`}>
+                          {transactionDetail.type === 'check-in' ? 
+                            <CheckCircle2 className="h-4 w-4 text-white" /> : 
+                            <Package className="h-4 w-4 text-white" />
+                          }
+                        </div>
+                      </div>
+                      <div>
+                        <p className="font-medium">
+                          {transactionDetail.type === 'check-in' ? 'Checked In' : 'Checked Out'}
+                        </p>
+                        <p className="text-sm text-neutral-500">
+                          {transactionDetail.timestamp ? new Date(transactionDetail.timestamp).toLocaleString() : "N/A"}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {transactionDetail.dueDate && (
+                      <div className="flex">
+                        <div className="mr-3 p-1">
+                          <div className="h-6 w-6 rounded-full bg-yellow-500 flex items-center justify-center">
+                            <Clock className="h-4 w-4 text-white" />
+                          </div>
+                        </div>
+                        <div>
+                          <p className="font-medium">Due Date</p>
+                          <p className="text-sm text-neutral-500">
+                            {new Date(transactionDetail.dueDate).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {transactionDetail.isOverdue && (
+                      <div className="flex">
+                        <div className="mr-3 p-1">
+                          <div className="h-6 w-6 rounded-full bg-red-500 flex items-center justify-center">
+                            <AlertTriangle className="h-4 w-4 text-white" />
+                          </div>
+                        </div>
+                        <div>
+                          <p className="font-medium">Marked Overdue</p>
+                          <p className="text-sm text-neutral-500">
+                            Item was not returned by the due date
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <h4 className="text-sm font-medium text-neutral-500 mb-1">User Information</h4>
+                  <div className="bg-neutral-50 rounded-lg p-4 border">
+                    <div className="flex items-center mb-2">
+                      <div className="mr-3 p-2 rounded-full bg-blue-50">
+                        <User className="h-5 w-5 text-blue-500" />
+                      </div>
+                      <div>
+                        <h5 className="font-medium">{transactionDetail.user.fullName}</h5>
+                        <p className="text-sm text-neutral-500">User ID: {transactionDetail.user.id}</p>
+                      </div>
+                    </div>
+                    <div className="mt-3 pt-3 border-t text-sm">
+                      <div className="mb-2">
+                        <p className="text-neutral-500">Username:</p>
+                        <p className="font-medium">{transactionDetail.user.username}</p>
+                      </div>
+                      <div className="mb-2">
+                        <p className="text-neutral-500">Role:</p>
+                        <p className="font-medium">{transactionDetail.user.role || "Standard User"}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <h4 className="text-sm font-medium text-neutral-500 mb-1">Transaction Notes</h4>
+                  <div className="bg-neutral-50 rounded-lg p-4 border h-32">
+                    <p className="text-sm">
+                      {transactionDetail.notes || "No notes provided for this transaction."}
+                    </p>
+                  </div>
+                </div>
+                
+                <div>
+                  <h4 className="text-sm font-medium text-neutral-500 mb-1">Actions</h4>
+                  <div className="bg-neutral-50 rounded-lg p-4 border">
+                    <div className="grid grid-cols-2 gap-3">
+                      <Button variant="outline" className="border-blue-200 text-blue-600 hover:bg-blue-50">
+                        <Phone className="h-4 w-4 mr-2" />
+                        Contact User
+                      </Button>
+                      <Button variant="outline" className="border-green-200 text-green-600 hover:bg-green-50">
+                        <RotateCw className="h-4 w-4 mr-2" />
+                        Print Receipt
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+  
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between mb-2">
@@ -547,6 +761,7 @@ const TransactionReportsTab: React.FC = () => {
             <Card 
               key={transaction.id} 
               className="border-neutral-100 hover:border-neutral-200 transition-colors cursor-pointer"
+              onClick={() => setSelectedTransaction(transaction.id)}
             >
               <CardContent className="p-4">
                 <div className="flex items-start justify-between">
