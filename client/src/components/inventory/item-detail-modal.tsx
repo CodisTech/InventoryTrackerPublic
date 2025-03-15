@@ -78,13 +78,13 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                 
                 <div className="flex items-center">
                   <ArrowDown className="h-4 w-4 mr-2 text-primary" />
-                  <span className="text-sm font-medium">Total Quantity:</span>
+                  <span className="text-sm font-medium">Total Units:</span>
                   <span className="ml-2">{item.totalQuantity}</span>
                 </div>
                 
                 <div className="flex items-center">
                   <ArrowUp className="h-4 w-4 mr-2 text-primary" />
-                  <span className="text-sm font-medium">Available:</span>
+                  <span className="text-sm font-medium">Available Units:</span>
                   <span className="ml-2">{item.availableQuantity}</span>
                 </div>
                 

@@ -75,11 +75,7 @@ export default function CheckedOutPage() {
         </div>
       ),
     },
-    {
-      header: "Quantity",
-      accessorKey: "quantity" as any,
-      cell: (trx: TransactionWithDetails) => trx.quantity || 1,
-    },
+    // Quantity column removed as system now only handles single items
     {
       header: "Checkout Date",
       accessorKey: "timestamp" as any,
@@ -159,9 +155,9 @@ export default function CheckedOutPage() {
               <PopoverContent className="w-80">
                 <div className="grid gap-4">
                   <div className="space-y-2">
-                    <h4 className="font-medium leading-none">Transaction Details</h4>
+                    <h4 className="font-medium leading-none">Checkout Details</h4>
                     <p className="text-sm text-muted-foreground">
-                      Full details about this checkout
+                      Full details about this item checkout
                     </p>
                   </div>
                   <div className="grid gap-2">
