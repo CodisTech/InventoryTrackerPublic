@@ -2,13 +2,28 @@ import { pgTable, text, serial, integer, boolean, timestamp, date } from "drizzl
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// User Schema (for admin accounts)
+// Role definitions
+export const USER_ROLES = {
+  STANDARD_USER: "standard",    // Can only check-in/out and view inventory/transactions
+  ADMIN: "admin",               // Can manage inventory, personnel, and view reports
+  SUPER_ADMIN: "super_admin"    // Full system access, can manage other admins
+} as const;
+
+export const userRoleSchema = z.enum([
+  USER_ROLES.STANDARD_USER,
+  USER_ROLES.ADMIN,
+  USER_ROLES.SUPER_ADMIN
+]);
+
+export type UserRole = z.infer<typeof userRoleSchema>;
+
+// User Schema (for accounts with system access)
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   fullName: text("full_name").notNull(),
-  role: text("role").notNull().default("user"),
+  role: text("role").notNull().default(USER_ROLES.STANDARD_USER),
   isAuthorized: boolean("is_authorized").notNull().default(true),
 });
 

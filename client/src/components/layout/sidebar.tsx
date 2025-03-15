@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth, Permission } from "@/hooks/use-auth";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { 
   LogOut, 
@@ -10,29 +10,105 @@ import {
   Users, 
   BarChart3,
   ShoppingBag,
-  ShieldCheck
+  ShieldCheck,
+  ClipboardList,
+  FileText
 } from "lucide-react";
 import codisLogoLight from "../../assets/images/codis-logo-light.svg";
+import { USER_ROLES } from "@shared/schema";
 
 const Sidebar: React.FC = () => {
   const [location] = useLocation();
-  const { user, logoutMutation } = useAuth();
+  const { user, logoutMutation, hasPermission } = useAuth();
 
-  const navItems = [
-    { name: "Dashboard", icon: <LayoutDashboard className="w-5 h-5" />, path: "/" },
-    { name: "Inventory", icon: <Package className="w-5 h-5" />, path: "/inventory" },
-    { name: "Checked Out", icon: <ShoppingBag className="w-5 h-5" />, path: "/checked-out" },
-    { name: "Transactions", icon: <RotateCw className="w-5 h-5" />, path: "/transactions" },
-    { name: "Personnel", icon: <Users className="w-5 h-5" />, path: "/users" },
-    { name: "Reports", icon: <BarChart3 className="w-5 h-5" />, path: "/reports" },
+  // Determine which nav items to show based on user role
+  const isAdmin = user?.role === USER_ROLES.ADMIN || user?.role === USER_ROLES.SUPER_ADMIN;
+  const isSuperAdmin = user?.role === USER_ROLES.SUPER_ADMIN;
+
+  // Define all possible navigation items with required permissions
+  const navigationItems = [
+    {
+      name: "Dashboard",
+      icon: <LayoutDashboard className="w-5 h-5" />,
+      path: "/",
+      permission: Permission.VIEW_INVENTORY,
+      showAlways: true
+    },
+    {
+      name: "Inventory",
+      icon: <Package className="w-5 h-5" />,
+      path: "/inventory",
+      permission: Permission.VIEW_INVENTORY,
+      showAlways: true
+    },
+    {
+      name: "Checked Out",
+      icon: <ShoppingBag className="w-5 h-5" />,
+      path: "/checked-out",
+      permission: Permission.VIEW_CHECKED_OUT,
+      showAlways: false
+    },
+    {
+      name: "Transactions",
+      icon: <RotateCw className="w-5 h-5" />,
+      path: "/transactions",
+      permission: Permission.VIEW_TRANSACTIONS,
+      showAlways: true
+    },
+    {
+      name: "Personnel",
+      icon: <Users className="w-5 h-5" />,
+      path: "/users",
+      permission: Permission.MANAGE_PERSONNEL,
+      showAlways: false,
+      isAdmin: true
+    },
+    {
+      name: "Reports",
+      icon: <BarChart3 className="w-5 h-5" />,
+      path: "/reports",
+      permission: Permission.VIEW_REPORTS,
+      showAlways: false,
+      isAdmin: true
+    }
   ];
-  
+
   // Admin menu items shown only for admin users
-  const adminItems = user?.role === 'admin' || user?.role === 'super_admin' ? [
-    { name: "Admin Management", icon: <ShieldCheck className="w-5 h-5" />, path: "/admin/management" },
-    { name: "Activity Logs", icon: <RotateCw className="w-5 h-5" />, path: "/admin/activity" },
-    { name: "Transfer Ownership", icon: <Users className="w-5 h-5" />, path: "/admin/transfers" }
-  ] : [];
+  const adminNavigationItems = [
+    {
+      name: "Admin Management",
+      icon: <ShieldCheck className="w-5 h-5" />,
+      path: "/admin/management",
+      permission: Permission.MANAGE_ADMINS,
+      isSuperAdmin: true
+    },
+    {
+      name: "Transfer Ownership",
+      icon: <Users className="w-5 h-5" />,
+      path: "/admin/transfers",
+      permission: Permission.TRANSFER_OWNERSHIP,
+      isSuperAdmin: true
+    },
+    {
+      name: "Activity Logs",
+      icon: <FileText className="w-5 h-5" />,
+      path: "/admin/activity",
+      permission: null, // No specific permission, just admin role
+      isAdminOnly: true
+    }
+  ];
+
+  // Filter items based on permissions
+  const navItems = navigationItems.filter(item => 
+    (item.showAlways && hasPermission(item.permission)) || 
+    (item.isAdmin && isAdmin && hasPermission(item.permission))
+  );
+  
+  // Filter admin items
+  const adminItems = adminNavigationItems.filter(item => 
+    (item.isAdminOnly && isAdmin) || 
+    (item.isSuperAdmin && isSuperAdmin && (item.permission ? hasPermission(item.permission) : true))
+  );
 
   const handleLogout = () => {
     logoutMutation.mutate();
@@ -98,12 +174,16 @@ const Sidebar: React.FC = () => {
         <div className="flex items-center">
           <Avatar className="mr-3">
             <AvatarFallback className="bg-primary text-white">
-              A
+              {user?.fullName?.charAt(0) || "U"}
             </AvatarFallback>
           </Avatar>
           <div>
-            <p className="text-sm font-medium text-neutral-900">Administrator</p>
-            <p className="text-xs text-neutral-500">System Admin</p>
+            <p className="text-sm font-medium text-neutral-900">{user?.fullName || "User"}</p>
+            <p className="text-xs text-neutral-500">
+              {user?.role === USER_ROLES.SUPER_ADMIN && "Super Admin"}
+              {user?.role === USER_ROLES.ADMIN && "Administrator"}
+              {user?.role === USER_ROLES.STANDARD_USER && "Standard User"}
+            </p>
           </div>
           <button 
             className="ml-auto hover:bg-neutral-100 p-2 rounded-full transition-colors" 

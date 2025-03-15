@@ -14,8 +14,9 @@ import AdminManagementPage from "@/pages/admin-management-page";
 import AdminActivityPage from "@/pages/admin-activity-page";
 import AdminTransferPage from "@/pages/admin-transfer-page";
 import { ProtectedRoute } from "./lib/protected-route";
-import { AuthProvider } from "./hooks/use-auth";
+import { AuthProvider, Permission } from "./hooks/use-auth";
 import AppLayout from "./components/layout/app-layout";
+import { USER_ROLES } from "@shared/schema";
 
 function Router() {
   return (
@@ -27,7 +28,8 @@ function Router() {
           <AppLayout>
             <DashboardPage />
           </AppLayout>
-        )} 
+        )}
+        requiredPermission={Permission.VIEW_INVENTORY}
       />
       <ProtectedRoute 
         path="/inventory" 
@@ -35,7 +37,8 @@ function Router() {
           <AppLayout>
             <InventoryPage />
           </AppLayout>
-        )} 
+        )}
+        requiredPermission={Permission.VIEW_INVENTORY}
       />
       <ProtectedRoute 
         path="/transactions" 
@@ -43,7 +46,8 @@ function Router() {
           <AppLayout>
             <TransactionsPage />
           </AppLayout>
-        )} 
+        )}
+        requiredPermission={Permission.VIEW_TRANSACTIONS}
       />
       <ProtectedRoute 
         path="/users" 
@@ -51,7 +55,8 @@ function Router() {
           <AppLayout>
             <UsersPage />
           </AppLayout>
-        )} 
+        )}
+        requiredPermission={Permission.MANAGE_PERSONNEL}
       />
       <ProtectedRoute 
         path="/reports" 
@@ -59,7 +64,8 @@ function Router() {
           <AppLayout>
             <ReportsPage />
           </AppLayout>
-        )} 
+        )}
+        requiredPermission={Permission.VIEW_REPORTS}
       />
       <ProtectedRoute 
         path="/checked-out" 
@@ -67,7 +73,8 @@ function Router() {
           <AppLayout>
             <CheckedOutPage />
           </AppLayout>
-        )} 
+        )}
+        requiredPermission={Permission.VIEW_CHECKED_OUT}
       />
       <ProtectedRoute 
         path="/admin/management" 
@@ -75,7 +82,9 @@ function Router() {
           <AppLayout>
             <AdminManagementPage />
           </AppLayout>
-        )} 
+        )}
+        requiredPermission={Permission.MANAGE_ADMINS}
+        requiredRole={USER_ROLES.SUPER_ADMIN}
       />
       <ProtectedRoute 
         path="/admin/activity" 
@@ -83,7 +92,8 @@ function Router() {
           <AppLayout>
             <AdminActivityPage />
           </AppLayout>
-        )} 
+        )}
+        requiredRole={USER_ROLES.ADMIN}
       />
       <ProtectedRoute 
         path="/admin/transfers" 
@@ -91,7 +101,9 @@ function Router() {
           <AppLayout>
             <AdminTransferPage />
           </AppLayout>
-        )} 
+        )}
+        requiredPermission={Permission.TRANSFER_OWNERSHIP}
+        requiredRole={USER_ROLES.SUPER_ADMIN}
       />
       <Route component={NotFound} />
     </Switch>

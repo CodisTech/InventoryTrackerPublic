@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth, Permission } from "@/hooks/use-auth";
 import { DataTable } from "@/components/ui/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,10 +15,15 @@ import { format } from "date-fns";
 
 const InventoryPage: React.FC = () => {
   const { toast } = useToast();
+  const { hasPermission } = useAuth();
   const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
   const [isCheckInOutModalOpen, setIsCheckInOutModalOpen] = useState(false);
   const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<InventoryItemWithCategory | null>(null);
+  
+  // Check permissions
+  const canManageInventory = hasPermission(Permission.MANAGE_INVENTORY);
+  const canCheckInOut = hasPermission(Permission.CHECK_IN_OUT_ITEMS);
 
   const { data: inventoryItems = [], isLoading, error } = useQuery<InventoryItemWithCategory[]>({
     queryKey: ["/api/inventory"],
@@ -112,17 +118,19 @@ const InventoryPage: React.FC = () => {
       accessorKey: "id",
       cell: (item: InventoryItemWithCategory) => (
         <div className="flex space-x-2">
-          <Button 
-            variant={item.checkedOutBy ? "secondary" : "default"} 
-            size="sm" 
-            className={item.checkedOutBy ? "bg-amber-100 text-amber-900 hover:bg-amber-200" : ""}
-            onClick={(e) => {
-              e.stopPropagation();
-              handleViewItem(item);
-            }}
-          >
-            {item.checkedOutBy ? 'Check In' : 'Check Out'}
-          </Button>
+          {canCheckInOut && (
+            <Button 
+              variant={item.checkedOutBy ? "secondary" : "default"} 
+              size="sm" 
+              className={item.checkedOutBy ? "bg-amber-100 text-amber-900 hover:bg-amber-200" : ""}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleViewItem(item);
+              }}
+            >
+              {item.checkedOutBy ? 'Check In' : 'Check Out'}
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={(e) => {
             e.stopPropagation();
             handleViewItem(item);
@@ -178,21 +186,26 @@ const InventoryPage: React.FC = () => {
               <Filter className="mr-2 h-4 w-4" />
               Filter
             </Button>
-            <Button 
-              variant="outline"
-              onClick={() => setIsBulkUploadOpen(true)}
-              className="flex items-center"
-            >
-              <Upload className="mr-2 h-4 w-4" />
-              Bulk Upload
-            </Button>
-            <Button 
-              onClick={() => setIsAddItemModalOpen(true)} 
-              className="flex items-center"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Add Item
-            </Button>
+            
+            {canManageInventory && (
+              <>
+                <Button 
+                  variant="outline"
+                  onClick={() => setIsBulkUploadOpen(true)}
+                  className="flex items-center"
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  Bulk Upload
+                </Button>
+                <Button 
+                  onClick={() => setIsAddItemModalOpen(true)} 
+                  className="flex items-center"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Item
+                </Button>
+              </>
+            )}
           </div>
         </CardHeader>
         <CardContent>
