@@ -260,7 +260,13 @@ const ListModal: React.FC<ListModalProps> = ({
             data={filteredData}
             columns={columns}
             onRowClick={(item) => {
-              if (listType === "personnel") {
+              if (selectMode && listType !== "personnel") {
+                const inventoryItem = item as InventoryItemWithCategory;
+                if (inventoryItem.availableQuantity > 0 && onItemSelect) {
+                  const isSelected = isItemSelected(inventoryItem);
+                  onItemSelect(inventoryItem, !isSelected);
+                }
+              } else if (listType === "personnel") {
                 setSelectedPersonnel(item as Personnel);
               } else {
                 setSelectedItem(item as InventoryItemWithCategory);
@@ -269,7 +275,15 @@ const ListModal: React.FC<ListModalProps> = ({
           />
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="flex justify-between">
+          {selectMode && listType !== "personnel" && selectedItems && selectedItems.length > 0 && (
+            <Button 
+              onClick={() => setIsCheckInOutOpen(true)} 
+              className="bg-primary text-white"
+            >
+              Checkout Selected Items ({selectedItems.length})
+            </Button>
+          )}
           <Button onClick={onClose}>Close</Button>
         </DialogFooter>
       </DialogContent>
@@ -300,8 +314,15 @@ const ListModal: React.FC<ListModalProps> = ({
       {isCheckInOutOpen && (
         <CheckInOutModal
           isOpen={isCheckInOutOpen}
-          onClose={() => setIsCheckInOutOpen(false)}
+          onClose={() => {
+            setIsCheckInOutOpen(false);
+            // If we're in select mode, also close the list modal after a successful checkout
+            if (selectMode) {
+              onClose();
+            }
+          }}
           selectedItem={selectedItem}
+          selectedItems={selectMode ? selectedItems : undefined}
         />
       )}
     </Dialog>

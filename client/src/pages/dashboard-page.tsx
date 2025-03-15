@@ -154,6 +154,16 @@ const DashboardPage: React.FC = () => {
                   <Check className="mr-2 h-4 w-4" />
                   Select Multiple
                 </Button>
+                <Button 
+                  onClick={() => {
+                    setSelectMode(true);
+                    setListModalType("available");
+                  }}
+                  className="mr-2 bg-green-600 hover:bg-green-700 text-white flex items-center"
+                >
+                  <ShoppingBag className="w-4 h-4 mr-2" />
+                  <span>Get Items</span>
+                </Button>
                 <Button onClick={() => setIsAddItemModalOpen(true)}>
                   <Plus className="w-4 h-4 mr-2" />
                   <span>Add Item</span>
@@ -239,10 +249,25 @@ const DashboardPage: React.FC = () => {
       {listModalType && (
         <ListModal
           isOpen={!!listModalType}
-          onClose={() => setListModalType(null)}
+          onClose={() => {
+            setListModalType(null);
+            if (selectMode) {
+              setSelectedItems([]);
+              setSelectMode(false);
+            }
+          }}
           listType={listModalType}
           inventory={inventory}
           personnel={personnel}
+          selectMode={selectMode && listModalType !== "personnel"}
+          selectedItems={selectedItems}
+          onItemSelect={(item, isSelected) => {
+            if (isSelected) {
+              setSelectedItems(prev => [...prev, item]);
+            } else {
+              setSelectedItems(prev => prev.filter(i => i.id !== item.id));
+            }
+          }}
         />
       )}
     </div>
