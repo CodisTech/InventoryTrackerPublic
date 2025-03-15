@@ -17,6 +17,11 @@ import { fromZodError } from "zod-validation-error";
 export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication routes
   const { ensureAuthenticated } = setupAuth(app);
+  
+  // Health check endpoint for Docker (no authentication required)
+  app.get("/api/health", async (_req, res) => {
+    res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
+  });
 
   // Dashboard
   app.get("/api/dashboard/stats", ensureAuthenticated, async (req, res, next) => {
