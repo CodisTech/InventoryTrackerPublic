@@ -132,6 +132,17 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
       printWindow.close();
       return;
     }
+    
+    // Find the selected administrator
+    const administrator = users.find(u => u.id === selectedAdministrator);
+    if (!administrator) {
+      toast({
+        title: "Print warning",
+        description: "Administrator information not available for receipt.",
+        variant: "default",
+      });
+      // Continue printing without admin info
+    }
 
     // Current date and time
     const now = new Date();
@@ -239,9 +250,17 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
             </div>
           ` : ''}
           
+          ${administrator ? `
+            <div class="section">
+              <div class="section-title">Administrator Information</div>
+              <p><strong>Name:</strong> ${administrator.fullName}</p>
+              <p><strong>Role:</strong> ${administrator.role}</p>
+            </div>
+          ` : ''}
+          
           <div class="signatures">
             <div class="signature-line">
-              ${operationType === "check-out" ? "Issued By" : "Received By"} (Inventory Manager)
+              ${operationType === "check-out" ? "Issued By" : "Received By"} (${administrator ? administrator.fullName : "Inventory Manager"})
             </div>
             <div class="signature-line">
               ${operationType === "check-out" ? "Received By" : "Returned By"} (${selectedPerson?.fullName || "User"})
@@ -703,6 +722,29 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
                 </div>
               </div>
             )}
+            
+            {/* Administrator selection */}
+            <div className="space-y-2">
+              <Label htmlFor="admin-select">Administrator</Label>
+              <Select
+                value={selectedAdministrator?.toString() || ""}
+                onValueChange={(value) => setSelectedAdministrator(parseInt(value))}
+              >
+                <SelectTrigger id="admin-select" className="w-full">
+                  <SelectValue placeholder="Select administrator" />
+                </SelectTrigger>
+                <SelectContent>
+                  {users.filter(u => u.role === "admin" || u.role === "super_admin").map((admin) => (
+                    <SelectItem key={admin.id} value={admin.id.toString()}>
+                      {admin.fullName} {admin.id === user?.id && "(You)"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                The administrator is responsible for this {operationType.replace('-', ' ')} operation
+              </p>
+            </div>
             
             <div className="space-y-2">
               <Label htmlFor="notes">Notes</Label>
