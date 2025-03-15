@@ -1,14 +1,19 @@
-import React from "react";
+import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { DataTable } from "@/components/ui/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { format } from "date-fns";
-import { Transaction } from "@shared/schema";
+import { Transaction, Personnel, InventoryItemWithCategory } from "@shared/schema";
+import { Printer } from "lucide-react";
 
 const TransactionsPage: React.FC = () => {
   const { toast } = useToast();
+  const [printModalOpen, setPrintModalOpen] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
   const { data: transactions = [], isLoading, error } = useQuery<Transaction[]>({
     queryKey: ["/api/transactions"],
@@ -24,13 +29,233 @@ const TransactionsPage: React.FC = () => {
     }
   }, [error, toast]);
 
-  const { data: inventory = [] } = useQuery({
+  const { data: inventory = [] } = useQuery<InventoryItemWithCategory[]>({
     queryKey: ["/api/inventory"],
   });
 
+  const { data: personnel = [] } = useQuery<Personnel[]>({
+    queryKey: ["/api/personnel"],
+  });
+
+  // This query is kept for backward compatibility
   const { data: users = [] } = useQuery({
     queryKey: ["/api/users"],
   });
+
+  const handlePrint = (transaction: Transaction) => {
+    setSelectedTransaction(transaction);
+    setPrintModalOpen(true);
+  };
+
+  const printTransaction = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast({
+        title: "Print failed",
+        description: "Unable to open print window. Please check your browser settings.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Find related data
+    const item = inventory.find(i => i.id === selectedTransaction?.itemId);
+    const person = personnel.find(p => p.id === selectedTransaction?.userId);
+
+    // Format dates
+    const checkoutDate = selectedTransaction?.timestamp 
+      ? format(new Date(selectedTransaction.timestamp), "MMMM dd, yyyy")
+      : 'N/A';
+    const checkoutTime = selectedTransaction?.timestamp
+      ? format(new Date(selectedTransaction.timestamp), "h:mm a")
+      : 'N/A';
+    const dueDate = selectedTransaction?.dueDate
+      ? format(new Date(selectedTransaction.dueDate), "MMMM dd, yyyy h:mm a")
+      : 'N/A';
+    const returnDate = selectedTransaction?.returnDate
+      ? format(new Date(selectedTransaction.returnDate), "MMMM dd, yyyy h:mm a")
+      : 'Not returned';
+
+    // Create HTML content for printing
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Transaction TRX-${selectedTransaction?.id.toString().padStart(4, '0')}</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              margin: 40px;
+              line-height: 1.6;
+            }
+            .header {
+              text-align: center;
+              margin-bottom: 30px;
+              border-bottom: 2px solid #333;
+              padding-bottom: 10px;
+            }
+            .transaction-id {
+              font-size: 24px;
+              font-weight: bold;
+              color: #333;
+            }
+            .section {
+              margin-bottom: 20px;
+            }
+            .section-title {
+              font-weight: bold;
+              font-size: 16px;
+              margin-bottom: 5px;
+              border-bottom: 1px solid #ddd;
+            }
+            .row {
+              display: flex;
+              margin-bottom: 5px;
+            }
+            .label {
+              font-weight: bold;
+              width: 180px;
+            }
+            .value {
+              flex: 1;
+            }
+            .signature-area {
+              margin-top: 50px;
+              border-top: 1px dashed #999;
+              padding-top: 20px;
+            }
+            .signature-line {
+              margin-top: 70px;
+              border-top: 1px solid #333;
+              width: 250px;
+              display: inline-block;
+              margin-right: 20px;
+            }
+            .footer {
+              margin-top: 50px;
+              font-size: 11px;
+              color: #666;
+              text-align: center;
+            }
+            @media print {
+              .no-print {
+                display: none;
+              }
+              body {
+                margin: 0;
+                padding: 15px;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>CODIS TECHNOLOGY</h1>
+            <div class="transaction-id">Transaction: TRX-${selectedTransaction?.id.toString().padStart(4, '0')}</div>
+            <div>${selectedTransaction?.type === 'check-out' ? 'EQUIPMENT CHECKOUT' : 'EQUIPMENT CHECK-IN'}</div>
+          </div>
+          
+          <div class="section">
+            <div class="section-title">PERSONNEL INFORMATION</div>
+            <div class="row">
+              <div class="label">First Name:</div>
+              <div class="value">${person?.firstName || 'N/A'}</div>
+            </div>
+            <div class="row">
+              <div class="label">Last Name:</div>
+              <div class="value">${person?.lastName || 'N/A'}</div>
+            </div>
+            <div class="row">
+              <div class="label">Division:</div>
+              <div class="value">${person?.division || 'N/A'}</div>
+            </div>
+            <div class="row">
+              <div class="label">Department:</div>
+              <div class="value">${person?.department || 'N/A'}</div>
+            </div>
+            <div class="row">
+              <div class="label">J-Dial:</div>
+              <div class="value">${person?.jDial || 'N/A'}</div>
+            </div>
+            <div class="row">
+              <div class="label">LCPO:</div>
+              <div class="value">${person?.lcpoName || 'N/A'}</div>
+            </div>
+          </div>
+          
+          <div class="section">
+            <div class="section-title">ITEM INFORMATION</div>
+            <div class="row">
+              <div class="label">Item Code:</div>
+              <div class="value">${item?.itemCode || 'N/A'}</div>
+            </div>
+            <div class="row">
+              <div class="label">Item Name:</div>
+              <div class="value">${item?.name || 'N/A'}</div>
+            </div>
+            <div class="row">
+              <div class="label">Description:</div>
+              <div class="value">${item?.description || 'N/A'}</div>
+            </div>
+            <div class="row">
+              <div class="label">Category:</div>
+              <div class="value">${item?.category?.name || 'N/A'}</div>
+            </div>
+          </div>
+          
+          <div class="section">
+            <div class="section-title">TRANSACTION DETAILS</div>
+            <div class="row">
+              <div class="label">Transaction Type:</div>
+              <div class="value">${selectedTransaction?.type === 'check-out' ? 'Check Out' : 'Check In'}</div>
+            </div>
+            <div class="row">
+              <div class="label">Date:</div>
+              <div class="value">${checkoutDate}</div>
+            </div>
+            <div class="row">
+              <div class="label">Time:</div>
+              <div class="value">${checkoutTime}</div>
+            </div>
+            <div class="row">
+              <div class="label">Due Date:</div>
+              <div class="value">${dueDate}</div>
+            </div>
+            ${selectedTransaction?.type === 'check-out' ? `
+            <div class="row">
+              <div class="label">Return Date:</div>
+              <div class="value">${returnDate}</div>
+            </div>` : ''}
+            <div class="row">
+              <div class="label">Notes:</div>
+              <div class="value">${selectedTransaction?.notes || 'N/A'}</div>
+            </div>
+          </div>
+          
+          <div class="signature-area">
+            <div class="row">
+              <div class="label">Personnel Signature:</div>
+              <div class="signature-line"></div>
+            </div>
+            <div class="row">
+              <div class="label">Administrator Signature:</div>
+              <div class="signature-line"></div>
+            </div>
+          </div>
+          
+          <div class="footer">
+            <p>This document serves as the official record of equipment transaction. Personnel are responsible for all equipment until properly returned.</p>
+            <p>All equipment must be returned within 24 hours of checkout unless a special exception has been granted.</p>
+          </div>
+          
+          <div class="no-print" style="text-align: center; margin-top: 30px;">
+            <button onclick="window.print(); window.close();">Print Document</button>
+          </div>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
 
   const columns = [
     {
@@ -67,11 +292,16 @@ const TransactionsPage: React.FC = () => {
       sortable: true,
     },
     {
-      header: "User",
+      header: "Personnel",
       accessorKey: "userId",
       cell: (transaction: Transaction) => {
+        const person = personnel.find(p => p.id === transaction.userId);
+        if (person) {
+          return `${person.firstName} ${person.lastName}${person.division ? ` (${person.division})` : ''}`;
+        }
+        // Fallback to users table for backward compatibility
         const user = users.find((u: any) => u.id === transaction.userId);
-        return user ? user.fullName : `User #${transaction.userId}`;
+        return user ? user.fullName : `Personnel #${transaction.userId}`;
       },
       sortable: true,
     },
@@ -122,6 +352,20 @@ const TransactionsPage: React.FC = () => {
       },
       sortable: true,
     },
+    {
+      header: "Actions",
+      accessorKey: "actions",
+      cell: (transaction: Transaction) => (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => handlePrint(transaction)}
+          title="Print Transaction Details"
+        >
+          <Printer className="h-4 w-4" />
+        </Button>
+      ),
+    },
   ];
 
   return (
@@ -138,6 +382,29 @@ const TransactionsPage: React.FC = () => {
           />
         </CardContent>
       </Card>
+
+      {/* Print Preview Modal */}
+      <Dialog open={printModalOpen} onOpenChange={setPrintModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Print Transaction</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p>Are you ready to print this transaction record?</p>
+            <p className="text-sm text-muted-foreground mt-2">
+              This will open a printable version in a new window.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPrintModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={printTransaction}>
+              Print Document
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
