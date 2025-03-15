@@ -104,7 +104,7 @@ const TransactionsPage: React.FC = () => {
         
         return (
           <span className={isOverdue ? "text-destructive font-medium" : ""}>
-            {format(dueDate, "MMM dd, yyyy")}
+            {format(dueDate, "MMM dd, yyyy h:mm a")}
             {isOverdue && " (Overdue)"}
           </span>
         );
@@ -117,7 +117,7 @@ const TransactionsPage: React.FC = () => {
       cell: (transaction: Transaction) => {
         if (transaction.type !== "check-out") return "-";
         return transaction.returnDate 
-          ? format(new Date(transaction.returnDate), "MMM dd, yyyy") 
+          ? format(new Date(transaction.returnDate), "MMM dd, yyyy h:mm a") 
           : "Not returned";
       },
       sortable: true,
