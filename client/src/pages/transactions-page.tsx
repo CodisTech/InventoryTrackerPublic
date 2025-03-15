@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { format } from "date-fns";
-import { Transaction, Personnel, InventoryItemWithCategory } from "@shared/schema";
+import { Transaction, Personnel, InventoryItemWithCategory, User } from "@shared/schema";
 import { Printer, Eye, RotateCcw } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import CheckInOutModal from "@/components/inventory/check-in-out-modal";
@@ -347,7 +347,7 @@ const TransactionsPage: React.FC = () => {
           return `${person.firstName} ${person.lastName}${person.division ? ` (${person.division})` : ''}`;
         }
         // Fallback to users table for backward compatibility
-        const user = users.find((u: any) => u.id === transaction.userId);
+        const user = users && users.find((u: User) => u.id === transaction.userId);
         return user ? user.fullName : `Personnel #${transaction.userId}`;
       },
       sortable: true,

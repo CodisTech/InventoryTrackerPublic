@@ -25,7 +25,7 @@ export type Column<T> = {
   sortable?: boolean;
 };
 
-type DataTableProps<T> = {
+type DataTableProps<T extends Record<string, any>> = {
   data: T[];
   columns: Column<T>[];
   searchable?: boolean;
@@ -33,7 +33,7 @@ type DataTableProps<T> = {
   onRowClick?: (item: T) => void;
 };
 
-export function DataTable<T>({ 
+export function DataTable<T extends Record<string, any>>({ 
   data,
   columns,
   searchable = true,
@@ -81,7 +81,7 @@ export function DataTable<T>({
         }
         
         // Handle dates
-        if (aValue instanceof Date && bValue instanceof Date) {
+        if (aValue && bValue && aValue instanceof Date && bValue instanceof Date) {
           return sortDirection === "asc"
             ? aValue.getTime() - bValue.getTime()
             : bValue.getTime() - aValue.getTime();

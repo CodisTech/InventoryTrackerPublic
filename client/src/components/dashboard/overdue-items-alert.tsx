@@ -92,7 +92,7 @@ const OverdueItemsAlert = () => {
                 </Badge>
               </div>
               
-              {userGroup.items.map((transaction) => (
+              {userGroup.items.map((transaction: TransactionWithDetails) => (
                 <div 
                   key={transaction.id} 
                   className="mb-3 p-3 rounded-md bg-white border border-red-100 shadow-sm cursor-pointer hover:bg-red-50"
