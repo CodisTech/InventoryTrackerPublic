@@ -26,7 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Cross2Icon } from "@radix-ui/react-icons";
+import { X } from "lucide-react";
 
 interface EditAdminModalProps {
   isOpen: boolean;
@@ -119,7 +119,7 @@ export default function EditAdminModal({ isOpen, onClose, user }: EditAdminModal
               className="h-8 w-8 p-0 rounded-full"
               onClick={onClose}
             >
-              <Cross2Icon className="h-4 w-4" />
+              <X className="h-4 w-4" />
             </Button>
           </DialogTitle>
         </DialogHeader>

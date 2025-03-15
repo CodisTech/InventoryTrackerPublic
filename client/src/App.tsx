@@ -10,6 +10,9 @@ import TransactionsPage from "@/pages/transactions-page";
 import UsersPage from "@/pages/users-page";
 import ReportsPage from "@/pages/reports-page";
 import CheckedOutPage from "@/pages/checked-out-page";
+import AdminManagementPage from "@/pages/admin-management-page";
+import AdminActivityPage from "@/pages/admin-activity-page";
+import AdminTransferPage from "@/pages/admin-transfer-page";
 import { ProtectedRoute } from "./lib/protected-route";
 import { AuthProvider } from "./hooks/use-auth";
 import AppLayout from "./components/layout/app-layout";
@@ -63,6 +66,30 @@ function Router() {
         component={() => (
           <AppLayout>
             <CheckedOutPage />
+          </AppLayout>
+        )} 
+      />
+      <ProtectedRoute 
+        path="/admin/management" 
+        component={() => (
+          <AppLayout>
+            <AdminManagementPage />
+          </AppLayout>
+        )} 
+      />
+      <ProtectedRoute 
+        path="/admin/activity" 
+        component={() => (
+          <AppLayout>
+            <AdminActivityPage />
+          </AppLayout>
+        )} 
+      />
+      <ProtectedRoute 
+        path="/admin/transfers" 
+        component={() => (
+          <AppLayout>
+            <AdminTransferPage />
           </AppLayout>
         )} 
       />
