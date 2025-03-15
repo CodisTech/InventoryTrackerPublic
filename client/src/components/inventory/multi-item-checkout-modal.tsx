@@ -232,6 +232,11 @@ const MultiItemCheckoutModal: React.FC<MultiItemCheckoutModalProps> = ({
           </div>
           
           <div class="section">
+            <div class="section-title">Administrator Information</div>
+            <p><strong>Administrator:</strong> ${adminUsers.find(admin => admin.id === selectedAdministrator)?.fullName || "Unknown"}</p>
+          </div>
+          
+          <div class="section">
             <div class="section-title">Items Checked Out</div>
             <table>
               <thead>
@@ -267,7 +272,7 @@ const MultiItemCheckoutModal: React.FC<MultiItemCheckoutModalProps> = ({
           
           <div class="signatures">
             <div class="signature-line">
-              Checked Out By (Inventory Manager)
+              Checked Out By (${adminUsers.find(admin => admin.id === selectedAdministrator)?.fullName || "Administrator"})
             </div>
             <div class="signature-line">
               Received By (${selectedPerson?.fullName || "User"})

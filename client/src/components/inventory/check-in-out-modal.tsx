@@ -6,7 +6,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
-import { Search, User as UserIcon, Users as UsersIcon, Minus as MinusIcon, Plus as PlusIcon, Printer } from "lucide-react";
+import { Search, User as UserIcon, Users as UsersIcon, Minus as MinusIcon, Plus as PlusIcon, Printer, UserCheck } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { apiRequest } from "@/lib/queryClient";
@@ -55,6 +55,8 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   // Quantity state for multi-item checkout
   const [quantity, setQuantity] = useState<number>(1);
+  // Administrator selection for tracking
+  const [selectedAdministrator, setSelectedAdministrator] = useState<number | null>(null);
   
   const { data: items = [] } = useQuery<InventoryItemWithCategory[]>({
     queryKey: ["/api/inventory"],
@@ -102,6 +104,8 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
       setNotes("");
       // Reset quantity to 1
       setQuantity(1);
+      // Set current user as default administrator
+      setSelectedAdministrator(user?.id || null);
     }
   }, [isOpen, selectedItem]);
 
@@ -323,11 +327,20 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
       }
     }
     
-    // Create the transaction object with the selected quantity and administrator (current user)
+    // Check if administrator is selected
+    if (!selectedAdministrator) {
+      toast({
+        title: "Please select an administrator",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Create the transaction object with the selected quantity and administrator
     const transaction: any = {
       itemId: parseInt(itemId),
       userId: parseInt(userId),
-      administratorId: user?.id, // Add administrator ID (current user)
+      administratorId: selectedAdministrator, // Use selected administrator
       type: operationType,
       quantity: quantity, // Use the quantity from state
       notes,
