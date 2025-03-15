@@ -9,12 +9,14 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { Search, X, Plus, Minus, User as UserIcon, Users as UsersIcon, Loader2, Printer } from "lucide-react";
+import { Search, X, Plus, Minus, User as UserIcon, Users as UsersIcon, Loader2, Printer, UserCheck } from "lucide-react";
 import { InventoryItemWithCategory, Personnel, Transaction } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
+import { useAuth } from "@/hooks/use-auth";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface MultiItemCheckoutModalProps {
   isOpen: boolean;
@@ -38,9 +40,11 @@ const MultiItemCheckoutModal: React.FC<MultiItemCheckoutModalProps> = ({
   isOpen,
   onClose,
 }) => {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
+  const [selectedAdministrator, setSelectedAdministrator] = useState<number | null>(null);
   const [notes, setNotes] = useState<string>("");
   const [personnelSearchTerm, setPersonnelSearchTerm] = useState<string>("");
   const [itemSearchTerm, setItemSearchTerm] = useState<string>("");
@@ -57,6 +61,16 @@ const MultiItemCheckoutModal: React.FC<MultiItemCheckoutModalProps> = ({
   const { data: personnel = [] } = useQuery<Personnel[]>({
     queryKey: ["/api/personnel"],
   });
+  
+  // Fetch admin users
+  const { data: users = [] } = useQuery({
+    queryKey: ["/api/users"],
+  });
+  
+  // Filter only admin and superadmin users
+  const adminUsers = users.filter(user => 
+    user.role === "admin" || user.role === "superadmin"
+  );
 
   // Reset form when modal is opened/closed
   useEffect(() => {
