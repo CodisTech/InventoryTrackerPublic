@@ -8,7 +8,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Search } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { apiRequest } from "@/lib/queryClient";
@@ -17,6 +17,9 @@ import { InventoryItemWithCategory, User, Personnel } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import { AgreementChecker } from "@/components/users/agreement-checker";
+import { Input } from "@/components/ui/input";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { CommandList } from "cmdk";
 
 interface CheckInOutModalProps {
   isOpen: boolean;
@@ -38,9 +41,11 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
   const [notes, setNotes] = useState<string>("");
   const [showAgreementChecker, setShowAgreementChecker] = useState(false);
   const [pendingTransaction, setPendingTransaction] = useState<any>(null);
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [isPersonnelSelectOpen, setIsPersonnelSelectOpen] = useState(false);
   
-  // New state to control the workflow
-  const [selectedPerson, setSelectedPerson] = useState<User | null>(null);
+  // New state to control the workflow using our Person type
+  const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
 
   const { data: items = [] } = useQuery<InventoryItemWithCategory[]>({
     queryKey: ["/api/inventory"],
@@ -48,6 +53,10 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
 
   const { data: users = [] } = useQuery<User[]>({
     queryKey: ["/api/users"],
+  });
+  
+  const { data: personnel = [] } = useQuery<Personnel[]>({
+    queryKey: ["/api/personnel"],
   });
 
   // Reset form when modal is opened/closed or when selected item changes
@@ -62,10 +71,13 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
           // If we're checking in, find the user who has this item checked out
           if (selectedItem.checkedOutBy) {
             setUserId(selectedItem.checkedOutBy.id.toString());
-            const personWithItem = users.find(u => u.id === selectedItem.checkedOutBy?.id);
-            if (personWithItem) {
-              setSelectedPerson(personWithItem);
-            }
+            // Create a Person object for the user who has the item
+            const personWithItem = {
+              id: selectedItem.checkedOutBy.id,
+              fullName: selectedItem.checkedOutBy.fullName,
+              isPersonnel: false
+            };
+            setSelectedPerson(personWithItem);
           }
         } else {
           setOperationType("check-out");
@@ -82,7 +94,7 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
       
       setNotes("");
     }
-  }, [isOpen, selectedItem, users]);
+  }, [isOpen, selectedItem]);
 
   const transactionMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -177,11 +189,60 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
   // Handle user selection
   const handleUserChange = (userId: string) => {
     setUserId(userId);
-    const selectedUser = users.find(u => u.id.toString() === userId);
-    if (selectedUser) {
-      setSelectedPerson(selectedUser);
+    // Find the person in our combined allPeople array
+    const person = allPeople.find(p => p.id.toString() === userId);
+    if (person) {
+      setSelectedPerson(person);
     }
   };
+  
+  // Handle personnel selection
+  const handlePersonnelSelect = (personnelId: string) => {
+    setUserId(personnelId);
+    const person = allPeople.find(p => p.id.toString() === personnelId);
+    if (person) {
+      setSelectedPerson(person);
+      setIsPersonnelSelectOpen(false);
+    }
+  };
+  
+  // Combined array of users and personnel with a common interface
+  type Person = {
+    id: number;
+    fullName: string;
+    division?: string;
+    department?: string;
+    jDial?: string | null;
+    isPersonnel?: boolean;
+  };
+  
+  const allPeople: Person[] = [
+    ...users.map(u => ({
+      id: u.id,
+      fullName: u.fullName,
+      isPersonnel: false
+    })),
+    ...personnel.map(p => ({
+      id: p.id,
+      fullName: `${p.firstName} ${p.lastName}`,
+      division: p.division,
+      department: p.department,
+      jDial: p.jDial,
+      isPersonnel: true
+    }))
+  ];
+  
+  // Filter people based on search term
+  const filteredPeople = allPeople.filter(person => {
+    if (!searchTerm) return true;
+    const search = searchTerm.toLowerCase();
+    return (
+      person.fullName.toLowerCase().includes(search) ||
+      (person.division && person.division.toLowerCase().includes(search)) ||
+      (person.department && person.department.toLowerCase().includes(search)) ||
+      (person.jDial && person.jDial.toLowerCase().includes(search))
+    );
+  });
 
   // Filter available items for checkout, all items for checkin
   const availableItems = operationType === "check-out"
