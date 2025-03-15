@@ -457,6 +457,17 @@ const OverdueReportsTab: React.FC = () => {
 };
 
 const ReportsPage: React.FC = () => {
+  const [location] = useLocation();
+  
+  // Determine the default tab based on URL parameters
+  const getDefaultTab = () => {
+    if (!location.includes('?')) return "overdueItems";
+    
+    const params = new URLSearchParams(location.split('?')[1]);
+    const tab = params.get('tab');
+    return tab || "overdueItems";
+  };
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
@@ -484,7 +495,7 @@ const ReportsPage: React.FC = () => {
         </div>
       </div>
 
-      <Tabs defaultValue="overdueItems" className="mb-6">
+      <Tabs defaultValue={getDefaultTab()} className="mb-6">
         <TabsList className="w-full">
           <TabsTrigger value="overdueItems" className="relative">
             <span>Overdue Items</span>
