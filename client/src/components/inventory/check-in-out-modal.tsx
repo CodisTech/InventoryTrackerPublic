@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { InventoryItemWithCategory, User, Personnel } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
-import { AgreementChecker } from "@/components/users/agreement-checker";
+// Removed AgreementChecker import as it's no longer needed
 import { Input } from "@/components/ui/input";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 
@@ -38,8 +38,7 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
   const [userId, setUserId] = useState<string>("");
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
   const [notes, setNotes] = useState<string>("");
-  const [showAgreementChecker, setShowAgreementChecker] = useState(false);
-  const [pendingTransaction, setPendingTransaction] = useState<any>(null);
+  // We removed EULA/Privacy agreement verification from checkout process
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [isPersonnelSelectOpen, setIsPersonnelSelectOpen] = useState(false);
   
@@ -153,37 +152,11 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
       notes,
     };
 
-    // For check-in operations, we don't need to verify agreements
-    if (operationType === "check-in") {
-      transactionMutation.mutate(transaction);
-      return;
-    }
-
-    // For check-out operations, we need to verify EULA and Privacy Agreement acceptance
-    // Store the transaction for later use after agreements are confirmed
-    setPendingTransaction(transaction);
-    setShowAgreementChecker(true);
+    // Process the transaction immediately without checking agreements
+    transactionMutation.mutate(transaction);
   };
   
-  // Handle completion of agreement checks
-  const handleAgreementsComplete = () => {
-    // User has accepted all agreements, proceed with the transaction
-    if (pendingTransaction) {
-      transactionMutation.mutate(pendingTransaction);
-      setShowAgreementChecker(false);
-    }
-  };
-  
-  // Handle cancellation of agreement checks
-  const handleAgreementsCancel = () => {
-    toast({
-      title: "Agreements Required",
-      description: "EULA and Privacy Agreement must be accepted before checking out equipment.",
-      variant: "destructive",
-    });
-    setShowAgreementChecker(false);
-    setPendingTransaction(null);
-  };
+  // Agreement functions removed as they're no longer needed
 
   // Handle user selection
   const handleUserChange = (userId: string) => {
@@ -250,15 +223,6 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
 
   return (
     <>
-      {/* Agreement Checker Modal */}
-      {showAgreementChecker && selectedPerson && (
-        <AgreementChecker 
-          personnelId={parseInt(userId)}
-          onComplete={handleAgreementsComplete}
-          onCancel={handleAgreementsCancel}
-        />
-      )}
-
       {/* Main Dialog */}
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="sm:max-w-md">
@@ -426,15 +390,6 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
                 rows={3}
               />
             </div>
-            
-            {operationType === "check-out" && (
-              <div className="space-y-2 rounded-md border p-3 bg-muted/30">
-                <p className="text-xs text-muted-foreground">
-                  <strong>Note:</strong> By checking out equipment, the user must agree to the EULA and Privacy Agreement.
-                  These agreements will be presented for review and acceptance during the checkout process.
-                </p>
-              </div>
-            )}
           </div>
           
           <DialogFooter>
