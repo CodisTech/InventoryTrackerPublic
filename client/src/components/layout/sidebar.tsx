@@ -12,7 +12,8 @@ import {
   ShoppingBag,
   ShieldCheck,
   ClipboardList,
-  FileText
+  FileText,
+  UserCog
 } from "lucide-react";
 import codisLogoLight from "../../assets/images/codis-logo-light.svg";
 import { USER_ROLES } from "@shared/schema";
@@ -76,15 +77,15 @@ const Sidebar: React.FC = () => {
   // Admin menu items shown only for admin users
   const adminNavigationItems = [
     {
-      name: "Admin Management",
-      icon: <ShieldCheck className="w-5 h-5" />,
+      name: "User Management",
+      icon: <Users className="w-5 h-5" />,
       path: "/admin/management",
       permission: Permission.MANAGE_ADMINS,
       isSuperAdmin: true
     },
     {
       name: "Transfer Ownership",
-      icon: <Users className="w-5 h-5" />,
+      icon: <UserCog className="w-5 h-5" />,
       path: "/admin/transfers",
       permission: Permission.TRANSFER_OWNERSHIP,
       isSuperAdmin: true
