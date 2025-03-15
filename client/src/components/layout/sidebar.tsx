@@ -39,17 +39,16 @@ const Sidebar: React.FC = () => {
         <ul className="space-y-1 px-2">
           {navItems.map((item) => (
             <li key={item.name}>
-              <Link href={item.path}>
-                <a
-                  className={`flex items-center px-4 py-3 rounded-md transition-colors ${
-                    location === item.path
-                      ? "bg-primary/10 text-primary font-medium"
-                      : "text-neutral-600 hover:bg-neutral-50 hover:text-primary"
-                  }`}
-                >
-                  <span className="mr-3">{item.icon}</span>
-                  <span>{item.name}</span>
-                </a>
+              <Link 
+                href={item.path}
+                className={`flex items-center px-4 py-3 rounded-md transition-colors ${
+                  location === item.path
+                    ? "bg-primary/10 text-primary font-medium"
+                    : "text-neutral-600 hover:bg-neutral-50 hover:text-primary"
+                }`}
+              >
+                <span className="mr-3">{item.icon}</span>
+                <span>{item.name}</span>
               </Link>
             </li>
           ))}

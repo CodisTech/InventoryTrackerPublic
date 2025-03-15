@@ -8,6 +8,7 @@ import DashboardPage from "@/pages/dashboard-page";
 import InventoryPage from "@/pages/inventory-page";
 import TransactionsPage from "@/pages/transactions-page";
 import UsersPage from "@/pages/users-page";
+import ReportsPage from "@/pages/reports-page";
 import { ProtectedRoute } from "./lib/protected-route";
 import { AuthProvider } from "./hooks/use-auth";
 import AppLayout from "./components/layout/app-layout";
@@ -45,6 +46,14 @@ function Router() {
         component={() => (
           <AppLayout>
             <UsersPage />
+          </AppLayout>
+        )} 
+      />
+      <ProtectedRoute 
+        path="/reports" 
+        component={() => (
+          <AppLayout>
+            <ReportsPage />
           </AppLayout>
         )} 
       />
