@@ -9,7 +9,8 @@ import {
   LogOut, 
   CheckCircle2, 
   Users,
-  ShoppingBag
+  ShoppingBag,
+  PackageOpen
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SummaryCard from "@/components/dashboard/summary-card";
@@ -17,6 +18,7 @@ import RecentActivity from "@/components/dashboard/recent-activity";
 import LowStockItems from "@/components/dashboard/low-stock-items";
 import OverdueItemsAlert from "@/components/dashboard/overdue-items-alert";
 import CheckInOutModal from "@/components/inventory/check-in-out-modal";
+import MultiItemCheckoutModal from "@/components/inventory/multi-item-checkout-modal";
 import AddItemModal from "@/components/inventory/add-item-modal";
 import ListModal from "@/components/dashboard/list-modal";
 import { DashboardStats, InventoryItemWithCategory, Personnel } from "@shared/schema";
@@ -24,6 +26,7 @@ import { DashboardStats, InventoryItemWithCategory, Personnel } from "@shared/sc
 const DashboardPage: React.FC = () => {
   const { toast } = useToast();
   const [isCheckInOutModalOpen, setIsCheckInOutModalOpen] = useState(false);
+  const [isMultiItemCheckoutModalOpen, setIsMultiItemCheckoutModalOpen] = useState(false);
   const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
   const [listModalType, setListModalType] = useState<"total" | "checked-out" | "available" | "personnel" | null>(null);
   const [selectedItem, setSelectedItem] = useState<InventoryItemWithCategory | null>(null);
@@ -76,6 +79,13 @@ const DashboardPage: React.FC = () => {
           >
             <RotateCw className="w-4 h-4 mr-2" />
             <span>Check In/Out</span>
+          </Button>
+          <Button 
+            onClick={() => setIsMultiItemCheckoutModalOpen(true)}
+            className="mr-2 bg-amber-600 hover:bg-amber-700 text-white flex items-center"
+          >
+            <PackageOpen className="w-4 h-4 mr-2" />
+            <span>Multi-Item Checkout</span>
           </Button>
           <Button 
             onClick={() => setListModalType("available")}
@@ -143,6 +153,10 @@ const DashboardPage: React.FC = () => {
           setIsCheckInOutModalOpen(false);
         }}
         selectedItem={selectedItem}
+      />
+      <MultiItemCheckoutModal
+        isOpen={isMultiItemCheckoutModalOpen}
+        onClose={() => setIsMultiItemCheckoutModalOpen(false)}
       />
       <AddItemModal
         isOpen={isAddItemModalOpen}
