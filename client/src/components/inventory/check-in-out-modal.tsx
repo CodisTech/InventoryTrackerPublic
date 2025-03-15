@@ -8,7 +8,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
-import { CalendarIcon, Search } from "lucide-react";
+import { CalendarIcon, Search, User as UserIcon, Users as UsersIcon, Building } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { apiRequest } from "@/lib/queryClient";
@@ -18,8 +18,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import { AgreementChecker } from "@/components/users/agreement-checker";
 import { Input } from "@/components/ui/input";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
-import { CommandList } from "cmdk";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 
 interface CheckInOutModalProps {
   isOpen: boolean;
@@ -293,27 +292,74 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="user-select">Select Person</Label>
-              <Select
-                value={userId}
-                onValueChange={handleUserChange}
-                disabled={!!selectedItem?.checkedOutBy}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a person..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {users.map((user) => (
-                    <SelectItem key={user.id} value={user.id.toString()}>
-                      {user.fullName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="user-select">Search Person</Label>
+              <Popover open={isPersonnelSelectOpen} onOpenChange={setIsPersonnelSelectOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={isPersonnelSelectOpen}
+                    className="w-full justify-between"
+                    disabled={!!selectedItem?.checkedOutBy}
+                  >
+                    {selectedPerson ? selectedPerson.fullName : "Select person..."}
+                    <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[350px] p-0">
+                  <Command>
+                    <CommandInput 
+                      placeholder="Search personnel or users..." 
+                      value={searchTerm}
+                      onValueChange={setSearchTerm}
+                    />
+                    <CommandList>
+                      <CommandEmpty>No person found.</CommandEmpty>
+                      <CommandGroup heading="Personnel">
+                        {filteredPeople.filter(p => p.isPersonnel).map((person) => (
+                          <CommandItem
+                            key={`personnel-${person.id}`}
+                            value={person.id.toString()}
+                            onSelect={handlePersonnelSelect}
+                            className="flex items-center"
+                          >
+                            <div className="mr-2 flex items-center justify-center rounded-full bg-primary/10 p-1">
+                              <UsersIcon className="h-3 w-3" />
+                            </div>
+                            <span>{person.fullName}</span>
+                            {person.division && (
+                              <span className="ml-auto text-xs text-muted-foreground">
+                                {person.division}
+                              </span>
+                            )}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                      <CommandGroup heading="System Users">
+                        {filteredPeople.filter(p => !p.isPersonnel).map((person) => (
+                          <CommandItem
+                            key={`user-${person.id}`}
+                            value={person.id.toString()}
+                            onSelect={handlePersonnelSelect}
+                          >
+                            <div className="mr-2 flex items-center justify-center rounded-full bg-secondary/10 p-1">
+                              <UserIcon className="h-3 w-3" />
+                            </div>
+                            <span>{person.fullName}</span>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
               {selectedPerson && (
                 <p className="text-xs text-muted-foreground">
                   {operationType === "check-out" ? "Checking out to: " : "Checking in from: "}
                   <span className="font-medium">{selectedPerson.fullName}</span>
+                  {selectedPerson.division && (
+                    <span className="ml-1">({selectedPerson.division})</span>
+                  )}
                 </p>
               )}
             </div>
