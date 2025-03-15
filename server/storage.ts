@@ -1236,7 +1236,21 @@ export class DatabaseStorage implements IStorage {
 }
 
 // Choose storage implementation based on environment
-// For now, we'll always use MemStorage as the DatabaseStorage implementation is incomplete
-// When deploying with Docker, we'll set up the database tables with the setup-db.js script
-// but still use the in-memory storage for simplicity
-export const storage = new MemStorage();
+// If DATABASE_URL is provided, use PostgreSQL, otherwise use in-memory storage
+let storageInstance: IStorage;
+
+try {
+  if (process.env.DATABASE_URL) {
+    console.log('Initializing database storage with PostgreSQL');
+    storageInstance = new DatabaseStorage();
+  } else {
+    console.log('DATABASE_URL not provided, using in-memory storage');
+    storageInstance = new MemStorage();
+  }
+} catch (error) {
+  console.error('Error initializing database storage:', error);
+  console.log('Falling back to in-memory storage');
+  storageInstance = new MemStorage();
+}
+
+export const storage = storageInstance;

@@ -12,7 +12,7 @@ services:
       - NODE_ENV=production
       - DATABASE_URL=postgres://postgres:postgres@db:5432/inventory_db
       - SESSION_SECRET=your_secret_key_here
-      - USE_DATABASE=false  # For now, we're using the in-memory storage
+      # Now we're using the database for storage
     depends_on:
       - db
     restart: unless-stopped
