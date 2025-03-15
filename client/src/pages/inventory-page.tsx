@@ -53,7 +53,7 @@ const InventoryPage: React.FC = () => {
               {getCategoryIcon(item.category.name)}
             </span>
           </div>
-          <span>{item.name}</span>
+          <span className="truncate max-w-[200px]">{item.name}</span>
         </div>
       ),
       sortable: true,
