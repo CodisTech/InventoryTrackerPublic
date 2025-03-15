@@ -14,8 +14,13 @@ import {
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
+import { neon, neonConfig } from '@neondatabase/serverless';
+import { drizzle } from 'drizzle-orm/neon-http';
+import { eq, and, or, ilike } from 'drizzle-orm';
+import connectPg from 'connect-pg-simple';
 
 const MemoryStore = createMemoryStore(session);
+const PostgresSessionStore = connectPg(session);
 
 // modify the interface with any CRUD methods
 // you might need
@@ -1111,4 +1116,127 @@ export class MemStorage implements IStorage {
   }
 }
 
+// Database Storage Implementation
+export class DatabaseStorage implements IStorage {
+  private db: any;
+  sessionStore: session.Store;
+  
+  constructor() {
+    // Initialize database connection
+    if (!process.env.DATABASE_URL) {
+      throw new Error('DATABASE_URL environment variable is required');
+    }
+    
+    // Configure neon for serverless usage
+    neonConfig.fetchConnectionCache = true;
+    
+    // Create SQL client
+    const sql = neon(process.env.DATABASE_URL);
+    
+    // Initialize drizzle instance
+    this.db = drizzle(sql);
+    
+    // Initialize session store
+    this.sessionStore = new PostgresSessionStore({
+      conObject: {
+        connectionString: process.env.DATABASE_URL,
+      },
+      createTableIfMissing: true
+    });
+  }
+  
+  // We'll need to implement all IStorage methods here for PostgreSQL
+  // For example:
+  
+  // User methods
+  async getUser(id: number): Promise<User | undefined> {
+    const result = await this.db.select().from(users).where(eq(users.id, id)).limit(1);
+    return result[0];
+  }
+  
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const result = await this.db.select().from(users).where(eq(users.username, username)).limit(1);
+    return result[0];
+  }
+  
+  async createUser(user: InsertUser): Promise<User> {
+    const result = await this.db.insert(users).values(user).returning();
+    return result[0];
+  }
+  
+  async getAllUsers(): Promise<User[]> {
+    return this.db.select().from(users);
+  }
+  
+  async updateUser(id: number, user: Partial<InsertUser>): Promise<User | undefined> {
+    const result = await this.db.update(users).set(user).where(eq(users.id, id)).returning();
+    return result[0];
+  }
+  
+  // Personnel methods
+  async getPersonnel(id: number): Promise<Personnel | undefined> {
+    const result = await this.db.select().from(personnel).where(eq(personnel.id, id)).limit(1);
+    return result[0];
+  }
+  
+  async getAllPersonnel(): Promise<Personnel[]> {
+    return this.db.select().from(personnel);
+  }
+  
+  async createPersonnel(person: InsertPersonnel): Promise<Personnel> {
+    const now = new Date();
+    const result = await this.db.insert(personnel).values({
+      ...person,
+      dateAdded: now.toISOString(),
+      isActive: person.isActive !== undefined ? person.isActive : true
+    }).returning();
+    return result[0];
+  }
+  
+  async updatePersonnel(id: number, person: Partial<InsertPersonnel>): Promise<Personnel | undefined> {
+    const result = await this.db.update(personnel).set(person).where(eq(personnel.id, id)).returning();
+    return result[0];
+  }
+  
+  async deletePersonnel(id: number): Promise<boolean> {
+    const result = await this.db.update(personnel)
+      .set({ isActive: false })
+      .where(eq(personnel.id, id))
+      .returning();
+    return result.length > 0;
+  }
+  
+  async searchPersonnel(query: string): Promise<Personnel[]> {
+    const searchTerm = `%${query.toLowerCase()}%`;
+    
+    return this.db.select()
+      .from(personnel)
+      .where(
+        and(
+          eq(personnel.isActive, true),
+          or(
+            ilike(personnel.firstName, searchTerm),
+            ilike(personnel.lastName, searchTerm),
+            ilike(personnel.division, searchTerm),
+            ilike(personnel.department, searchTerm),
+            ilike(personnel.rank, searchTerm),
+            ilike(personnel.jDial, searchTerm),
+            ilike(personnel.lcpoName, searchTerm)
+          )
+        )
+      );
+  }
+  
+  // The rest of the required methods would be implemented similarly,
+  // translating the in-memory storage operations to SQL queries.
+  // This is a partial implementation for illustration purposes.
+  
+  // For a full implementation, each method in IStorage would need to be
+  // implemented with appropriate SQL queries.
+}
+
+// Choose storage implementation based on environment
+// For now, we'll always use MemStorage as the DatabaseStorage implementation is incomplete
+// When deploying with Docker, we'll set up the database tables with the setup-db.js script
+// but still use the in-memory storage for simplicity
 export const storage = new MemStorage();

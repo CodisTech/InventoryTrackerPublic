@@ -5,18 +5,29 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    container_name: inventory-app
     ports:
       - "5000:5000"
     environment:
       - NODE_ENV=production
       - DATABASE_URL=postgres://postgres:postgres@db:5432/inventory_db
       - SESSION_SECRET=your_secret_key_here
+      - USE_DATABASE=false  # For now, we're using the in-memory storage
     depends_on:
       - db
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    networks:
+      - inventory-network
 
   db:
     image: postgres:15-alpine
+    container_name: inventory-db
     ports:
       - "5432:5432"
     environment:
@@ -26,6 +37,19 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - inventory-network
     
 volumes:
   postgres_data:
+    name: inventory-db-data
+
+networks:
+  inventory-network:
+    name: inventory-network
