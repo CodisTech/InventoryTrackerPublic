@@ -41,7 +41,8 @@ const MultiItemCheckoutModal: React.FC<MultiItemCheckoutModalProps> = ({
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
   const [notes, setNotes] = useState<string>("");
-  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [personnelSearchTerm, setPersonnelSearchTerm] = useState<string>("");
+  const [itemSearchTerm, setItemSearchTerm] = useState<string>("");
   const [isPersonnelSelectOpen, setIsPersonnelSelectOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -60,7 +61,8 @@ const MultiItemCheckoutModal: React.FC<MultiItemCheckoutModalProps> = ({
       setSelectedPerson(null);
       setSelectedItems([]);
       setNotes("");
-      setSearchTerm("");
+      setPersonnelSearchTerm("");
+      setItemSearchTerm("");
     }
   }, [isOpen]);
 
@@ -75,9 +77,9 @@ const MultiItemCheckoutModal: React.FC<MultiItemCheckoutModalProps> = ({
 
   // Filter people based on search term
   const filteredPeople = allPeople.filter(person => {
-    if (!searchTerm) return true;
+    if (!personnelSearchTerm) return true;
     
-    const search = searchTerm.toLowerCase();
+    const search = personnelSearchTerm.toLowerCase();
     return (
       person.fullName.toLowerCase().includes(search) ||
       (person.division && person.division.toLowerCase().includes(search)) ||
@@ -183,8 +185,20 @@ const MultiItemCheckoutModal: React.FC<MultiItemCheckoutModalProps> = ({
     }
   };
 
-  // Filter only available items
-  const availableItems = items.filter(item => item.availableQuantity > 0);
+  // Filter only available items and apply search term
+  const filteredItems = items
+    .filter(item => item.availableQuantity > 0)
+    .filter(item => {
+      if (!itemSearchTerm) return true;
+      
+      const search = itemSearchTerm.toLowerCase();
+      return (
+        item.name.toLowerCase().includes(search) ||
+        item.itemCode.toLowerCase().includes(search) ||
+        item.category.name.toLowerCase().includes(search) ||
+        item.notes?.toLowerCase().includes(search)
+      );
+    });
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -213,8 +227,8 @@ const MultiItemCheckoutModal: React.FC<MultiItemCheckoutModalProps> = ({
                 <Command>
                   <CommandInput 
                     placeholder="Search personnel by name, division, or department..." 
-                    value={searchTerm}
-                    onValueChange={setSearchTerm}
+                    value={personnelSearchTerm}
+                    onValueChange={setPersonnelSearchTerm}
                   />
                   <CommandList>
                     <CommandEmpty>No person found.</CommandEmpty>
@@ -265,16 +279,41 @@ const MultiItemCheckoutModal: React.FC<MultiItemCheckoutModalProps> = ({
           
           {/* Item Selection */}
           <div className="space-y-2">
-            <Label htmlFor="items-select">Select Items</Label>
+            <div className="flex justify-between items-center">
+              <Label htmlFor="items-select">Select Items</Label>
+              <div className="text-xs text-muted-foreground">
+                {filteredItems.length} of {items.filter(item => item.availableQuantity > 0).length} available items
+              </div>
+            </div>
             
-            {availableItems.length === 0 ? (
+            <div className="relative mb-2">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search items by name, code, or category..."
+                className="pl-8"
+                value={itemSearchTerm}
+                onChange={(e) => setItemSearchTerm(e.target.value)}
+              />
+              {itemSearchTerm && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-1 top-1 h-7 w-7"
+                  onClick={() => setItemSearchTerm("")}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
+            
+            {filteredItems.length === 0 ? (
               <p className="text-xs text-destructive">
-                No items available for checkout
+                {itemSearchTerm ? "No items match your search" : "No items available for checkout"}
               </p>
             ) : (
               <ScrollArea className="h-[250px] border rounded-md p-2">
                 <div className="space-y-2">
-                  {availableItems.map((item) => {
+                  {filteredItems.map((item) => {
                     const isSelected = selectedItems.some(selectedItem => selectedItem.id === item.id);
                     const selectedItem = selectedItems.find(selectedItem => selectedItem.id === item.id);
                     
