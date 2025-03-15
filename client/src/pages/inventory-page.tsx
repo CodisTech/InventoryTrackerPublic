@@ -4,10 +4,11 @@ import { useToast } from "@/hooks/use-toast";
 import { DataTable } from "@/components/ui/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Filter, Plus } from "lucide-react";
+import { Filter, Plus, Upload } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import AddItemModal from "@/components/inventory/add-item-modal";
 import CheckInOutModal from "@/components/inventory/check-in-out-modal";
+import { BulkUploadModal } from "@/components/users/bulk-upload-modal";
 import { InventoryItemWithCategory } from "@shared/schema";
 import { format } from "date-fns";
 
@@ -15,6 +16,7 @@ const InventoryPage: React.FC = () => {
   const { toast } = useToast();
   const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
   const [isCheckInOutModalOpen, setIsCheckInOutModalOpen] = useState(false);
+  const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<InventoryItemWithCategory | null>(null);
 
   const { data: inventoryItems = [], isLoading, error } = useQuery<InventoryItemWithCategory[]>({
@@ -177,6 +179,14 @@ const InventoryPage: React.FC = () => {
               Filter
             </Button>
             <Button 
+              variant="outline"
+              onClick={() => setIsBulkUploadOpen(true)}
+              className="flex items-center"
+            >
+              <Upload className="mr-2 h-4 w-4" />
+              Bulk Upload
+            </Button>
+            <Button 
               onClick={() => setIsAddItemModalOpen(true)} 
               className="flex items-center"
             >
@@ -207,6 +217,13 @@ const InventoryPage: React.FC = () => {
           setSelectedItem(null); // Clear selected item when closing modal
         }}
         selectedItem={selectedItem}
+      />
+      
+      {/* Bulk Upload Modal */}
+      <BulkUploadModal
+        isOpen={isBulkUploadOpen}
+        onClose={() => setIsBulkUploadOpen(false)}
+        entityType="inventory"
       />
     </div>
   );

@@ -192,10 +192,20 @@ const UsersPage: React.FC = () => {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-2xl font-medium text-neutral-900">Personnel Management</CardTitle>
-          <Button onClick={() => setIsAddModalOpen(true)} className="flex items-center">
-            <Plus className="mr-2 h-4 w-4" />
-            Add Personnel
-          </Button>
+          <div className="flex space-x-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setIsBulkUploadOpen(true)} 
+              className="flex items-center"
+            >
+              <Upload className="mr-2 h-4 w-4" />
+              Bulk Upload
+            </Button>
+            <Button onClick={() => setIsAddModalOpen(true)} className="flex items-center">
+              <Plus className="mr-2 h-4 w-4" />
+              Add Personnel
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="mb-4 relative">
@@ -253,6 +263,13 @@ const UsersPage: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Bulk Upload Modal */}
+      <BulkUploadModal
+        isOpen={isBulkUploadOpen}
+        onClose={() => setIsBulkUploadOpen(false)}
+        entityType="personnel"
+      />
     </div>
   );
 };

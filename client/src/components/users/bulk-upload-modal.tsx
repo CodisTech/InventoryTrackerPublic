@@ -30,12 +30,13 @@ export function BulkUploadModal({ isOpen, onClose, entityType }: BulkUploadModal
         ? '/api/personnel/bulk-upload' 
         : '/api/inventory/bulk-upload';
         
-      return apiRequest(endpoint, {
-        method: 'POST',
+      const response = await apiRequest("POST", endpoint, {
         body: formData,
         // Don't set Content-Type header when using FormData
         headers: {}
       });
+      
+      return response.json();
     },
     onSuccess: (data) => {
       setUploadResults(data);
