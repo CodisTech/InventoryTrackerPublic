@@ -105,7 +105,7 @@ const InventoryPage: React.FC = () => {
     // Selection column (conditional on selectMode)
     ...(selectMode ? [
       {
-        header: () => <div className="text-center">Select</div>,
+        header: "Select",
         accessorKey: "selected",
         cell: (item: InventoryItemWithCategory) => {
           const isSelected = selectedItems.some(i => i.id === item.id);
@@ -329,6 +329,15 @@ const InventoryPage: React.FC = () => {
           setSelectedItem(null); // Clear selected item when closing modal
         }}
         selectedItem={selectedItem}
+      />
+      <MultiItemCheckoutModal
+        isOpen={isMultiCheckoutModalOpen}
+        onClose={() => {
+          setIsMultiCheckoutModalOpen(false);
+          // Only exit select mode if explicitly requested by user
+          // to allow for multiple batch checkouts
+        }}
+        selectedItems={selectedItems}
       />
     </div>
   );
