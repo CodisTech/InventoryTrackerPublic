@@ -143,14 +143,18 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
       return;
     }
 
-    const transaction = {
+    const transaction: any = {
       itemId: parseInt(itemId),
       userId: parseInt(userId),
       type: operationType,
       quantity: 1,
-      dueDate: operationType === "check-out" ? dueDate?.toISOString() : undefined,
       notes,
     };
+
+    // Only include dueDate for check-out operations to avoid validation errors
+    if (operationType === "check-out" && dueDate) {
+      transaction.dueDate = dueDate.toISOString();
+    }
 
     // Process the transaction immediately without checking agreements
     transactionMutation.mutate(transaction);

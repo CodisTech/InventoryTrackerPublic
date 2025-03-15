@@ -169,6 +169,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         quantity: req.body.quantity || 1
       };
       
+      // Only require dueDate for check-out transactions
+      if (dataWithDefaults.type === 'check-in' && dataWithDefaults.dueDate === undefined) {
+        // No issue - dueDate is optional for check-in
+      } else if (dataWithDefaults.type === 'check-out' && !dataWithDefaults.dueDate) {
+        return res.status(400).json({ 
+          message: "Due date is required for check-out transactions"
+        });
+      }
+      
       const validatedData = insertTransactionSchema.parse(dataWithDefaults);
       
       // Check if item exists
