@@ -886,7 +886,13 @@ export class MemStorage implements IStorage {
           }
         };
         
-        recentActivity.push({
+        // Get the administrator info if available
+        let admin = null;
+        if (transaction.administratorId) {
+          admin = await this.getUser(transaction.administratorId);
+        }
+        
+        const transactionWithDetails: TransactionWithDetails = {
           ...transaction,
           item: itemWithCategory,
           user: {
@@ -899,7 +905,21 @@ export class MemStorage implements IStorage {
           },
           // Add personnel data (which is the same as user in our case)
           person: user
-        });
+        };
+        
+        // Add administrator if available
+        if (admin) {
+          transactionWithDetails.administrator = {
+            id: admin.id,
+            username: admin.username,
+            fullName: admin.fullName,
+            role: admin.role,
+            isAuthorized: admin.isAuthorized,
+            password: '' // Don't include password
+          };
+        }
+        
+        recentActivity.push(transactionWithDetails);
         
         console.log(`[DASHBOARD DEBUG] Added recent transaction detail for ID ${transaction.id}`);
       } else {

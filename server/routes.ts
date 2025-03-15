@@ -185,7 +185,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Ensure quantity is always set with a default value if not provided
       const dataWithDefaults = {
         ...req.body,
-        quantity: req.body.quantity || 1
+        quantity: req.body.quantity || 1,
+        // Add the authenticated user as the administrator for this transaction
+        administratorId: req.user?.id
       };
       
       // Transaction dates:
@@ -227,6 +229,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           available: item.availableQuantity
         });
       }
+      
+      // Log the administrator info for debugging
+      console.log(`Transaction created by administrator: ${req.user?.username} (ID: ${req.user?.id})`);
       
       const transaction = await storage.createTransaction(validatedData);
       res.status(201).json(transaction);
