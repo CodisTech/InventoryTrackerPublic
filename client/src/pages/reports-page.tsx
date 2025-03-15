@@ -542,34 +542,7 @@ const ReportsPage: React.FC = () => {
           </div>
         </TabsContent>
         <TabsContent value="transactions" className="pt-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Transaction Activity</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Alert>
-                  <Info className="h-4 w-4" />
-                  <AlertDescription>
-                    This section will display transaction activity charts and statistics.
-                  </AlertDescription>
-                </Alert>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>Checkout Duration</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Alert>
-                  <Info className="h-4 w-4" />
-                  <AlertDescription>
-                    This section will display checkout duration analysis.
-                  </AlertDescription>
-                </Alert>
-              </CardContent>
-            </Card>
-          </div>
+          <TransactionReportsTab />
         </TabsContent>
         <TabsContent value="personnel" className="pt-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
