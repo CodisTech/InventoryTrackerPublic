@@ -75,7 +75,9 @@ const ListModal: React.FC<ListModalProps> = ({
       // Filter inventory items based on list type
       let filteredItems = inventory;
       if (listType === "checked-out") {
-        filteredItems = inventory.filter(item => item.checkedOutBy !== null);
+        // Show items where available quantity is less than total quantity
+        // This includes partially checked out items
+        filteredItems = inventory.filter(item => item.availableQuantity < item.totalQuantity);
       } else if (listType === "available") {
         filteredItems = inventory.filter(item => item.availableQuantity > 0);
       }
@@ -150,6 +152,12 @@ const ListModal: React.FC<ListModalProps> = ({
         if (row.availableQuantity === 0) {
           return <span className="text-destructive font-medium">Out of Stock</span>;
         }
+        if (row.availableQuantity < row.totalQuantity) {
+          if (row.availableQuantity < (row.minStockLevel || 3)) {
+            return <span className="text-amber-500 font-medium">Partially Checked Out (Low Stock)</span>;
+          }
+          return <span className="text-blue-500 font-medium">Partially Checked Out</span>;
+        }
         if (row.availableQuantity < (row.minStockLevel || 3)) {
           return <span className="text-amber-500 font-medium">Low Stock</span>;
         }
@@ -159,7 +167,20 @@ const ListModal: React.FC<ListModalProps> = ({
     {
       header: "Checked Out By",
       accessorKey: "checkedOutBy",
-      cell: (row: InventoryItemWithCategory) => row.checkedOutBy ? row.checkedOutBy.fullName : "-",
+      cell: (row: InventoryItemWithCategory) => {
+        if (!row.checkedOutBy) return "-";
+        const quantityCheckedOut = row.totalQuantity - row.availableQuantity;
+        return (
+          <div className="flex flex-col">
+            <span className="font-medium">{row.checkedOutBy.fullName}</span>
+            {quantityCheckedOut > 1 && (
+              <span className="text-sm text-muted-foreground">
+                Qty: {quantityCheckedOut}
+              </span>
+            )}
+          </div>
+        );
+      },
     },
   ];
 
