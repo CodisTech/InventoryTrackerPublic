@@ -638,22 +638,29 @@ export class MemStorage implements IStorage {
     const allTransactions = await this.getAllTransactions();
     const result: TransactionWithDetails[] = [];
     
+    console.log(`[TRANSACTION DEBUG] Found ${allTransactions.length} transactions to process`);
+    
     for (const transaction of allTransactions) {
-      const item = await this.getInventoryItemWithCategory(transaction.itemId);
-      const user = this.personnelDB.get(transaction.userId);
+      console.log(`[TRANSACTION DEBUG] Processing transaction ID ${transaction.id}, itemId: ${transaction.itemId}, userId: ${transaction.userId}`);
+      
+      // Retrieve the item with its category
+      const item = await this.getInventoryItem(transaction.itemId);
+      
+      // For users, we need to look in the personnel database since we use personnel as users
+      const user = await this.getPersonnel(transaction.userId);
       
       if (item && user) {
+        // Get the category for this item
+        const category = await this.getCategoryById(item.categoryId);
+        
         // Add in category information to make it a complete item with category
         const itemWithCategory = {
           ...item,
           category: {
             id: item.categoryId,
-            name: (await this.getCategoryById(item.categoryId))?.name || "Unknown"
+            name: category?.name || "Unknown"
           }
         };
-        
-        // Get personnel data for the transaction
-        const personnel = await this.getPersonnel(transaction.userId);
         
         result.push({
           ...transaction,
@@ -666,21 +673,18 @@ export class MemStorage implements IStorage {
             isAuthorized: true,
             password: '' // We don't actually store passwords for personnel
           },
-          // Add personnel data if available
-          person: personnel || undefined
+          // Add personnel data (which is the same as user in our case)
+          person: user
         });
 
         // Log for debugging
         console.log(`[TRANSACTION DEBUG] Added transaction detail for ID ${transaction.id}`);
         console.log(`[TRANSACTION DEBUG] Item: ${item.name}, User: ${user.firstName} ${user.lastName}`);
-        if (personnel) {
-          console.log(`[TRANSACTION DEBUG] Personnel: ${personnel.firstName} ${personnel.lastName}, Division: ${personnel.division || 'N/A'}`);
-        }
       } else {
         console.log(`[TRANSACTION DEBUG] Skipped transaction ID ${transaction.id}, item or user not found`);
         console.log(`[TRANSACTION DEBUG] Item ID: ${transaction.itemId}, User ID: ${transaction.userId}`);
         if (!item) console.log(`[TRANSACTION DEBUG] Item not found with ID ${transaction.itemId}`);
-        if (!user) console.log(`[TRANSACTION DEBUG] User not found with ID ${transaction.userId}`);
+        if (!user) console.log(`[TRANSACTION DEBUG] User (Personnel) not found with ID ${transaction.userId}`);
       }
     }
     
@@ -709,24 +713,31 @@ export class MemStorage implements IStorage {
     const overdueTransactions = Array.from(this.transactionsDB.values())
       .filter(t => t.isOverdue && !t.returnDate);
     
+    console.log(`[TRANSACTION DEBUG] Found ${overdueTransactions.length} overdue transactions to process`);
+    
     // Add item and user details
     const result: TransactionWithDetails[] = [];
     for (const transaction of overdueTransactions) {
-      const item = await this.getInventoryItemWithCategory(transaction.itemId);
-      const user = this.personnelDB.get(transaction.userId);
+      console.log(`[TRANSACTION DEBUG] Processing overdue transaction ID ${transaction.id}, itemId: ${transaction.itemId}, userId: ${transaction.userId}`);
+      
+      // Retrieve the item with its category
+      const item = await this.getInventoryItem(transaction.itemId);
+      
+      // For users, we need to look in the personnel database since we use personnel as users
+      const user = await this.getPersonnel(transaction.userId);
       
       if (item && user) {
+        // Get the category for this item
+        const category = await this.getCategoryById(item.categoryId);
+        
         // Add in category information
         const itemWithCategory = {
           ...item,
           category: {
             id: item.categoryId,
-            name: (await this.getCategoryById(item.categoryId))?.name || "Unknown"
+            name: category?.name || "Unknown"
           }
         };
-        
-        // Get personnel data for the transaction
-        const personnel = await this.getPersonnel(transaction.userId);
         
         result.push({
           ...transaction,
@@ -739,9 +750,15 @@ export class MemStorage implements IStorage {
             isAuthorized: true,
             password: '' // We don't actually store passwords for personnel
           },
-          // Add personnel data if available
-          person: personnel || undefined
+          // Add personnel data (which is the same as user in our case)
+          person: user
         });
+        
+        console.log(`[TRANSACTION DEBUG] Added overdue transaction detail for ID ${transaction.id}`);
+      } else {
+        console.log(`[TRANSACTION DEBUG] Skipped overdue transaction ID ${transaction.id}, item or user not found`);
+        if (!item) console.log(`[TRANSACTION DEBUG] Item not found with ID ${transaction.itemId}`);
+        if (!user) console.log(`[TRANSACTION DEBUG] User (Personnel) not found with ID ${transaction.userId}`);
       }
     }
     
@@ -785,23 +802,30 @@ export class MemStorage implements IStorage {
       })
       .slice(0, 5);
     
+    console.log(`[DASHBOARD DEBUG] Found ${sortedTransactions.length} recent transactions to process`);
+    
     const recentActivity: TransactionWithDetails[] = [];
     for (const transaction of sortedTransactions) {
-      const item = await this.getInventoryItemWithCategory(transaction.itemId);
-      const user = this.personnelDB.get(transaction.userId);
+      console.log(`[DASHBOARD DEBUG] Processing recent transaction ID ${transaction.id}, itemId: ${transaction.itemId}, userId: ${transaction.userId}`);
+      
+      // Retrieve the item with its category
+      const item = await this.getInventoryItem(transaction.itemId);
+      
+      // For users, we need to look in the personnel database since we use personnel as users
+      const user = await this.getPersonnel(transaction.userId);
       
       if (item && user) {
+        // Get the category for this item
+        const category = await this.getCategoryById(item.categoryId);
+        
         // Add in category information
         const itemWithCategory = {
           ...item,
           category: {
             id: item.categoryId,
-            name: (await this.getCategoryById(item.categoryId))?.name || "Unknown"
+            name: category?.name || "Unknown"
           }
         };
-        
-        // Get personnel data for the transaction
-        const personnel = await this.getPersonnel(transaction.userId);
         
         recentActivity.push({
           ...transaction,
@@ -814,9 +838,15 @@ export class MemStorage implements IStorage {
             isAuthorized: true,
             password: '' // We don't actually store passwords for personnel
           },
-          // Add personnel data if available
-          person: personnel || undefined
+          // Add personnel data (which is the same as user in our case)
+          person: user
         });
+        
+        console.log(`[DASHBOARD DEBUG] Added recent transaction detail for ID ${transaction.id}`);
+      } else {
+        console.log(`[DASHBOARD DEBUG] Skipped recent transaction ID ${transaction.id}, item or user not found`);
+        if (!item) console.log(`[DASHBOARD DEBUG] Item not found with ID ${transaction.itemId}`);
+        if (!user) console.log(`[DASHBOARD DEBUG] User (Personnel) not found with ID ${transaction.userId}`);
       }
     }
     
