@@ -8,6 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import codisLogo from "../assets/images/codis-logo.svg";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -52,7 +53,7 @@ export default function AuthPage() {
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <div className="flex justify-center mb-3">
-              <span className="material-icons text-5xl text-primary">inventory_2</span>
+              <img src={codisLogo} alt="Codis Technology" className="w-48 h-48" />
             </div>
             <h1 className="text-2xl font-bold">Inventory Management System</h1>
             <p className="text-neutral-500 mt-2">
@@ -115,7 +116,7 @@ export default function AuthPage() {
                   
                   <Button 
                     type="submit" 
-                    className="w-full" 
+                    className="w-full bg-black hover:bg-black/80 text-white" 
                     disabled={loginMutation.isPending}
                   >
                     {loginMutation.isPending ? "Logging in..." : "Login as Administrator"}
@@ -133,37 +134,55 @@ export default function AuthPage() {
       </div>
 
       {/* Right side: Hero content */}
-      <div className="hidden lg:flex flex-1 bg-primary p-12 text-white items-center justify-center">
+      <div className="hidden lg:flex flex-1 bg-black p-12 text-white items-center justify-center">
         <div className="max-w-md">
-          <h2 className="text-3xl font-bold mb-6">
-            Streamline Your Inventory Management
+          <div className="mb-6 flex justify-center">
+            <img src={codisLogo} alt="Codis Technology" className="w-52 h-52" />
+          </div>
+          <h2 className="text-3xl font-bold mb-6 text-center">
+            Codis Technology Inventory Management
           </h2>
           <ul className="space-y-4">
             <li className="flex items-start">
-              <span className="material-icons mr-3 mt-0.5">check_circle</span>
+              <svg className="h-5 w-5 mr-3 mt-0.5 text-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              </svg>
               <span>Track items with real-time availability</span>
             </li>
             <li className="flex items-start">
-              <span className="material-icons mr-3 mt-0.5">check_circle</span>
+              <svg className="h-5 w-5 mr-3 mt-0.5 text-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              </svg>
               <span>Centrally manage item check-ins and check-outs</span>
             </li>
             <li className="flex items-start">
-              <span className="material-icons mr-3 mt-0.5">check_circle</span>
+              <svg className="h-5 w-5 mr-3 mt-0.5 text-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              </svg>
               <span>Get alerts for low stock items</span>
             </li>
             <li className="flex items-start">
-              <span className="material-icons mr-3 mt-0.5">check_circle</span>
+              <svg className="h-5 w-5 mr-3 mt-0.5 text-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              </svg>
               <span>Assign items to personnel with easy tracking</span>
             </li>
             <li className="flex items-start">
-              <span className="material-icons mr-3 mt-0.5">check_circle</span>
+              <svg className="h-5 w-5 mr-3 mt-0.5 text-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              </svg>
               <span>Complete transaction history for all inventory items</span>
             </li>
           </ul>
           <div className="mt-8 text-center">
-            <div className="inline-flex p-4 rounded-full bg-white/10">
-              <span className="material-icons text-6xl">inventory_2</span>
-            </div>
+            <p className="text-sm text-white/70">
+              © Codis Technology 2020-{new Date().getFullYear()}
+            </p>
           </div>
         </div>
       </div>

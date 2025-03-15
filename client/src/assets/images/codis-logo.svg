@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 500 500">
+  <defs>
+    <radialGradient id="dots-gradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+      <stop offset="0%" style="stop-color:#000000;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#000000;stop-opacity:1" />
+    </radialGradient>
+  </defs>
+  <rect width="100%" height="100%" fill="#000000" />
+  <g transform="translate(250, 180)">
+    <!-- Dot pattern circles -->
+    <circle cx="0" cy="0" r="150" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-dasharray="2 5" />
+    <circle cx="0" cy="0" r="140" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-dasharray="2 5" />
+    <circle cx="0" cy="0" r="130" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-dasharray="2 5" />
+    <circle cx="0" cy="0" r="120" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-dasharray="2 5" />
+    <circle cx="0" cy="0" r="110" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-dasharray="2 5" />
+    <circle cx="0" cy="0" r="100" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-dasharray="2 5" />
+    <circle cx="0" cy="0" r="90" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-dasharray="2 5" />
+    <circle cx="0" cy="0" r="80" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-dasharray="2 5" />
+    <circle cx="0" cy="0" r="70" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-dasharray="2 5" />
+    <circle cx="0" cy="0" r="60" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-dasharray="2 5" />
+    <circle cx="0" cy="0" r="50" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-dasharray="2 5" />
+    <circle cx="0" cy="0" r="40" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-dasharray="2 5" />
+    <circle cx="0" cy="0" r="30" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-dasharray="2 5" />
+    <circle cx="0" cy="0" r="20" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-dasharray="2 5" />
+    <circle cx="0" cy="0" r="10" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-dasharray="2 5" />
+  </g>
+  <!-- Established year -->
+  <text x="30" y="180" font-family="Arial, sans-serif" font-size="14" fill="#FFFFFF">est.</text>
+  <text x="420" y="180" font-family="Arial, sans-serif" font-size="14" fill="#FFFFFF">2020</text>
+  <!-- CODIS -->
+  <text x="250" y="240" font-family="Arial, sans-serif" font-size="42" font-weight="bold" fill="#FFFFFF" text-anchor="middle">CODIS</text>
+  <!-- technology -->
+  <text x="250" y="280" font-family="Arial, sans-serif" font-size="20" fill="#FFFFFF" text-anchor="middle" letter-spacing="4">t e c h n o l o g y</text>
+</svg>
