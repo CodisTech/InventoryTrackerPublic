@@ -115,8 +115,9 @@ const Sidebar: React.FC = () => {
   // For debugging - temporary direct links for super admin
   if (isSuperAdmin) {
     console.log("User is super admin - should show admin links");
-    console.log("Navigation items:", adminNavigationItems);
-    console.log("Filtered admin items:", adminItems);
+    // Log only essential properties to avoid cyclic references
+    console.log("Admin navigation item paths:", adminNavigationItems.map(item => item.path));
+    console.log("Filtered admin item paths:", adminItems.map(item => item.path));
     console.log("Has MANAGE_ADMINS permission:", hasPermission(Permission.MANAGE_ADMINS));
   }
 
