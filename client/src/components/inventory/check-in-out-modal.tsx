@@ -32,17 +32,12 @@ type Person = {
   jDial?: string | null;
 };
 
-// Interface for selected items with quantities
-interface SelectedItemWithQuantity {
-  item: InventoryItemWithCategory;
-  quantity: number;
-}
+
 
 const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
   isOpen,
   onClose,
-  selectedItem,
-  selectedItems = [],
+  selectedItem
 }) => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -57,12 +52,6 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
   // Person state to control the workflow
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   
-  // State for tracking selected items and their quantities in multi-item mode
-  const [selectedItemsWithQuantities, setSelectedItemsWithQuantities] = useState<SelectedItemWithQuantity[]>([]);
-  
-  // Flag to determine if we're in multi-item mode
-  const isMultiItemMode = selectedItems && selectedItems.length > 0;
-
   const { data: items = [] } = useQuery<InventoryItemWithCategory[]>({
     queryKey: ["/api/inventory"],
   });
@@ -82,22 +71,8 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
       setSelectedPerson(null);
       setUserId("");
       
-      // Check if we have multiple selected items (multi-item mode)
-      if (selectedItems && selectedItems.length > 0) {
-        setOperationType("check-out"); // Multi-item mode only supports check-out for now
-        
-        // Initialize the selected items with quantities
-        const itemsWithQty = selectedItems.map(item => ({
-          item,
-          quantity: 1
-        }));
-        setSelectedItemsWithQuantities(itemsWithQty);
-        
-        // No need to set itemId in multi-item mode
-        setItemId("");
-      } 
-      // Single item mode
-      else if (selectedItem) {
+      // Set up for the selected item
+      if (selectedItem) {
         setItemId(selectedItem.id.toString());
         
         // If item is checked out, default to check-in, otherwise default to check-out
@@ -123,7 +98,7 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
       setQuantity(1);
       setNotes("");
     }
-  }, [isOpen, selectedItem, selectedItems]);
+  }, [isOpen, selectedItem]);
 
   const transactionMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -164,59 +139,7 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
       return;
     }
 
-    // Multi-item mode
-    if (isMultiItemMode) {
-      if (selectedItemsWithQuantities.length === 0) {
-        toast({
-          title: "No items selected",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Process each item as a separate transaction
-      const transactions = selectedItemsWithQuantities.map(itemWithQty => ({
-        itemId: itemWithQty.item.id,
-        userId: parseInt(userId),
-        type: operationType,
-        quantity: itemWithQty.quantity,
-        notes,
-      }));
-
-      // For now, process transactions sequentially with a simple loop
-      // In production, consider using Promise.all or a proper batch API endpoint
-      let processed = 0;
-      const processNext = () => {
-        if (processed < transactions.length) {
-          const transaction = transactions[processed];
-          transactionMutation.mutate(transaction, {
-            onSuccess: () => {
-              processed++;
-              processNext(); // Process the next transaction
-            }
-          });
-        } else {
-          // All transactions processed
-          toast({
-            title: `${processed} items ${operationType === "check-out" ? "checked out to" : "checked in from"} ${selectedPerson?.fullName}`,
-            description: "The inventory has been updated.",
-          });
-          
-          // Invalidate all necessary queries to ensure data consistency
-          queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
-          queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
-          queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
-          queryClient.invalidateQueries({ queryKey: ["/api/overdue-items"] });
-          onClose();
-        }
-      };
-
-      // Start processing the transactions
-      processNext();
-      return;
-    }
-
-    // Single item mode
+    // Verify item selection
     if (!itemId) {
       toast({
         title: "Please select an item",
@@ -329,16 +252,14 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {isMultiItemMode
-                ? "Check Out Multiple Items"
-                : selectedItem
-                  ? (selectedItem.checkedOutBy 
-                    ? `Check In Item from ${selectedItem.checkedOutBy.fullName}` 
-                    : "Check Out Item")
-                  : "Check In/Out Item"
+              {selectedItem
+                ? (selectedItem.checkedOutBy 
+                  ? `Check In Item from ${selectedItem.checkedOutBy.fullName}` 
+                  : "Check Out Item")
+                : "Check In/Out Item"
               }
             </DialogTitle>
-            {selectedItem && !isMultiItemMode && (
+            {selectedItem && (
               <div className="text-sm text-muted-foreground mt-1">
                 {selectedItem.checkedOutBy ? (
                   <div className="flex items-center">
@@ -358,35 +279,33 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
           </DialogHeader>
           
           <div className="grid gap-4 py-4">
-            {/* Operation selection - hide in multi-item mode */}
-            {!isMultiItemMode && (
-              <div className="space-y-2">
-                <Label>Operation Type</Label>
-                <RadioGroup
-                  value={operationType}
-                  onValueChange={(v) => {
-                    const newType = v as "check-in" | "check-out";
-                    setOperationType(newType);
-                    // Reset selections when switching operation types
-                    if (!selectedItem) {
-                      setItemId("");
-                      setSelectedPerson(null);
-                      setUserId("");
-                    }
-                  }}
-                  className="flex space-x-4"
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="check-out" id="checkout" />
-                    <Label htmlFor="checkout">Check Out</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="check-in" id="checkin" />
-                    <Label htmlFor="checkin">Check In</Label>
-                  </div>
-                </RadioGroup>
-              </div>
-            )}
+            {/* Operation selection */}
+            <div className="space-y-2">
+              <Label>Operation Type</Label>
+              <RadioGroup
+                value={operationType}
+                onValueChange={(v) => {
+                  const newType = v as "check-in" | "check-out";
+                  setOperationType(newType);
+                  // Reset selections when switching operation types
+                  if (!selectedItem) {
+                    setItemId("");
+                    setSelectedPerson(null);
+                    setUserId("");
+                  }
+                }}
+                className="flex space-x-4"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="check-out" id="checkout" />
+                  <Label htmlFor="checkout">Check Out</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="check-in" id="checkin" />
+                  <Label htmlFor="checkin">Check In</Label>
+                </div>
+              </RadioGroup>
+            </div>
             
             {/* Personnel selection */}
             <div className="space-y-2">
@@ -489,119 +408,57 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
               )}
             </div>
             
-            {/* Item Selection - show different UI based on mode */}
-            {isMultiItemMode ? (
-              <div className="space-y-2">
-                <Label>Selected Items ({selectedItemsWithQuantities.length})</Label>
-                <div className="border rounded-md max-h-[200px] overflow-y-auto divide-y">
-                  {selectedItemsWithQuantities.map((itemWithQty, index) => (
-                    <div key={itemWithQty.item.id} className="p-2 flex items-center">
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">{itemWithQty.item.name}</p>
-                        <p className="text-xs text-muted-foreground">{itemWithQty.item.itemCode}</p>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="h-8 w-8 p-0"
-                          onClick={() => {
-                            // Create a new array with updated quantity
-                            const updatedItems = [...selectedItemsWithQuantities];
-                            const newQty = Math.max(1, itemWithQty.quantity - 1);
-                            updatedItems[index] = {
-                              ...itemWithQty,
-                              quantity: newQty
-                            };
-                            setSelectedItemsWithQuantities(updatedItems);
-                          }}
-                          disabled={itemWithQty.quantity <= 1}
-                        >
-                          <MinusIcon className="h-4 w-4" />
-                        </Button>
-                        <span className="text-sm w-8 text-center">
-                          {itemWithQty.quantity}
-                        </span>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="h-8 w-8 p-0"
-                          onClick={() => {
-                            // Create a new array with updated quantity
-                            const updatedItems = [...selectedItemsWithQuantities];
-                            const newQty = Math.min(
-                              itemWithQty.item.availableQuantity || 1,
-                              itemWithQty.quantity + 1
-                            );
-                            updatedItems[index] = {
-                              ...itemWithQty,
-                              quantity: newQty
-                            };
-                            setSelectedItemsWithQuantities(updatedItems);
-                          }}
-                          disabled={itemWithQty.quantity >= (itemWithQty.item.availableQuantity || 1)}
-                        >
-                          <PlusIcon className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
+            {/* Item Selection */}
+            <div className="space-y-2">
+              <Label htmlFor="item-select">Select Item</Label>
+              <Select
+                value={itemId}
+                onValueChange={setItemId}
+                disabled={!!selectedItem}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select an item..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableItems.map((item) => (
+                    <SelectItem key={item.id} value={item.id.toString()}>
+                      {item.itemCode}: {item.name}
+                    </SelectItem>
                   ))}
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <Label htmlFor="item-select">Select Item</Label>
-                <Select
-                  value={itemId}
-                  onValueChange={setItemId}
-                  disabled={!!selectedItem}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select an item..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableItems.map((item) => (
-                      <SelectItem key={item.id} value={item.id.toString()}>
-                        {item.itemCode}: {item.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {availableItems.length === 0 && (
-                  <p className="text-xs text-destructive">
-                    {operationType === "check-out" 
-                      ? "No items available for checkout" 
-                      : checkedOutItems.length === 0
-                        ? "No items are currently checked out"
-                        : selectedPerson
-                          ? `${selectedPerson.fullName} has no items checked out` 
-                          : "Please select a person with checked out items"}
-                  </p>
-                )}
-                
-                {/* Additional information about the selected item */}
-                {itemId && items.find(i => i.id.toString() === itemId) && (
-                  <div className="mt-2 p-2 bg-muted/50 rounded-md">
-                    <div className="text-sm font-medium">
-                      {items.find(i => i.id.toString() === itemId)?.name}
-                    </div>
-                    <div className="text-xs text-muted-foreground flex items-center space-x-2">
-                      <span className="bg-primary/10 px-2 py-1 rounded">
-                        {items.find(i => i.id.toString() === itemId)?.itemCode}
-                      </span>
-                      <span>
-                        Category: {items.find(i => i.id.toString() === itemId)?.category.name}
-                      </span>
-                    </div>
+                </SelectContent>
+              </Select>
+              {availableItems.length === 0 && (
+                <p className="text-xs text-destructive">
+                  {operationType === "check-out" 
+                    ? "No items available for checkout" 
+                    : checkedOutItems.length === 0
+                      ? "No items are currently checked out"
+                      : selectedPerson
+                        ? `${selectedPerson.fullName} has no items checked out` 
+                        : "Please select a person with checked out items"}
+                </p>
+              )}
+              
+              {/* Additional information about the selected item */}
+              {itemId && items.find(i => i.id.toString() === itemId) && (
+                <div className="mt-2 p-2 bg-muted/50 rounded-md">
+                  <div className="text-sm font-medium">
+                    {items.find(i => i.id.toString() === itemId)?.name}
                   </div>
-                )}
-              </div>
-            )}
+                  <div className="text-xs text-muted-foreground flex items-center space-x-2">
+                    <span className="bg-primary/10 px-2 py-1 rounded">
+                      {items.find(i => i.id.toString() === itemId)?.itemCode}
+                    </span>
+                    <span>
+                      Category: {items.find(i => i.id.toString() === itemId)?.category.name}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
             
-            {/* Quantity selector - only show in single item mode */}
-            {!isMultiItemMode && operationType === "check-out" && itemId && (
+            {/* Quantity selector */}
+            {operationType === "check-out" && itemId && (
               <div className="space-y-2">
                 <Label htmlFor="quantity">Quantity</Label>
                 <div className="flex items-center space-x-3">
@@ -694,15 +551,13 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
             >
               {transactionMutation.isPending 
                 ? "Processing..." 
-                : isMultiItemMode
-                  ? `Check Out ${selectedItemsWithQuantities.length} Items to ${selectedPerson?.fullName || "..."}`
-                  : operationType === "check-out" 
-                    ? (quantity > 1 
-                      ? `Check Out ${quantity} Units to ${selectedPerson?.fullName || "..."}` 
-                      : `Check Out to ${selectedPerson?.fullName || "..."}`)
-                    : (quantity > 1
-                      ? `Check In ${quantity} Units from ${selectedPerson?.fullName || "..."}`
-                      : `Check In from ${selectedPerson?.fullName || "..."}`)}
+                : operationType === "check-out" 
+                  ? (quantity > 1 
+                    ? `Check Out ${quantity} Units to ${selectedPerson?.fullName || "..."}` 
+                    : `Check Out to ${selectedPerson?.fullName || "..."}`)
+                  : (quantity > 1
+                    ? `Check In ${quantity} Units from ${selectedPerson?.fullName || "..."}`
+                    : `Check In from ${selectedPerson?.fullName || "..."}`)}
             </Button>
           </DialogFooter>
         </DialogContent>
