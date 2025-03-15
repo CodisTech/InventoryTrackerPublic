@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
 import { Search, Package, LogOut, CheckCircle2, Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { InventoryItemWithCategory, Personnel } from "@shared/schema";
 import ItemDetailModal from "@/components/inventory/item-detail-modal";
 import PersonnelDetailModal from "@/components/users/personnel-detail-modal";
@@ -15,6 +16,9 @@ interface ListModalProps {
   listType: "total" | "checked-out" | "available" | "personnel";
   inventory?: InventoryItemWithCategory[];
   personnel?: Personnel[];
+  selectMode?: boolean;
+  selectedItems?: InventoryItemWithCategory[];
+  onItemSelect?: (item: InventoryItemWithCategory, isSelected: boolean) => void;
 }
 
 const ListModal: React.FC<ListModalProps> = ({
@@ -23,6 +27,9 @@ const ListModal: React.FC<ListModalProps> = ({
   listType,
   inventory = [],
   personnel = [],
+  selectMode = false,
+  selectedItems = [],
+  onItemSelect,
 }) => {
   const [searchTerm, setSearchTerm] = React.useState("");
   const [selectedItem, setSelectedItem] = React.useState<InventoryItemWithCategory | null>(null);
@@ -128,8 +135,35 @@ const ListModal: React.FC<ListModalProps> = ({
     },
   ];
 
+  // Check if an item is in the selected items array
+  const isItemSelected = (item: InventoryItemWithCategory) => {
+    return selectedItems.some(selectedItem => selectedItem.id === item.id);
+  };
+
   // Define columns for inventory table
   const inventoryColumns = [
+    ...(selectMode && listType !== "personnel" ? [
+      {
+        header: "",
+        accessorKey: "select",
+        cell: (row: InventoryItemWithCategory) => {
+          const isDisabled = row.availableQuantity === 0;
+          const selected = isItemSelected(row);
+          return (
+            <Checkbox 
+              checked={selected}
+              disabled={isDisabled}
+              onCheckedChange={(checked) => {
+                if (onItemSelect && row.availableQuantity > 0) {
+                  onItemSelect(row, checked as boolean);
+                }
+              }}
+              onClick={(e) => e.stopPropagation()}
+            />
+          );
+        },
+      },
+    ] : []),
     {
       header: "Item Code",
       accessorKey: "itemCode",

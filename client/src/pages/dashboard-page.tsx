@@ -205,15 +205,32 @@ const DashboardPage: React.FC = () => {
       {/* Recent Activities & Low Stock Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <RecentActivity activities={stats?.recentActivity || []} />
-        <LowStockItems items={stats?.lowStockItems || []} />
+        <LowStockItems 
+          items={stats?.lowStockItems || []} 
+          selectMode={selectMode}
+          selectedItems={selectedItems}
+          onItemSelect={(item, isSelected) => {
+            if (isSelected) {
+              setSelectedItems(prev => [...prev, item]);
+            } else {
+              setSelectedItems(prev => prev.filter(i => i.id !== item.id));
+            }
+          }}
+        />
       </div>
 
       {/* Modals */}
       <CheckInOutModal
         isOpen={isCheckInOutModalOpen}
-        onClose={() => setIsCheckInOutModalOpen(false)}
+        onClose={() => {
+          setIsCheckInOutModalOpen(false);
+          if (selectMode) {
+            setSelectedItems([]);
+            setSelectMode(false);
+          }
+        }}
         selectedItem={null}
-        selectedItems={[]}
+        selectedItems={selectedItems}
       />
       <AddItemModal
         isOpen={isAddItemModalOpen}
