@@ -4,12 +4,10 @@ import { useToast } from "@/hooks/use-toast";
 import { DataTable } from "@/components/ui/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Filter, Plus, Check, ShoppingBag } from "lucide-react";
+import { Filter, Plus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import AddItemModal from "@/components/inventory/add-item-modal";
 import CheckInOutModal from "@/components/inventory/check-in-out-modal";
-// Multi-item checkout is now handled in CheckInOutModal
 import { InventoryItemWithCategory } from "@shared/schema";
 import { format } from "date-fns";
 
@@ -17,10 +15,7 @@ const InventoryPage: React.FC = () => {
   const { toast } = useToast();
   const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
   const [isCheckInOutModalOpen, setIsCheckInOutModalOpen] = useState(false);
-  // We now use CheckInOutModal for both single and multi-item operations
   const [selectedItem, setSelectedItem] = useState<InventoryItemWithCategory | null>(null);
-  const [selectedItems, setSelectedItems] = useState<InventoryItemWithCategory[]>([]);
-  const [selectMode, setSelectMode] = useState(false);
 
   const { data: inventoryItems = [], isLoading, error } = useQuery<InventoryItemWithCategory[]>({
     queryKey: ["/api/inventory"],
@@ -36,97 +31,13 @@ const InventoryPage: React.FC = () => {
     }
   }, [error, toast]);
 
-  // Handle toggling item selection
-  const handleItemSelect = (item: InventoryItemWithCategory, checked: boolean) => {
-    if (checked) {
-      setSelectedItems(prev => [...prev, item]);
-    } else {
-      setSelectedItems(prev => prev.filter(i => i.id !== item.id));
-    }
-  };
-
-  // Toggle select mode
-  const toggleSelectMode = () => {
-    setSelectMode(prev => !prev);
-    // Clear selections when exiting select mode
-    if (selectMode) {
-      setSelectedItems([]);
-    }
-  };
-
-  // Handle multi-item checkout
-  const handleMultiCheckout = () => {
-    if (selectedItems.length === 0) {
-      toast({
-        title: "No items selected",
-        description: "Please select at least one item to check out.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    // Filter out items that aren't available
-    const availableItems = selectedItems.filter(item => item.availableQuantity > 0);
-    
-    if (availableItems.length === 0) {
-      toast({
-        title: "No available items",
-        description: "None of the selected items are available for checkout.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    if (availableItems.length !== selectedItems.length) {
-      toast({
-        title: "Some items unavailable",
-        description: "Some selected items are unavailable and won't be included in checkout.",
-      });
-    }
-    
-    // Update selectedItems array with only available items and open modal
-    setSelectedItems(availableItems);
-    setSelectedItem(null); // Set to null to ensure we're in multi-item mode
-    setIsCheckInOutModalOpen(true);
-  };
-
   const handleViewItem = (item: InventoryItemWithCategory) => {
-    // In select mode, toggle item selection instead of opening the check-in/out modal
-    if (selectMode) {
-      const isSelected = selectedItems.some(i => i.id === item.id);
-      handleItemSelect(item, !isSelected);
-      return;
-    }
-    
-    // Reset selected items before opening check in/out modal for a single item
-    setSelectedItems([]);
     setSelectedItem(item);
     setIsCheckInOutModalOpen(true);
   };
 
-  // Create columns including a selection column when in select mode
+  // Create columns for the data table
   const columns = [
-    // Selection column (conditional on selectMode)
-    ...(selectMode ? [
-      {
-        header: "Select",
-        accessorKey: "selected",
-        cell: (item: InventoryItemWithCategory) => {
-          const isSelected = selectedItems.some(i => i.id === item.id);
-          return (
-            <div className="flex justify-center" onClick={(e) => e.stopPropagation()}>
-              <Checkbox 
-                checked={isSelected}
-                onCheckedChange={(checked) => {
-                  handleItemSelect(item, checked as boolean);
-                }}
-                disabled={item.availableQuantity <= 0}
-              />
-            </div>
-          );
-        },
-      }
-    ] : []),
     {
       header: "Item Code",
       accessorKey: "itemCode",
@@ -254,61 +165,24 @@ const InventoryPage: React.FC = () => {
                   </Badge>
                 </div>
               )}
-              {selectMode && selectedItems.length > 0 && (
-                <div className="flex items-center mt-2">
-                  <Badge variant="outline" className="mr-2 bg-blue-100 text-blue-800 border-blue-200">
-                    {selectedItems.length} item{selectedItems.length !== 1 ? 's' : ''} selected
-                  </Badge>
-                </div>
-              )}
             </div>
           </div>
           
           <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 mt-4 md:mt-0">
-            {selectMode ? (
-              <>
-                <Button 
-                  variant="outline" 
-                  onClick={toggleSelectMode} 
-                  className="flex items-center"
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={handleMultiCheckout}
-                  className="flex items-center"
-                  disabled={selectedItems.length === 0}
-                >
-                  <ShoppingBag className="mr-2 h-4 w-4" />
-                  Check Out Selected ({selectedItems.length})
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button 
-                  variant="outline" 
-                  onClick={toggleSelectMode} 
-                  className="flex items-center"
-                >
-                  <Check className="mr-2 h-4 w-4" />
-                  Select Multiple
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="flex items-center"
-                >
-                  <Filter className="mr-2 h-4 w-4" />
-                  Filter
-                </Button>
-                <Button 
-                  onClick={() => setIsAddItemModalOpen(true)} 
-                  className="flex items-center"
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Item
-                </Button>
-              </>
-            )}
+            <Button 
+              variant="outline" 
+              className="flex items-center"
+            >
+              <Filter className="mr-2 h-4 w-4" />
+              Filter
+            </Button>
+            <Button 
+              onClick={() => setIsAddItemModalOpen(true)} 
+              className="flex items-center"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add Item
+            </Button>
           </div>
         </CardHeader>
         <CardContent>
@@ -331,12 +205,9 @@ const InventoryPage: React.FC = () => {
         onClose={() => {
           setIsCheckInOutModalOpen(false);
           setSelectedItem(null); // Clear selected item when closing modal
-          setSelectedItems([]); // Also clear selected items array
         }}
         selectedItem={selectedItem}
-        selectedItems={selectedItems}
       />
-      {/* We now use the unified CheckInOutModal for both single and multi-item operations */}
     </div>
   );
 };

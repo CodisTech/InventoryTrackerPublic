@@ -21,8 +21,6 @@ interface CheckInOutModalProps {
   isOpen: boolean;
   onClose: () => void;
   selectedItem?: InventoryItemWithCategory | null;
-  // Added support for multiple items
-  selectedItems?: InventoryItemWithCategory[];
 }
 
 // Interface for personnel that can check out items
