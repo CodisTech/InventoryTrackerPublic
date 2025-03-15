@@ -132,6 +132,8 @@ const DashboardPage: React.FC = () => {
       <CheckInOutModal
         isOpen={isCheckInOutModalOpen}
         onClose={() => setIsCheckInOutModalOpen(false)}
+        selectedItem={null}
+        selectedItems={[]}
       />
       <AddItemModal
         isOpen={isAddItemModalOpen}
