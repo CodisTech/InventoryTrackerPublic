@@ -96,6 +96,8 @@ const InventoryPage: React.FC = () => {
       return;
     }
     
+    // Reset selected items before opening check in/out modal for a single item
+    setSelectedItems([]);
     setSelectedItem(item);
     setIsCheckInOutModalOpen(true);
   };
@@ -327,8 +329,10 @@ const InventoryPage: React.FC = () => {
         onClose={() => {
           setIsCheckInOutModalOpen(false);
           setSelectedItem(null); // Clear selected item when closing modal
+          setSelectedItems([]); // Also clear selected items array
         }}
         selectedItem={selectedItem}
+        selectedItems={selectedItems}
       />
       <MultiItemCheckoutModal
         isOpen={isMultiCheckoutModalOpen}
