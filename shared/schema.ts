@@ -138,6 +138,7 @@ export const transactionWithDetailsSchema = z.object({
   ...transactions.$inferInsert,
   item: z.object(inventoryItems.$inferInsert),
   user: z.object(users.$inferInsert),
+  person: z.object(personnel.$inferInsert).optional(),
 });
 
 export type TransactionWithDetails = z.infer<typeof transactionWithDetailsSchema>;
