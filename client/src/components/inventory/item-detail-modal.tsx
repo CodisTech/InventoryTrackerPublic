@@ -31,7 +31,7 @@ const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
   onCheckInOut
 }) => {
   // Format the created date
-  const formattedDate = item.createdAt 
+  const formattedDate = item && item.createdAt 
     ? format(new Date(item.createdAt), 'PPP')
     : 'Unknown';
 
