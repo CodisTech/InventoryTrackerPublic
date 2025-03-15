@@ -524,6 +524,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Reports endpoints
+  app.get("/api/reports/personnel-activity", ensureAuthenticated, async (req, res, next) => {
+    try {
+      const personnelActivity = await storage.getPersonnelActivity();
+      res.json(personnelActivity);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/reports/department-usage", ensureAuthenticated, async (req, res, next) => {
+    try {
+      const departmentUsage = await storage.getDepartmentUsage();
+      res.json(departmentUsage);
+    } catch (error) {
+      next(error);
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

@@ -7,6 +7,8 @@ import {
   type Transaction, type InsertTransaction, 
   type DashboardStats, type InventoryItemWithCategory,
   type TransactionWithDetails,
+  type PersonnelActivity,
+  type DepartmentUsage,
   type PrivacyAgreement, type InsertPrivacyAgreement,
   type EulaAgreement, type InsertEulaAgreement
 } from "@shared/schema";
