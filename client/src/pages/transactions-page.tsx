@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { DataTable } from "@/components/ui/data-table";
 import { Badge } from "@/components/ui/badge";
@@ -8,12 +8,18 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { Transaction, Personnel, InventoryItemWithCategory } from "@shared/schema";
-import { Printer } from "lucide-react";
+import { Printer, Eye, RotateCcw } from "lucide-react";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import CheckInOutModal from "@/components/inventory/check-in-out-modal";
+import ItemDetailModal from "@/components/inventory/item-detail-modal";
 
 const TransactionsPage: React.FC = () => {
   const { toast } = useToast();
   const [printModalOpen, setPrintModalOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [isCheckInOutModalOpen, setIsCheckInOutModalOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<InventoryItemWithCategory | null>(null);
+  const [viewModalOpen, setViewModalOpen] = useState(false);
 
   const { data: transactions = [], isLoading, error } = useQuery<Transaction[]>({
     queryKey: ["/api/transactions"],
@@ -45,6 +51,44 @@ const TransactionsPage: React.FC = () => {
   const handlePrint = (transaction: Transaction) => {
     setSelectedTransaction(transaction);
     setPrintModalOpen(true);
+  };
+  
+  const handleViewItem = (transaction: Transaction) => {
+    const item = inventory.find(i => i.id === transaction.itemId);
+    if (item) {
+      setSelectedItem(item);
+      setViewModalOpen(true);
+    } else {
+      toast({
+        title: "Item not found",
+        description: "Could not find the item associated with this transaction.",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  const handleCheckIn = (transaction: Transaction) => {
+    // Only allow check-in for checked-out items that haven't been returned
+    if (transaction.type !== "check-out" || transaction.returnDate) {
+      toast({
+        title: "Cannot check in this item",
+        description: "This item is not currently checked out or has already been returned.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const item = inventory.find(i => i.id === transaction.itemId);
+    if (item) {
+      setSelectedItem(item);
+      setIsCheckInOutModalOpen(true);
+    } else {
+      toast({
+        title: "Item not found",
+        description: "Could not find the item associated with this transaction.",
+        variant: "destructive",
+      });
+    }
   };
 
   const printTransaction = () => {
@@ -356,14 +400,37 @@ const TransactionsPage: React.FC = () => {
       header: "Actions",
       accessorKey: "actions",
       cell: (transaction: Transaction) => (
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => handlePrint(transaction)}
-          title="Print Transaction Details"
-        >
-          <Printer className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center space-x-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => handleViewItem(transaction)}
+            title="View Item Details"
+          >
+            <Eye className="h-4 w-4" />
+          </Button>
+          
+          {transaction.type === "check-out" && !transaction.returnDate && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handleCheckIn(transaction)}
+              title="Check In Item"
+              className="text-green-600"
+            >
+              <RotateCcw className="h-4 w-4" />
+            </Button>
+          )}
+          
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => handlePrint(transaction)}
+            title="Print Transaction Details"
+          >
+            <Printer className="h-4 w-4" />
+          </Button>
+        </div>
       ),
     },
   ];
