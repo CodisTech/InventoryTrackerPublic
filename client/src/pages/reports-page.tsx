@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { TransactionWithDetails, PersonnelActivity, DepartmentUsage, InventoryItemWithCategory } from "@shared/schema";
+import { TransactionWithDetails, PersonnelActivity, DepartmentUsage, InventoryItemWithCategory, Category } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 import { useLocation } from "wouter";
@@ -1950,7 +1950,7 @@ const CategoryDistributionChart: React.FC = () => {
     queryKey: ["/api/inventory"],
   });
 
-  const { data: categories = [], isLoading: isLoadingCategories, error: categoriesError } = useQuery({
+  const { data: categories = [], isLoading: isLoadingCategories, error: categoriesError } = useQuery<Category[]>({
     queryKey: ["/api/categories"],
   });
 
