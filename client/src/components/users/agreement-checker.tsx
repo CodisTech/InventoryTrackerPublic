@@ -17,16 +17,16 @@ export function AgreementChecker({ personnelId, onComplete, onCancel }: Agreemen
   const { toast } = useToast();
 
   // Query to check if personnel has agreed to privacy policy
-  const privacyAgreementQuery = useQuery({
+  const privacyAgreementQuery = useQuery<{hasAgreed: boolean}>({
     queryKey: [`/api/privacy-agreements/check/${personnelId}`],
-    queryFn: getQueryFn(),
+    queryFn: getQueryFn({ on401: 'throw' }),
     enabled: !!personnelId,
   });
 
   // Query to check if personnel has accepted EULA
-  const eulaQuery = useQuery({
+  const eulaQuery = useQuery<{hasAccepted: boolean}>({
     queryKey: [`/api/eula-agreements/check/${personnelId}`],
-    queryFn: getQueryFn(),
+    queryFn: getQueryFn({ on401: 'throw' }),
     enabled: !!personnelId,
   });
 
