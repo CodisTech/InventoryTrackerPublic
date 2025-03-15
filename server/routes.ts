@@ -551,6 +551,229 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Setup multer for file uploads
+  const upload = multer({ 
+    storage: multer.memoryStorage(),
+    limits: {
+      fileSize: 5 * 1024 * 1024 // 5MB limit
+    }
+  });
+
+  // Bulk upload routes
+  // CSV Upload for Personnel
+  app.post("/api/personnel/bulk-upload", ensureAuthenticated, upload.single('file'), async (req, res, next) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      const csvBuffer = req.file.buffer;
+      const results: any[] = [];
+      const errors: any[] = [];
+      let successCount = 0;
+
+      // Stream the CSV file
+      const parser = parse({
+        columns: true,
+        skip_empty_lines: true,
+        trim: true
+      });
+
+      // Process the CSV data
+      const records: any[] = [];
+      parser.on('readable', function() {
+        let record;
+        while ((record = parser.read()) !== null) {
+          records.push(record);
+        }
+      });
+
+      // Handle parsing errors
+      parser.on('error', function(err) {
+        return res.status(400).json({
+          message: "Error parsing CSV file",
+          error: err.message
+        });
+      });
+
+      // When parsing is complete, create records
+      parser.on('end', async function() {
+        for (const record of records) {
+          try {
+            // Map CSV columns to personnel schema
+            const personnelData = {
+              firstName: record.firstName || record['First Name'],
+              lastName: record.lastName || record['Last Name'],
+              division: record.division || record['Division'],
+              department: record.department || record['Department'],
+              jDial: record.jDial || record['J-Dial'] || null,
+              rank: record.rank || record['Rank'] || null,
+              lcpoName: record.lcpoName || record['LCPO Name'] || null,
+              isActive: true
+            };
+
+            // Validate the data
+            const validatedData = insertPersonnelSchema.parse(personnelData);
+            
+            // Create the personnel record
+            const person = await storage.createPersonnel(validatedData);
+            results.push(person);
+            successCount++;
+          } catch (error) {
+            if (error instanceof z.ZodError) {
+              errors.push({
+                record,
+                error: fromZodError(error).message
+              });
+            } else {
+              errors.push({
+                record,
+                error: error instanceof Error ? error.message : "Unknown error"
+              });
+            }
+          }
+        }
+
+        // Return the results
+        res.status(200).json({
+          message: `Processed ${records.length} records. Successfully added ${successCount} personnel.`,
+          successCount,
+          errorCount: errors.length,
+          results,
+          errors
+        });
+      });
+
+      // Feed the parser with data
+      Readable.from(csvBuffer).pipe(parser);
+
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // CSV Upload for Inventory Items
+  app.post("/api/inventory/bulk-upload", ensureAuthenticated, upload.single('file'), async (req, res, next) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      const csvBuffer = req.file.buffer;
+      const results: any[] = [];
+      const errors: any[] = [];
+      let successCount = 0;
+
+      // Get all categories for reference
+      const categories = await storage.getAllCategories();
+      const categoryMap = new Map();
+      categories.forEach(cat => {
+        categoryMap.set(cat.name.toLowerCase(), cat.id);
+      });
+
+      // Stream the CSV file
+      const parser = parse({
+        columns: true,
+        skip_empty_lines: true,
+        trim: true
+      });
+
+      // Process the CSV data
+      const records: any[] = [];
+      parser.on('readable', function() {
+        let record;
+        while ((record = parser.read()) !== null) {
+          records.push(record);
+        }
+      });
+
+      // Handle parsing errors
+      parser.on('error', function(err) {
+        return res.status(400).json({
+          message: "Error parsing CSV file",
+          error: err.message
+        });
+      });
+
+      // When parsing is complete, create records
+      parser.on('end', async function() {
+        for (const record of records) {
+          try {
+            // Get category ID from name
+            const categoryName = record.category || record['Category'];
+            const categoryId = categoryMap.get(categoryName?.toLowerCase());
+            
+            if (!categoryId) {
+              errors.push({
+                record,
+                error: `Category '${categoryName}' not found`
+              });
+              continue;
+            }
+
+            // Map CSV columns to inventory item schema
+            const itemData = {
+              itemCode: record.itemCode || record['Item Code'],
+              name: record.name || record['Name'],
+              description: record.description || record['Description'] || null,
+              categoryId: categoryId,
+              totalQuantity: parseInt(record.totalQuantity || record['Total Quantity'] || 1),
+              availableQuantity: parseInt(record.availableQuantity || record['Available Quantity'] || 1),
+              minStockLevel: parseInt(record.minStockLevel || record['Min Stock Level'] || 5),
+              status: record.status || record['Status'] || 'available',
+              checkoutAlertDays: parseInt(record.checkoutAlertDays || record['Checkout Alert Days'] || 7)
+            };
+
+            // Check if item code already exists
+            const existingItem = await storage.getInventoryItemByCode(itemData.itemCode);
+            if (existingItem) {
+              errors.push({
+                record,
+                error: `Item code '${itemData.itemCode}' already exists`
+              });
+              continue;
+            }
+
+            // Validate the data
+            const validatedData = insertInventoryItemSchema.parse(itemData);
+            
+            // Create the inventory item
+            const item = await storage.createInventoryItem(validatedData);
+            results.push(item);
+            successCount++;
+          } catch (error) {
+            if (error instanceof z.ZodError) {
+              errors.push({
+                record,
+                error: fromZodError(error).message
+              });
+            } else {
+              errors.push({
+                record,
+                error: error instanceof Error ? error.message : "Unknown error"
+              });
+            }
+          }
+        }
+
+        // Return the results
+        res.status(200).json({
+          message: `Processed ${records.length} records. Successfully added ${successCount} inventory items.`,
+          successCount,
+          errorCount: errors.length,
+          results,
+          errors
+        });
+      });
+
+      // Feed the parser with data
+      Readable.from(csvBuffer).pipe(parser);
+
+    } catch (error) {
+      next(error);
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
