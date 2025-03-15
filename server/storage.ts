@@ -630,15 +630,16 @@ export class MemStorage implements IStorage {
   // Dashboard stats
   async getDashboardStats(): Promise<DashboardStats> {
     const items = await this.getAllInventoryItems();
-    const users = await this.getAllUsers();
+    const personnel = await this.getAllPersonnel();
     
     // Check for overdue items first
     await this.checkOverdueItems();
     
-    // Calculate stats
-    const totalItems = items.reduce((sum, item) => sum + item.totalQuantity, 0);
-    const availableItems = items.reduce((sum, item) => sum + item.availableQuantity, 0);
-    const checkedOutItems = totalItems - availableItems;
+    // Calculate stats - count unique items, not quantities
+    const totalItems = items.length;
+    const itemsWithNoAvailability = items.filter(item => item.availableQuantity === 0).length;
+    const availableItems = totalItems - itemsWithNoAvailability;
+    const checkedOutItems = items.filter(item => item.availableQuantity < item.totalQuantity).length;
     
     // Get low stock items
     const lowStockItems = await Promise.all(
@@ -678,7 +679,7 @@ export class MemStorage implements IStorage {
       totalItems,
       checkedOutItems,
       availableItems,
-      totalUsers: users.length,
+      totalUsers: personnel.length,
       lowStockItems,
       recentActivity,
       overdueItems
