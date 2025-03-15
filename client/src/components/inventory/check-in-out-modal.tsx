@@ -563,6 +563,77 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
               </div>
             )}
             
+            {/* Quantity selector */}
+            <div className="space-y-2">
+              <Label htmlFor="quantity">Quantity</Label>
+              <div className="flex items-center space-x-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => {
+                    setQuantity(Math.max(1, quantity - 1));
+                  }}
+                  disabled={quantity <= 1}
+                >
+                  -
+                </Button>
+                <Input
+                  id="quantity"
+                  type="number"
+                  min={1}
+                  className="w-20 text-center"
+                  value={quantity}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value);
+                    if (!isNaN(val) && val >= 1) {
+                      // Get the selected item and check available quantity for checkout
+                      const selectedItem = items.find(i => i.id.toString() === itemId);
+                      if (selectedItem && operationType === "check-out") {
+                        const maxAvailable = selectedItem.availableQuantity || 0;
+                        setQuantity(Math.min(val, maxAvailable));
+                      } else {
+                        setQuantity(val);
+                      }
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => {
+                    // Get the selected item and check available quantity for checkout
+                    const selectedItem = items.find(i => i.id.toString() === itemId);
+                    if (selectedItem && operationType === "check-out") {
+                      const maxAvailable = selectedItem.availableQuantity || 0;
+                      setQuantity(Math.min(quantity + 1, maxAvailable));
+                    } else {
+                      setQuantity(quantity + 1);
+                    }
+                  }}
+                >
+                  +
+                </Button>
+                
+                {/* Show available quantity for checkout */}
+                {operationType === "check-out" && itemId && (
+                  <div className="text-sm text-muted-foreground ml-2">
+                    {(() => {
+                      const selectedItem = items.find(i => i.id.toString() === itemId);
+                      if (selectedItem) {
+                        const maxAvailable = selectedItem.availableQuantity || 0;
+                        return `${maxAvailable} available`;
+                      }
+                      return "";
+                    })()}
+                  </div>
+                )}
+              </div>
+            </div>
+            
             <div className="space-y-2">
               <Label htmlFor="notes">Notes</Label>
               <Textarea
@@ -590,7 +661,9 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
                   ? (quantity > 1 
                     ? `Check Out ${quantity} units to ${selectedPerson?.fullName || "..."}` 
                     : `Check Out to ${selectedPerson?.fullName || "..."}`)
-                  : `Check In from ${selectedPerson?.fullName || "..."}`}
+                  : (quantity > 1
+                    ? `Check In ${quantity} units from ${selectedPerson?.fullName || "..."}`
+                    : `Check In from ${selectedPerson?.fullName || "..."}`)}
             </Button>
           </DialogFooter>
         </DialogContent>
