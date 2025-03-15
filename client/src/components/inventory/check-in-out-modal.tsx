@@ -45,7 +45,6 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
   const [itemId, setItemId] = useState<string>("");
   const [userId, setUserId] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
-  const [quantity, setQuantity] = useState<number>(1);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [isPersonnelSelectOpen, setIsPersonnelSelectOpen] = useState(false);
   
@@ -95,7 +94,6 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
         setOperationType("check-out");
       }
       
-      setQuantity(1);
       setNotes("");
     }
   }, [isOpen, selectedItem]);
@@ -107,10 +105,9 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
     },
     onSuccess: () => {
       const selectedItemName = items.find(i => i.id.toString() === itemId)?.name || "Item";
-      const quantityText = quantity > 1 ? `${quantity} units of ` : "";
       
       toast({
-        title: `${quantityText}${selectedItemName} ${operationType === "check-out" ? "checked out to" : "checked in from"} ${selectedPerson?.fullName}`,
+        title: `${selectedItemName} ${operationType === "check-out" ? "checked out to" : "checked in from"} ${selectedPerson?.fullName}`,
         description: "The inventory has been updated.",
       });
       // Invalidate all necessary queries to ensure data consistency
@@ -161,12 +158,12 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
       }
     }
     
-    // Create the transaction object
+    // Create the transaction object with fixed quantity of 1
     const transaction: any = {
       itemId: parseInt(itemId),
       userId: parseInt(userId),
       type: operationType,
-      quantity: quantity,
+      quantity: 1, // Fixed to 1 for single-item operations
       notes,
     };
 
