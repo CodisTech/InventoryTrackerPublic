@@ -23,6 +23,7 @@ const TransactionsPage: React.FC = () => {
 
   const { data: transactions = [], isLoading, error } = useQuery<Transaction[]>({
     queryKey: ["/api/transactions"],
+    refetchInterval: 5000, // Refetch every 5 seconds
   });
 
   React.useEffect(() => {
@@ -37,10 +38,12 @@ const TransactionsPage: React.FC = () => {
 
   const { data: inventory = [] } = useQuery<InventoryItemWithCategory[]>({
     queryKey: ["/api/inventory"],
+    refetchInterval: 5000, // Refetch every 5 seconds
   });
 
   const { data: personnel = [] } = useQuery<Personnel[]>({
     queryKey: ["/api/personnel"],
+    refetchInterval: 5000, // Refetch every 5 seconds
   });
 
   // This query is kept for backward compatibility

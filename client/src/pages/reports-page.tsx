@@ -263,7 +263,7 @@ const OverdueReportsTab: React.FC = () => {
   
   const { data: overdueItems = [], isLoading, error } = useQuery<TransactionWithDetails[]>({
     queryKey: ["/api/overdue-items"],
-    refetchInterval: 60000, // Refetch every minute to keep the list updated
+    refetchInterval: 5000, // Refetch every 5 seconds to keep the list updated
   });
 
   React.useEffect(() => {
