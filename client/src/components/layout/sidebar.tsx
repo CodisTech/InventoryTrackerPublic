@@ -94,8 +94,9 @@ const Sidebar: React.FC = () => {
       name: "Activity Logs",
       icon: <FileText className="w-5 h-5" />,
       path: "/admin/activity",
-      permission: null, // No specific permission, just admin role
-      isAdminOnly: true
+      permission: null, // No specific permission
+      isAdminOnly: true, 
+      isSuperAdmin: true  // Also show for super admins
     }
   ];
 
