@@ -93,7 +93,6 @@ function Router() {
             <AdminActivityPage />
           </AppLayout>
         )}
-        requiredRole={USER_ROLES.ADMIN}
       />
       <ProtectedRoute 
         path="/admin/transfers" 
