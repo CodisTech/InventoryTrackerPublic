@@ -7,6 +7,18 @@
 
 import { Client } from 'pg';
 import fs from 'fs';
+import crypto from 'crypto';
+
+// Function to hash a password with scrypt
+async function hashPassword(password) {
+  return new Promise((resolve, reject) => {
+    const salt = crypto.randomBytes(16).toString('hex');
+    crypto.scrypt(password, salt, 64, (err, derivedKey) => {
+      if (err) reject(err);
+      resolve(`${derivedKey.toString('hex')}.${salt}`);
+    });
+  });
+}
 
 async function main() {
   // Connect to the database
@@ -118,11 +130,11 @@ async function main() {
       console.log('Seeding database with initial data...');
       
       // Create admin user with password 'admin123'
-      // Note: In a real implementation, we would properly hash the password
+      const hashedPassword = await hashPassword('admin123');
       await client.query(`
         INSERT INTO users (username, password, fullName, role, isAuthorized)
-        VALUES ('admin', 'admin123', 'Administrator', 'admin', true);
-      `);
+        VALUES ($1, $2, $3, $4, $5);
+      `, ['admin', hashedPassword, 'Administrator', 'admin', true]);
       
       // Add sample categories
       const categoryNames = ['Laptops', 'Desktops', 'Mobile Devices', 'Storage', 'A/V Equipment', 'Accessories'];
