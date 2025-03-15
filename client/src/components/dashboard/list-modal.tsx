@@ -75,10 +75,13 @@ const ListModal: React.FC<ListModalProps> = ({
       // Filter inventory items based on list type
       let filteredItems = inventory;
       if (listType === "checked-out") {
-        // Show items where available quantity is less than total quantity
-        // This includes partially checked out items
-        filteredItems = inventory.filter(item => item.availableQuantity < item.totalQuantity);
+        // Only show fully checked out items that have a person assigned
+        filteredItems = inventory.filter(item => 
+          item.checkedOutBy !== null && 
+          item.checkedOutBy !== undefined
+        );
       } else if (listType === "available") {
+        // Show items that are not fully checked out
         filteredItems = inventory.filter(item => item.availableQuantity > 0);
       }
 
@@ -149,18 +152,27 @@ const ListModal: React.FC<ListModalProps> = ({
       header: "Status",
       accessorKey: "status",
       cell: (row: InventoryItemWithCategory) => {
+        // If the item has no available quantity and is assigned to someone
+        if (row.availableQuantity === 0 && row.checkedOutBy) {
+          return <span className="text-amber-500 font-medium">Checked Out</span>;
+        }
+        
+        // If the item has no available quantity but is not assigned
         if (row.availableQuantity === 0) {
           return <span className="text-destructive font-medium">Out of Stock</span>;
         }
-        if (row.availableQuantity < row.totalQuantity) {
-          if (row.availableQuantity < (row.minStockLevel || 3)) {
-            return <span className="text-amber-500 font-medium">Partially Checked Out (Low Stock)</span>;
-          }
+        
+        // If someone has this item checked out but some quantity is still available
+        if (row.checkedOutBy && row.availableQuantity > 0) {
           return <span className="text-blue-500 font-medium">Partially Checked Out</span>;
         }
+        
+        // Low stock warning
         if (row.availableQuantity < (row.minStockLevel || 3)) {
           return <span className="text-amber-500 font-medium">Low Stock</span>;
         }
+        
+        // Normal in-stock status
         return <span className="text-emerald-500">In Stock</span>;
       },
     },
