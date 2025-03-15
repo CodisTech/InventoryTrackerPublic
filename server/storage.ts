@@ -652,6 +652,9 @@ export class MemStorage implements IStorage {
           }
         };
         
+        // Get personnel data for the transaction
+        const personnel = await this.getPersonnel(transaction.userId);
+        
         result.push({
           ...transaction,
           item: itemWithCategory,
@@ -662,12 +665,17 @@ export class MemStorage implements IStorage {
             role: 'personnel',
             isAuthorized: true,
             password: '' // We don't actually store passwords for personnel
-          }
+          },
+          // Add personnel data if available
+          person: personnel || undefined
         });
 
         // Log for debugging
         console.log(`[TRANSACTION DEBUG] Added transaction detail for ID ${transaction.id}`);
         console.log(`[TRANSACTION DEBUG] Item: ${item.name}, User: ${user.firstName} ${user.lastName}`);
+        if (personnel) {
+          console.log(`[TRANSACTION DEBUG] Personnel: ${personnel.firstName} ${personnel.lastName}, Division: ${personnel.division || 'N/A'}`);
+        }
       } else {
         console.log(`[TRANSACTION DEBUG] Skipped transaction ID ${transaction.id}, item or user not found`);
         console.log(`[TRANSACTION DEBUG] Item ID: ${transaction.itemId}, User ID: ${transaction.userId}`);
@@ -717,6 +725,9 @@ export class MemStorage implements IStorage {
           }
         };
         
+        // Get personnel data for the transaction
+        const personnel = await this.getPersonnel(transaction.userId);
+        
         result.push({
           ...transaction,
           item: itemWithCategory,
@@ -727,7 +738,9 @@ export class MemStorage implements IStorage {
             role: 'personnel',
             isAuthorized: true,
             password: '' // We don't actually store passwords for personnel
-          }
+          },
+          // Add personnel data if available
+          person: personnel || undefined
         });
       }
     }
@@ -787,6 +800,9 @@ export class MemStorage implements IStorage {
           }
         };
         
+        // Get personnel data for the transaction
+        const personnel = await this.getPersonnel(transaction.userId);
+        
         recentActivity.push({
           ...transaction,
           item: itemWithCategory,
@@ -797,7 +813,9 @@ export class MemStorage implements IStorage {
             role: 'personnel',
             isAuthorized: true,
             password: '' // We don't actually store passwords for personnel
-          }
+          },
+          // Add personnel data if available
+          person: personnel || undefined
         });
       }
     }
