@@ -132,6 +132,20 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
 
     // Due date validation removed as it's handled by the server
 
+    // For check-in operations, verify that the selected person actually has this item checked out
+    if (operationType === "check-in") {
+      const item = items.find(i => i.id.toString() === itemId);
+      if (item && (!item.checkedOutBy || item.checkedOutBy.id.toString() !== userId)) {
+        toast({
+          title: "Invalid check-in",
+          description: `${selectedPerson?.fullName || "This person"} does not have this item checked out.`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+    
+    // Create the transaction object
     const transaction: any = {
       itemId: parseInt(itemId),
       userId: parseInt(userId),
@@ -142,6 +156,14 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
 
     // Log the transaction details for debugging
     console.log("Submitting transaction:", transaction);
+    
+    // Additional debug for check-in transactions
+    if (operationType === "check-in") {
+      console.log("Check-in details:");
+      console.log("- Selected person:", selectedPerson);
+      console.log("- Selected item:", items.find(i => i.id.toString() === itemId));
+      console.log("- Item's checkedOutBy:", items.find(i => i.id.toString() === itemId)?.checkedOutBy);
+    }
 
     // The server handles all date logic:
     // 1. For check-out: dueDate is set to 24 hours from time of checkout
@@ -211,6 +233,13 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
   const eligiblePeople = operationType === "check-in" 
     ? allPeople.filter(person => personnelWithItems.includes(person.id))
     : allPeople;
+    
+  // Debug log the personnel filtering for check-in
+  if (operationType === "check-in") {
+    console.log("Checked out items:", checkedOutItems);
+    console.log("Personnel with items:", personnelWithItems);
+    console.log("Eligible people for check-in:", eligiblePeople);
+  }
   
   // Filter people based on search term
   const filteredPeople = eligiblePeople.filter(person => {
@@ -230,11 +259,19 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
   const availableItems = operationType === "check-out"
     ? items.filter(item => item.availableQuantity > 0)
     : selectedPerson
-      ? items.filter(item => 
-          item.checkedOutBy && 
-          item.checkedOutBy.id === selectedPerson.id
-        )
+      ? items.filter(item => {
+          if (!item.checkedOutBy) return false;
+          
+          // Debug the item.checkedOutBy to see what we're matching against
+          console.log(`Item ${item.name} checked out by:`, item.checkedOutBy);
+          console.log(`Selected person:`, selectedPerson);
+          
+          return item.checkedOutBy.id === selectedPerson.id;
+        })
       : [];
+      
+  // Log the available items for debugging
+  console.log(`Available items for ${operationType}:`, availableItems);
 
   return (
     <>
