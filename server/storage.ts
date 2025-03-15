@@ -462,9 +462,26 @@ export class MemStorage implements IStorage {
           return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
         });
       
+      // Find the most recent checkout that hasn't been returned
       const lastCheckout = transactions.find(t => t.type === 'check-out' && !t.returnDate);
+      
       if (lastCheckout) {
-        checkedOutBy = this.usersDB.get(lastCheckout.userId) || null;
+        console.log(`[DEBUG] Item ${item.name} (ID: ${item.id}) is checked out in transaction ${lastCheckout.id}`);
+        
+        // Use personnel instead of users for checkout association
+        const personnel = this.personnelDB.get(lastCheckout.userId);
+        if (personnel) {
+          checkedOutBy = {
+            id: personnel.id,
+            fullName: `${personnel.firstName} ${personnel.lastName}`,
+            division: personnel.division,
+            department: personnel.department,
+            jDial: personnel.jDial
+          };
+          console.log(`[DEBUG] Item checked out by: ${checkedOutBy.fullName} (ID: ${checkedOutBy.id})`);
+        } else {
+          console.log(`[DEBUG] WARNING: Personnel with ID ${lastCheckout.userId} not found for checkout transaction`);
+        }
       }
       
       result.push({
@@ -493,6 +510,9 @@ export class MemStorage implements IStorage {
     const id = this.transactionIdCounter++;
     const now = new Date();
     
+    // Debug logging
+    console.log(`[DEBUG] Creating transaction - type: ${insertTransaction.type}, itemId: ${insertTransaction.itemId}, userId: ${insertTransaction.userId}`);
+    
     // Ensure quantity is defined
     const transactionData = {
       ...insertTransaction,
@@ -515,13 +535,18 @@ export class MemStorage implements IStorage {
     };
     
     this.transactionsDB.set(id, transaction);
+    console.log(`[DEBUG] Transaction created and stored in DB with ID: ${id}`);
     
     // Update inventory item availability
     const item = this.itemsDB.get(transactionData.itemId);
     if (item) {
+      console.log(`[DEBUG] Found item: ${item.name} (ID: ${item.id}), current available: ${item.availableQuantity}, total: ${item.totalQuantity}`);
+      
       if (transactionData.type === 'check-out') {
         // Decrease available quantity
         const newAvailable = Math.max(0, item.availableQuantity - transactionData.quantity);
+        console.log(`[DEBUG] Check-out: Decreasing available quantity from ${item.availableQuantity} to ${newAvailable}`);
+        
         this.itemsDB.set(item.id, {
           ...item,
           availableQuantity: newAvailable,
@@ -530,6 +555,8 @@ export class MemStorage implements IStorage {
       } else if (transactionData.type === 'check-in') {
         // Increase available quantity
         const newAvailable = Math.min(item.totalQuantity, item.availableQuantity + transactionData.quantity);
+        console.log(`[DEBUG] Check-in: Increasing available quantity from ${item.availableQuantity} to ${newAvailable}`);
+        
         this.itemsDB.set(item.id, {
           ...item,
           availableQuantity: newAvailable,
@@ -545,12 +572,17 @@ export class MemStorage implements IStorage {
           })[0];
         
         if (checkoutTransaction) {
+          console.log(`[DEBUG] Found matching checkout transaction ID: ${checkoutTransaction.id}, marking as returned`);
           this.transactionsDB.set(checkoutTransaction.id, {
             ...checkoutTransaction,
             returnDate: now
           });
+        } else {
+          console.log(`[DEBUG] No matching checkout transaction found for item ID: ${item.id}`);
         }
       }
+    } else {
+      console.log(`[DEBUG] WARNING: Item with ID ${transactionData.itemId} not found`);
     }
     
     return transaction;

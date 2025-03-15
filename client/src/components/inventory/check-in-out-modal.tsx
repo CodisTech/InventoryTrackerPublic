@@ -140,12 +140,15 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
       notes,
     };
 
-    // The server handles all date logic:
-  // 1. For check-out: dueDate is set to 24 hours from time of checkout
-  // 2. For check-in: returnDate is set to current time
-  // 3. timestamp is automatically set on server
+    // Log the transaction details for debugging
+    console.log("Submitting transaction:", transaction);
 
-    // Process the transaction immediately without checking agreements
+    // The server handles all date logic:
+    // 1. For check-out: dueDate is set to 24 hours from time of checkout
+    // 2. For check-in: returnDate is set to current time
+    // 3. timestamp is automatically set on server
+
+    // Process the transaction
     transactionMutation.mutate(transaction);
   };
   
