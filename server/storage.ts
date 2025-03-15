@@ -1,12 +1,13 @@
 import { 
-  users, categories, inventoryItems, transactions, personnel,
+  users, categories, inventoryItems, transactions, personnel, privacyAgreements,
   type User, type InsertUser, 
   type Personnel, type InsertPersonnel,
   type Category, type InsertCategory, 
   type InventoryItem, type InsertInventoryItem,
   type Transaction, type InsertTransaction, 
   type DashboardStats, type InventoryItemWithCategory,
-  type TransactionWithDetails
+  type TransactionWithDetails,
+  type PrivacyAgreement, type InsertPrivacyAgreement
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
@@ -63,6 +64,12 @@ export interface IStorage {
   getPrivacyAgreementByPersonnel(personnelId: number): Promise<PrivacyAgreement | undefined>;
   getPrivacyAgreementsByVersion(version: string): Promise<PrivacyAgreement[]>;
   checkPersonnelHasAgreed(personnelId: number): Promise<boolean>;
+  
+  // EULA Agreement methods
+  createEulaAgreement(agreement: InsertEulaAgreement): Promise<EulaAgreement>;
+  getEulaAgreementByPersonnel(personnelId: number): Promise<EulaAgreement | undefined>;
+  getEulaAgreementsByVersion(version: string): Promise<EulaAgreement[]>;
+  checkPersonnelHasAcceptedEula(personnelId: number): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -706,6 +713,44 @@ export class MemStorage implements IStorage {
   
   async checkPersonnelHasAgreed(personnelId: number): Promise<boolean> {
     const agreement = await this.getPrivacyAgreementByPersonnel(personnelId);
+    return !!agreement;
+  }
+  
+  // EULA Agreement methods
+  private eulaAgreementsDB: Map<number, EulaAgreement> = new Map();
+  private eulaAgreementIdCounter: number = 1;
+  
+  async createEulaAgreement(agreement: InsertEulaAgreement): Promise<EulaAgreement> {
+    const id = this.eulaAgreementIdCounter++;
+    const now = new Date();
+    
+    const eulaAgreement: EulaAgreement = {
+      ...agreement,
+      id,
+      agreedAt: now,
+      version: agreement.version || "1.0"
+    };
+    
+    this.eulaAgreementsDB.set(id, eulaAgreement);
+    return eulaAgreement;
+  }
+  
+  async getEulaAgreementByPersonnel(personnelId: number): Promise<EulaAgreement | undefined> {
+    return Array.from(this.eulaAgreementsDB.values())
+      .filter(agreement => agreement.personnelId === personnelId)
+      .sort((a, b) => {
+        if (!a.agreedAt || !b.agreedAt) return 0;
+        return new Date(b.agreedAt).getTime() - new Date(a.agreedAt).getTime();
+      })[0];
+  }
+  
+  async getEulaAgreementsByVersion(version: string): Promise<EulaAgreement[]> {
+    return Array.from(this.eulaAgreementsDB.values())
+      .filter(agreement => agreement.version === version);
+  }
+  
+  async checkPersonnelHasAcceptedEula(personnelId: number): Promise<boolean> {
+    const agreement = await this.getEulaAgreementByPersonnel(personnelId);
     return !!agreement;
   }
 }

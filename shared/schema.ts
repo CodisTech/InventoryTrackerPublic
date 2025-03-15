@@ -168,3 +168,21 @@ export const insertPrivacyAgreementSchema = createInsertSchema(privacyAgreements
 
 export type PrivacyAgreement = typeof privacyAgreements.$inferSelect;
 export type InsertPrivacyAgreement = z.infer<typeof insertPrivacyAgreementSchema>;
+
+// EULA License Agreement Schema
+export const eulaAgreements = pgTable("eula_agreements", {
+  id: serial("id").primaryKey(),
+  personnelId: integer("personnel_id").notNull(),
+  agreedAt: timestamp("agreed_at").defaultNow(),
+  version: text("version").notNull().default("1.0"),
+  ipAddress: text("ip_address"),
+});
+
+export const insertEulaAgreementSchema = createInsertSchema(eulaAgreements).pick({
+  personnelId: true,
+  version: true,
+  ipAddress: true,
+});
+
+export type EulaAgreement = typeof eulaAgreements.$inferSelect;
+export type InsertEulaAgreement = z.infer<typeof insertEulaAgreementSchema>;
