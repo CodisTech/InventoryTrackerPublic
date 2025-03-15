@@ -87,6 +87,7 @@ export const transactions = pgTable("transactions", {
   id: serial("id").primaryKey(),
   itemId: integer("item_id").notNull(),
   userId: integer("user_id").notNull(),
+  administratorId: integer("administrator_id"), // ID of the admin processing the transaction
   type: text("type").notNull(), // check-in, check-out
   quantity: integer("quantity").notNull().default(1),
   timestamp: timestamp("timestamp").defaultNow(),
@@ -99,6 +100,7 @@ export const transactions = pgTable("transactions", {
 export const insertTransactionSchema = createInsertSchema(transactions).pick({
   itemId: true,
   userId: true,
+  administratorId: true,
   type: true,
   quantity: true,
   notes: true,
@@ -139,6 +141,7 @@ export const transactionWithDetailsSchema = z.object({
   item: z.object(inventoryItems.$inferInsert),
   user: z.object(users.$inferInsert),
   person: z.object(personnel.$inferInsert).optional(),
+  administrator: z.object(users.$inferInsert).optional(),
 });
 
 export type TransactionWithDetails = z.infer<typeof transactionWithDetailsSchema>;

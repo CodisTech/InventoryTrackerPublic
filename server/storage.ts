@@ -662,6 +662,12 @@ export class MemStorage implements IStorage {
       // For users, we need to look in the personnel database since we use personnel as users
       const user = await this.getPersonnel(transaction.userId);
       
+      // Get the administrator info if available
+      let admin = null;
+      if (transaction.administratorId) {
+        admin = await this.getUser(transaction.administratorId);
+      }
+      
       if (item && user) {
         // Get the category for this item
         const category = await this.getCategoryById(item.categoryId);
@@ -675,7 +681,7 @@ export class MemStorage implements IStorage {
           }
         };
         
-        result.push({
+        const transactionWithDetails: TransactionWithDetails = {
           ...transaction,
           item: itemWithCategory,
           user: {
@@ -688,11 +694,28 @@ export class MemStorage implements IStorage {
           },
           // Add personnel data (which is the same as user in our case)
           person: user
-        });
+        };
+        
+        // Add administrator if available
+        if (admin) {
+          transactionWithDetails.administrator = {
+            id: admin.id,
+            username: admin.username,
+            fullName: admin.fullName,
+            role: admin.role,
+            isAuthorized: admin.isAuthorized,
+            password: '' // Don't include password
+          };
+        }
+        
+        result.push(transactionWithDetails);
 
         // Log for debugging
         console.log(`[TRANSACTION DEBUG] Added transaction detail for ID ${transaction.id}`);
         console.log(`[TRANSACTION DEBUG] Item: ${item.name}, User: ${user.firstName} ${user.lastName}`);
+        if (admin) {
+          console.log(`[TRANSACTION DEBUG] Administrator: ${admin.fullName}`);
+        }
       } else {
         console.log(`[TRANSACTION DEBUG] Skipped transaction ID ${transaction.id}, item or user not found`);
         console.log(`[TRANSACTION DEBUG] Item ID: ${transaction.itemId}, User ID: ${transaction.userId}`);
@@ -739,6 +762,12 @@ export class MemStorage implements IStorage {
       // For users, we need to look in the personnel database since we use personnel as users
       const user = await this.getPersonnel(transaction.userId);
       
+      // Get the administrator info if available
+      let admin = null;
+      if (transaction.administratorId) {
+        admin = await this.getUser(transaction.administratorId);
+      }
+      
       if (item && user) {
         // Get the category for this item
         const category = await this.getCategoryById(item.categoryId);
@@ -752,7 +781,7 @@ export class MemStorage implements IStorage {
           }
         };
         
-        result.push({
+        const transactionWithDetails: TransactionWithDetails = {
           ...transaction,
           item: itemWithCategory,
           user: {
@@ -765,9 +794,26 @@ export class MemStorage implements IStorage {
           },
           // Add personnel data (which is the same as user in our case)
           person: user
-        });
+        };
+        
+        // Add administrator if available
+        if (admin) {
+          transactionWithDetails.administrator = {
+            id: admin.id,
+            username: admin.username,
+            fullName: admin.fullName,
+            role: admin.role,
+            isAuthorized: admin.isAuthorized,
+            password: '' // Don't include password
+          };
+        }
+        
+        result.push(transactionWithDetails);
         
         console.log(`[TRANSACTION DEBUG] Added overdue transaction detail for ID ${transaction.id}`);
+        if (admin) {
+          console.log(`[TRANSACTION DEBUG] Administrator: ${admin.fullName}`);
+        }
       } else {
         console.log(`[TRANSACTION DEBUG] Skipped overdue transaction ID ${transaction.id}, item or user not found`);
         if (!item) console.log(`[TRANSACTION DEBUG] Item not found with ID ${transaction.itemId}`);
