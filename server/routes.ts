@@ -7,7 +7,9 @@ import {
   insertUserSchema, 
   insertCategorySchema, 
   insertTransactionSchema, 
-  insertPersonnelSchema 
+  insertPersonnelSchema,
+  insertPrivacyAgreementSchema,
+  insertEulaAgreementSchema
 } from "@shared/schema";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
@@ -360,6 +362,130 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.status(204).end();
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Privacy Agreement endpoints
+  app.post("/api/privacy-agreements", ensureAuthenticated, async (req, res, next) => {
+    try {
+      const validatedData = insertPrivacyAgreementSchema.parse(req.body);
+      
+      // Check if personnel exists
+      const personnel = await storage.getPersonnel(validatedData.personnelId);
+      if (!personnel) {
+        return res.status(400).json({ message: "Personnel not found" });
+      }
+      
+      // Include IP address if available
+      const ipAddress = req.ip || req.socket.remoteAddress || null;
+      const privacyAgreement = await storage.createPrivacyAgreement({
+        ...validatedData,
+        ipAddress
+      });
+      
+      res.status(201).json(privacyAgreement);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Validation error", 
+          errors: fromZodError(error).message 
+        });
+      }
+      next(error);
+    }
+  });
+
+  app.get("/api/privacy-agreements/personnel/:personnelId", ensureAuthenticated, async (req, res, next) => {
+    try {
+      const personnelId = parseInt(req.params.personnelId);
+      if (isNaN(personnelId)) {
+        return res.status(400).json({ message: "Invalid personnel ID format" });
+      }
+      
+      const agreement = await storage.getPrivacyAgreementByPersonnel(personnelId);
+      if (!agreement) {
+        return res.status(404).json({ message: "No privacy agreement found for this personnel" });
+      }
+      
+      res.json(agreement);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/privacy-agreements/check/:personnelId", ensureAuthenticated, async (req, res, next) => {
+    try {
+      const personnelId = parseInt(req.params.personnelId);
+      if (isNaN(personnelId)) {
+        return res.status(400).json({ message: "Invalid personnel ID format" });
+      }
+      
+      const hasAgreed = await storage.checkPersonnelHasAgreed(personnelId);
+      res.json({ hasAgreed });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // EULA Agreement endpoints
+  app.post("/api/eula-agreements", ensureAuthenticated, async (req, res, next) => {
+    try {
+      const validatedData = insertEulaAgreementSchema.parse(req.body);
+      
+      // Check if personnel exists
+      const personnel = await storage.getPersonnel(validatedData.personnelId);
+      if (!personnel) {
+        return res.status(400).json({ message: "Personnel not found" });
+      }
+      
+      // Include IP address if available
+      const ipAddress = req.ip || req.socket.remoteAddress || null;
+      const eulaAgreement = await storage.createEulaAgreement({
+        ...validatedData,
+        ipAddress
+      });
+      
+      res.status(201).json(eulaAgreement);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Validation error", 
+          errors: fromZodError(error).message 
+        });
+      }
+      next(error);
+    }
+  });
+
+  app.get("/api/eula-agreements/personnel/:personnelId", ensureAuthenticated, async (req, res, next) => {
+    try {
+      const personnelId = parseInt(req.params.personnelId);
+      if (isNaN(personnelId)) {
+        return res.status(400).json({ message: "Invalid personnel ID format" });
+      }
+      
+      const agreement = await storage.getEulaAgreementByPersonnel(personnelId);
+      if (!agreement) {
+        return res.status(404).json({ message: "No EULA agreement found for this personnel" });
+      }
+      
+      res.json(agreement);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/eula-agreements/check/:personnelId", ensureAuthenticated, async (req, res, next) => {
+    try {
+      const personnelId = parseInt(req.params.personnelId);
+      if (isNaN(personnelId)) {
+        return res.status(400).json({ message: "Invalid personnel ID format" });
+      }
+      
+      const hasAccepted = await storage.checkPersonnelHasAcceptedEula(personnelId);
+      res.json({ hasAccepted });
     } catch (error) {
       next(error);
     }

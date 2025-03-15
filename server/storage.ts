@@ -1,5 +1,5 @@
 import { 
-  users, categories, inventoryItems, transactions, personnel, privacyAgreements,
+  users, categories, inventoryItems, transactions, personnel, privacyAgreements, eulaAgreements,
   type User, type InsertUser, 
   type Personnel, type InsertPersonnel,
   type Category, type InsertCategory, 
@@ -7,7 +7,8 @@ import {
   type Transaction, type InsertTransaction, 
   type DashboardStats, type InventoryItemWithCategory,
   type TransactionWithDetails,
-  type PrivacyAgreement, type InsertPrivacyAgreement
+  type PrivacyAgreement, type InsertPrivacyAgreement,
+  type EulaAgreement, type InsertEulaAgreement
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
