@@ -202,7 +202,11 @@ const ListModal: React.FC<ListModalProps> = ({
   ];
 
   const filteredData = getFilteredData();
-  const columns = listType === "personnel" ? personnelColumns : inventoryColumns;
+  
+  // Use type assertion to address Column type compatibility issue
+  const columns = listType === "personnel" 
+    ? personnelColumns as Column<any>[]
+    : inventoryColumns as Column<any>[];
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -227,9 +231,10 @@ const ListModal: React.FC<ListModalProps> = ({
         </div>
 
         <div className="overflow-auto max-h-[400px]">
+          {/* Use properly typed data */}
           <DataTable
             data={filteredData}
-            columns={columns}
+            columns={columns as any}
             onRowClick={(item) => {
               if (listType === "personnel") {
                 setSelectedPersonnel(item as Personnel);
