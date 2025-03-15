@@ -61,6 +61,10 @@ export interface IStorage {
   // Dashboard stats
   getDashboardStats(): Promise<DashboardStats>;
   
+  // Report methods
+  getPersonnelActivity(): Promise<PersonnelActivity[]>;
+  getDepartmentUsage(): Promise<DepartmentUsage[]>;
+  
   // Privacy Agreement methods
   createPrivacyAgreement(agreement: InsertPrivacyAgreement): Promise<PrivacyAgreement>;
   getPrivacyAgreementByPersonnel(personnelId: number): Promise<PrivacyAgreement | undefined>;

@@ -156,6 +156,35 @@ export const dashboardStatsSchema = z.object({
 
 export type DashboardStats = z.infer<typeof dashboardStatsSchema>;
 
+// Personnel Activity Report Schema
+export const personnelActivitySchema = z.object({
+  personnelId: z.number(),
+  personnelName: z.string(),
+  division: z.string().optional(),
+  department: z.string().optional(),
+  totalTransactions: z.number(),
+  checkouts: z.number(),
+  checkins: z.number(),
+  overdueItems: z.number(),
+  lastActivity: z.string().optional(),
+});
+
+export type PersonnelActivity = z.infer<typeof personnelActivitySchema>;
+
+// Department Usage Report Schema
+export const departmentUsageSchema = z.object({
+  department: z.string(),
+  totalTransactions: z.number(),
+  uniquePersonnel: z.number(),
+  mostFrequentItems: z.array(z.object({
+    itemName: z.string(),
+    count: z.number(),
+  })),
+  checkoutFrequency: z.number(),
+});
+
+export type DepartmentUsage = z.infer<typeof departmentUsageSchema>;
+
 // Privacy Agreement Schema
 export const privacyAgreements = pgTable("privacy_agreements", {
   id: serial("id").primaryKey(),
