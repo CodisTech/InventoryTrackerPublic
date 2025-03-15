@@ -1,121 +1,181 @@
 import React, { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { DataTable } from "@/components/ui/data-table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { User } from "@shared/schema";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { DataTable } from "@/components/ui/data-table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
 import { 
+  PlusCircle, 
   Shield, 
-  ShieldCheck, 
-  ShieldAlert, 
-  Edit, 
+  Edit2, 
   Trash, 
-  UserPlus, 
-  ArrowDownUp 
+  UserCog, 
+  ShieldAlert,
+  ShieldCheck,
+  UserX 
 } from "lucide-react";
-import AddUserModal from "@/components/users/add-user-modal";
-import EditUserModal from "@/components/users/edit-user-modal";
 
-const AdminManagementPage: React.FC = () => {
+import AddAdminModal from "@/components/users/add-admin-modal";
+import EditAdminModal from "@/components/users/edit-admin-modal";
+
+type User = {
+  id: number;
+  username: string;
+  password: string; // Note: This should be hashed and never displayed
+  fullName: string;
+  role: string;
+  isAuthorized: boolean;
+};
+
+export default function AdminManagementPage() {
+  const { user: currentUser } = useAuth();
+  const queryClient = useQueryClient();
   const { toast } = useToast();
+  
+  // State for modals
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
-  const [isEditUserModalOpen, setIsEditUserModalOpen] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
+  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
+  const [isRoleAlertOpen, setIsRoleAlertOpen] = useState(false);
 
-  const { data: users = [], isLoading, error } = useQuery<User[]>({
+  // Fetch all users
+  const { data: users = [], isLoading } = useQuery({
     queryKey: ["/api/users"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/users");
+      return await res.json();
+    }
   });
 
-  React.useEffect(() => {
-    if (error) {
-      toast({
-        title: "Error loading users",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  }, [error, toast]);
-
+  // Delete user mutation
   const deleteUserMutation = useMutation({
     mutationFn: async (userId: number) => {
-      return await apiRequest(`/api/users/${userId}`, {
-        method: "DELETE",
-      });
+      const res = await apiRequest("DELETE", `/api/users/${userId}`);
+      return res.ok;
     },
     onSuccess: () => {
       toast({
-        title: "User deleted",
-        description: "The user has been successfully deleted.",
+        title: "Administrator deleted",
+        description: "The administrator account has been deleted successfully",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-      setIsDeleteModalOpen(false);
+      setIsDeleteAlertOpen(false);
     },
     onError: (error: Error) => {
       toast({
-        title: "Failed to delete user",
+        title: "Error deleting administrator",
         description: error.message,
         variant: "destructive",
       });
     },
   });
 
-  const updateRoleMutation = useMutation({
-    mutationFn: async ({ userId, role }: { userId: number; role: string }) => {
-      return await apiRequest(`/api/users/${userId}/role`, {
-        method: "PATCH",
-        data: { role },
-      });
+  // Change role mutation
+  const changeRoleMutation = useMutation({
+    mutationFn: async ({ userId, newRole }: { userId: number; newRole: string }) => {
+      const res = await apiRequest("PATCH", `/api/users/${userId}`, { role: newRole });
+      return await res.json();
     },
     onSuccess: () => {
       toast({
         title: "Role updated",
-        description: "The user's role has been successfully updated.",
+        description: "The administrator role has been updated successfully",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-      setIsRoleModalOpen(false);
+      setIsRoleAlertOpen(false);
     },
     onError: (error: Error) => {
       toast({
-        title: "Failed to update role",
+        title: "Error updating role",
         description: error.message,
         variant: "destructive",
       });
     },
   });
 
+  // Toggle authorization mutation
+  const toggleAuthorizationMutation = useMutation({
+    mutationFn: async ({ userId, isAuthorized }: { userId: number; isAuthorized: boolean }) => {
+      const res = await apiRequest("PATCH", `/api/users/${userId}`, { isAuthorized });
+      return await res.json();
+    },
+    onSuccess: (_, variables) => {
+      toast({
+        title: variables.isAuthorized ? "Administrator activated" : "Administrator deactivated",
+        description: `The administrator account has been ${variables.isAuthorized ? "activated" : "deactivated"} successfully`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error toggling authorization",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Handle edit click
   const handleEditClick = (user: User) => {
     setSelectedUser(user);
-    setIsEditUserModalOpen(true);
+    setIsEditModalOpen(true);
   };
 
+  // Handle delete click
   const handleDeleteClick = (user: User) => {
     setSelectedUser(user);
-    setIsDeleteModalOpen(true);
+    setIsDeleteAlertOpen(true);
   };
 
+  // Handle role click
   const handleRoleClick = (user: User) => {
     setSelectedUser(user);
-    setIsRoleModalOpen(true);
+    setIsRoleAlertOpen(true);
   };
 
-  const handleDelete = () => {
+  // Handle toggle authorization
+  const handleToggleAuthorization = (user: User) => {
+    toggleAuthorizationMutation.mutate({
+      userId: user.id,
+      isAuthorized: !user.isAuthorized
+    });
+  };
+
+  // Handle delete confirmation
+  const handleDeleteConfirm = () => {
     if (selectedUser) {
       deleteUserMutation.mutate(selectedUser.id);
     }
   };
 
-  const handleRoleChange = (role: string) => {
+  // Handle role change confirmation
+  const handleRoleChangeConfirm = () => {
     if (selectedUser) {
-      updateRoleMutation.mutate({ userId: selectedUser.id, role });
+      const newRole = selectedUser.role === "admin" ? "super_admin" : "admin";
+      changeRoleMutation.mutate({
+        userId: selectedUser.id,
+        newRole
+      });
     }
   };
 
+  // Table columns definition
   const columns = [
     {
       header: "ID",
@@ -136,25 +196,20 @@ const AdminManagementPage: React.FC = () => {
       header: "Role",
       accessorKey: "role",
       cell: (user: User) => {
-        const role = user.role || "user";
-        const isAdmin = role === "admin";
-        const isSuperAdmin = role === "superadmin";
-        
         return (
-          <div className="flex items-center">
-            {isSuperAdmin ? (
-              <ShieldAlert className="h-4 w-4 mr-2 text-red-500" />
-            ) : isAdmin ? (
-              <ShieldCheck className="h-4 w-4 mr-2 text-green-500" />
+          <Badge variant={user.role === "super_admin" ? "destructive" : "default"}>
+            {user.role === "super_admin" ? (
+              <div className="flex items-center gap-1">
+                <ShieldAlert className="h-3 w-3" />
+                <span>Super Admin</span>
+              </div>
             ) : (
-              <Shield className="h-4 w-4 mr-2 text-gray-500" />
+              <div className="flex items-center gap-1">
+                <Shield className="h-3 w-3" />
+                <span>Admin</span>
+              </div>
             )}
-            <Badge 
-              variant={isSuperAdmin ? "destructive" : isAdmin ? "success" : "secondary"}
-            >
-              {role.charAt(0).toUpperCase() + role.slice(1)}
-            </Badge>
-          </div>
+          </Badge>
         );
       },
       sortable: true,
@@ -162,162 +217,182 @@ const AdminManagementPage: React.FC = () => {
     {
       header: "Status",
       accessorKey: "isAuthorized",
-      cell: (user: User) => (
-        <Badge variant={user.isAuthorized ? "success" : "destructive"}>
-          {user.isAuthorized ? "Active" : "Inactive"}
-        </Badge>
-      ),
+      cell: (user: User) => {
+        return (
+          <Badge variant={user.isAuthorized ? "outline" : "secondary"}>
+            {user.isAuthorized ? (
+              <div className="flex items-center gap-1 text-green-600">
+                <ShieldCheck className="h-3 w-3" />
+                <span>Active</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1 text-red-600">
+                <UserX className="h-3 w-3" />
+                <span>Inactive</span>
+              </div>
+            )}
+          </Badge>
+        );
+      },
       sortable: true,
     },
     {
       header: "Actions",
       accessorKey: "actions",
-      cell: (user: User) => (
-        <div className="flex items-center space-x-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => handleRoleClick(user)}
-            title="Change Role"
-          >
-            <ArrowDownUp className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => handleEditClick(user)}
-            title="Edit User"
-          >
-            <Edit className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => handleDeleteClick(user)}
-            title="Delete User"
-            className="text-red-500"
-          >
-            <Trash className="h-4 w-4" />
-          </Button>
-        </div>
-      ),
+      cell: (user: User) => {
+        // Don't allow users to modify themselves or super_admin role if the current user is just admin
+        const isSelf = currentUser?.id === user.id;
+        const isRestrictedSuperAdmin = 
+          user.role === "super_admin" && 
+          currentUser?.role !== "super_admin";
+        
+        return (
+          <div className="flex space-x-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleEditClick(user)}
+              disabled={isSelf}
+            >
+              <Edit2 className="h-4 w-4" />
+            </Button>
+            
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleRoleClick(user)}
+              disabled={isSelf || isRestrictedSuperAdmin}
+            >
+              <UserCog className="h-4 w-4" />
+            </Button>
+            
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleToggleAuthorization(user)}
+              disabled={isSelf || isRestrictedSuperAdmin}
+            >
+              {user.isAuthorized ? (
+                <UserX className="h-4 w-4 text-red-500" />
+              ) : (
+                <ShieldCheck className="h-4 w-4 text-green-500" />
+              )}
+            </Button>
+            
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleDeleteClick(user)}
+              disabled={isSelf || isRestrictedSuperAdmin}
+            >
+              <Trash className="h-4 w-4 text-red-500" />
+            </Button>
+          </div>
+        );
+      },
+      sortable: false,
     },
   ];
 
   return (
-    <div>
+    <div className="container mx-auto py-6">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-3xl font-bold">Administrator Management</h1>
+          <p className="text-muted-foreground">
+            Manage administrator accounts and permissions
+          </p>
+        </div>
+        <Button onClick={() => setIsAddModalOpen(true)}>
+          <PlusCircle className="mr-2 h-4 w-4" />
+          Add Administrator
+        </Button>
+      </div>
+
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 py-5">
-          <CardTitle className="text-2xl font-medium text-neutral-900">Administrator Management</CardTitle>
-          <Button onClick={() => setIsAddUserModalOpen(true)}>
-            <UserPlus className="mr-2 h-4 w-4" />
-            Add New Admin
-          </Button>
+        <CardHeader>
+          <CardTitle>Administrators</CardTitle>
+          <CardDescription>
+            View and manage all administrator accounts in the system
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <DataTable
-            data={users}
-            columns={columns}
-            searchable
-            searchPlaceholder="Search administrators..."
-          />
+          {isLoading ? (
+            <div className="flex justify-center items-center h-40">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : (
+            <DataTable
+              data={users}
+              columns={columns}
+              searchable
+              searchPlaceholder="Search administrators..."
+            />
+          )}
         </CardContent>
       </Card>
 
-      {/* Add User Modal */}
-      <AddUserModal 
-        isOpen={isAddUserModalOpen}
-        onClose={() => setIsAddUserModalOpen(false)}
+      {/* Add Admin Modal */}
+      <AddAdminModal 
+        isOpen={isAddModalOpen} 
+        onClose={() => setIsAddModalOpen(false)} 
       />
 
-      {/* Edit User Modal */}
+      {/* Edit Admin Modal */}
       {selectedUser && (
-        <EditUserModal
-          isOpen={isEditUserModalOpen}
-          onClose={() => setIsEditUserModalOpen(false)}
+        <EditAdminModal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
           user={selectedUser}
         />
       )}
 
-      {/* Delete Confirmation Modal */}
-      <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Confirm Deletion</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <p>Are you sure you want to delete this user?</p>
-            <p className="text-sm text-muted-foreground mt-2">
-              {selectedUser?.fullName} ({selectedUser?.username})
-            </p>
-            <p className="text-sm text-destructive mt-2">
-              This action cannot be undone.
-            </p>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              Delete User
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the administrator account for{" "}
+              <strong>{selectedUser?.fullName}</strong>. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-red-600 hover:bg-red-700">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
-      {/* Role Change Modal */}
-      <Dialog open={isRoleModalOpen} onOpenChange={setIsRoleModalOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Change User Role</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <p>Select a new role for: {selectedUser?.fullName}</p>
-            <div className="flex flex-col gap-3 mt-4">
-              <Button 
-                variant={selectedUser?.role === "user" ? "default" : "outline"} 
-                onClick={() => handleRoleChange("user")}
-                className="justify-start"
-              >
-                <Shield className="h-4 w-4 mr-2" />
-                User
-                <span className="text-xs text-muted-foreground ml-2">
-                  (Basic access, no administrative privileges)
-                </span>
-              </Button>
-              <Button 
-                variant={selectedUser?.role === "admin" ? "default" : "outline"} 
-                onClick={() => handleRoleChange("admin")}
-                className="justify-start"
-              >
-                <ShieldCheck className="h-4 w-4 mr-2 text-green-500" />
-                Administrator
-                <span className="text-xs text-muted-foreground ml-2">
-                  (Can manage inventory, transactions, and personnel)
-                </span>
-              </Button>
-              <Button 
-                variant={selectedUser?.role === "superadmin" ? "default" : "outline"} 
-                onClick={() => handleRoleChange("superadmin")}
-                className="justify-start"
-              >
-                <ShieldAlert className="h-4 w-4 mr-2 text-red-500" />
-                Super Administrator
-                <span className="text-xs text-muted-foreground ml-2">
-                  (Full access to all system features)
-                </span>
-              </Button>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsRoleModalOpen(false)}>
-              Cancel
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Role Change Confirmation Dialog */}
+      <AlertDialog open={isRoleAlertOpen} onOpenChange={setIsRoleAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Change Administrator Role</AlertDialogTitle>
+            <AlertDialogDescription>
+              {selectedUser?.role === "admin" ? (
+                <>
+                  Are you sure you want to promote <strong>{selectedUser?.fullName}</strong> from Administrator to Super Administrator?
+                  Super Administrators have complete control over the system.
+                </>
+              ) : (
+                <>
+                  Are you sure you want to demote <strong>{selectedUser?.fullName}</strong> from Super Administrator to Administrator?
+                  This will reduce their permissions in the system.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleRoleChangeConfirm}>
+              Confirm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
-};
-
-export default AdminManagementPage;
+}

@@ -9,7 +9,8 @@ import {
   RotateCw, 
   Users, 
   BarChart3,
-  ShoppingBag
+  ShoppingBag,
+  ShieldCheck
 } from "lucide-react";
 import codisLogoLight from "../../assets/images/codis-logo-light.svg";
 
@@ -25,6 +26,11 @@ const Sidebar: React.FC = () => {
     { name: "Personnel", icon: <Users className="w-5 h-5" />, path: "/users" },
     { name: "Reports", icon: <BarChart3 className="w-5 h-5" />, path: "/reports" },
   ];
+  
+  // Admin menu items shown only for admin users
+  const adminItems = user?.role === 'admin' || user?.role === 'super_admin' ? [
+    { name: "Admin Management", icon: <ShieldCheck className="w-5 h-5" />, path: "/admin/management" }
+  ] : [];
 
   const handleLogout = () => {
     logoutMutation.mutate();
@@ -57,6 +63,32 @@ const Sidebar: React.FC = () => {
               </Link>
             </li>
           ))}
+          
+          {/* Admin menu items */}
+          {adminItems.length > 0 && (
+            <>
+              <li className="pt-2 pb-1">
+                <div className="px-4 text-xs font-semibold text-neutral-400 uppercase tracking-wider">
+                  Admin Controls
+                </div>
+              </li>
+              {adminItems.map((item) => (
+                <li key={item.name}>
+                  <Link 
+                    href={item.path}
+                    className={`flex items-center px-4 py-3 rounded-md transition-colors ${
+                      location === item.path
+                        ? "bg-primary/10 text-primary font-medium"
+                        : "text-neutral-600 hover:bg-neutral-50 hover:text-primary"
+                    }`}
+                  >
+                    <span className="mr-3">{item.icon}</span>
+                    <span>{item.name}</span>
+                  </Link>
+                </li>
+              ))}
+            </>
+          )}
         </ul>
       </nav>
 
