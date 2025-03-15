@@ -186,8 +186,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const dataWithDefaults = {
         ...req.body,
         quantity: req.body.quantity || 1,
-        // Add the authenticated user as the administrator for this transaction
-        administratorId: req.user?.id
+        // If administratorId is not provided, default to the authenticated user
+        administratorId: req.body.administratorId || req.user?.id
       };
       
       // Transaction dates:
