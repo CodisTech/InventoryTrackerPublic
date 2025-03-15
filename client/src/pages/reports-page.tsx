@@ -1600,10 +1600,10 @@ const PersonnelActivityChart: React.FC = () => {
   }
 
   const chartData = personnelActivity.map(item => ({
-    personnel: item.fullName,
-    checkouts: item.checkoutCount,
-    returns: item.returnsCount,
-    overdue: item.overdueCount
+    personnel: item.personnelName,
+    checkouts: item.checkouts,
+    returns: item.checkins,
+    overdue: item.overdueItems
   }));
 
   return (
@@ -1716,7 +1716,7 @@ const DepartmentUsageChart: React.FC = () => {
   const chartData = departmentUsage.map(item => ({
     id: item.department,
     label: item.department,
-    value: item.itemCount,
+    value: item.totalTransactions,
   }));
 
   return (
