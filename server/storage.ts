@@ -478,7 +478,22 @@ export class MemStorage implements IStorage {
   async createTransaction(insertTransaction: InsertTransaction): Promise<Transaction> {
     const id = this.transactionIdCounter++;
     const now = new Date();
-    const transaction: Transaction = { ...insertTransaction, id, timestamp: now, returnDate: undefined };
+    
+    // Set a default due date of 24 hours from now for check-outs if not provided
+    let dueDate = insertTransaction.dueDate;
+    if (insertTransaction.type === 'check-out' && !dueDate) {
+      dueDate = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours from now
+    }
+    
+    const transaction: Transaction = { 
+      ...insertTransaction, 
+      id, 
+      timestamp: now, 
+      dueDate,
+      returnDate: undefined,
+      isOverdue: false
+    };
+    
     this.transactionsDB.set(id, transaction);
     
     // Update inventory item availability
@@ -540,11 +555,65 @@ export class MemStorage implements IStorage {
       (transaction) => transaction.itemId === itemId,
     );
   }
+  
+  // Check for overdue items
+  async checkOverdueItems(): Promise<Transaction[]> {
+    const now = new Date();
+    const overdueTransactions: Transaction[] = [];
+    
+    // Find all checked out items that are overdue
+    const checkoutTransactions = Array.from(this.transactionsDB.values())
+      .filter(t => t.type === 'check-out' && !t.returnDate && t.dueDate);
+    
+    for (const transaction of checkoutTransactions) {
+      if (transaction.dueDate && new Date(transaction.dueDate) < now && !transaction.isOverdue) {
+        // Mark as overdue
+        const updatedTransaction = { 
+          ...transaction, 
+          isOverdue: true 
+        };
+        this.transactionsDB.set(transaction.id, updatedTransaction);
+        overdueTransactions.push(updatedTransaction);
+      }
+    }
+    
+    return overdueTransactions;
+  }
+  
+  // Get all overdue items
+  async getOverdueItems(): Promise<TransactionWithDetails[]> {
+    // First check and update overdue status
+    await this.checkOverdueItems();
+    
+    // Get all overdue transactions
+    const overdueTransactions = Array.from(this.transactionsDB.values())
+      .filter(t => t.isOverdue && !t.returnDate);
+    
+    // Add item and user details
+    const result: TransactionWithDetails[] = [];
+    for (const transaction of overdueTransactions) {
+      const item = this.itemsDB.get(transaction.itemId);
+      const user = this.usersDB.get(transaction.userId);
+      
+      if (item && user) {
+        result.push({
+          ...transaction,
+          item,
+          user
+        });
+      }
+    }
+    
+    return result;
+  }
 
   // Dashboard stats
   async getDashboardStats(): Promise<DashboardStats> {
     const items = await this.getAllInventoryItems();
     const users = await this.getAllUsers();
+    
+    // Check for overdue items first
+    await this.checkOverdueItems();
     
     // Calculate stats
     const totalItems = items.reduce((sum, item) => sum + item.totalQuantity, 0);
@@ -582,13 +651,17 @@ export class MemStorage implements IStorage {
       }
     }
     
+    // Get overdue items
+    const overdueItems = await this.getOverdueItems();
+    
     return {
       totalItems,
       checkedOutItems,
       availableItems,
       totalUsers: users.length,
       lowStockItems,
-      recentActivity
+      recentActivity,
+      overdueItems
     };
   }
 }

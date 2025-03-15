@@ -26,6 +26,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Overdue items endpoint
+  app.get("/api/overdue-items", ensureAuthenticated, async (req, res, next) => {
+    try {
+      // Check and update overdue status first
+      await storage.checkOverdueItems();
+      
+      // Get all overdue items
+      const overdueItems = await storage.getOverdueItems();
+      res.json(overdueItems);
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // Categories
   app.get("/api/categories", ensureAuthenticated, async (req, res, next) => {
     try {

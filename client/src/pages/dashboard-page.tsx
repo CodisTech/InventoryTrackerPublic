@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import SummaryCard from "@/components/dashboard/summary-card";
 import RecentActivity from "@/components/dashboard/recent-activity";
 import LowStockItems from "@/components/dashboard/low-stock-items";
+import OverdueItemsAlert from "@/components/dashboard/overdue-items-alert";
 import CheckInOutModal from "@/components/inventory/check-in-out-modal";
 import AddItemModal from "@/components/inventory/add-item-modal";
 import { DashboardStats } from "@shared/schema";
@@ -57,6 +58,11 @@ const DashboardPage: React.FC = () => {
           </Button>
         </div>
       </div>
+      
+      {/* Overdue Items Alert */}
+      {stats?.overdueItems && stats.overdueItems.length > 0 && (
+        <OverdueItemsAlert />
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">

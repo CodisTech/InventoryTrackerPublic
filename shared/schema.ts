@@ -91,6 +91,7 @@ export const transactions = pgTable("transactions", {
   dueDate: timestamp("due_date"),
   returnDate: timestamp("return_date"),
   notes: text("notes"),
+  isOverdue: boolean("is_overdue").default(false),
 });
 
 export const insertTransactionSchema = createInsertSchema(transactions).pick({
@@ -143,6 +144,7 @@ export const dashboardStatsSchema = z.object({
   totalUsers: z.number(),
   lowStockItems: z.array(inventoryItemWithCategorySchema),
   recentActivity: z.array(transactionWithDetailsSchema),
+  overdueItems: z.array(transactionWithDetailsSchema),
 });
 
 export type DashboardStats = z.infer<typeof dashboardStatsSchema>;
