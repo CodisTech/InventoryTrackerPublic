@@ -10,7 +10,7 @@ import {
   Users, 
   BarChart3 
 } from "lucide-react";
-import codisLogo from "../../assets/images/codis-logo.svg";
+import codisLogoLight from "../../assets/images/codis-logo-light.svg";
 
 const Sidebar: React.FC = () => {
   const [location] = useLocation();
@@ -31,7 +31,7 @@ const Sidebar: React.FC = () => {
   return (
     <aside className="hidden md:block w-64 bg-white border-r border-neutral-100 shadow-sm">
       <div className="p-4 flex flex-col items-center justify-center border-b border-neutral-100">
-        <img src={codisLogo} alt="Codis Technology" className="w-24 h-24 mb-2" />
+        <img src={codisLogoLight} alt="Codis Technology" className="w-24 h-24 mb-2" />
         <h1 className="text-xl font-bold text-black">
           Codis Technology
         </h1>

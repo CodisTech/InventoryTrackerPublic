@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Menu, Bell, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import codisLogo from "../../assets/images/codis-logo.svg";
+import codisLogoDark from "../../assets/images/codis-logo-dark.svg";
 
 interface AppHeaderProps {
   onMenuClick: () => void;
@@ -18,7 +18,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onMenuClick }) => {
         <button className="p-2" aria-label="Menu" onClick={onMenuClick}>
           <Menu className="h-5 w-5" />
         </button>
-        <img src={codisLogo} alt="Codis Technology" className="ml-2 h-8 w-8" />
+        <img src={codisLogoDark} alt="Codis Technology" className="ml-2 h-8 w-8" />
         <h1 className="text-lg font-medium ml-2">Codis Inventory</h1>
       </div>
 
