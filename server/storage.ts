@@ -868,6 +868,170 @@ export class MemStorage implements IStorage {
     };
   }
   
+  // Report methods
+  async getPersonnelActivity(): Promise<PersonnelActivity[]> {
+    // Get all transactions with details
+    const transactions = await this.getAllTransactionsWithDetails();
+    const personnel = await this.getAllPersonnel();
+    const result: PersonnelActivity[] = [];
+    
+    // Create a map to track personnel activity
+    const activityMap = new Map<number, {
+      totalTransactions: number;
+      checkouts: number;
+      checkins: number;
+      overdueItems: number;
+      lastActivity: Date | null;
+    }>();
+    
+    // Initialize counters for each personnel
+    personnel.forEach(person => {
+      activityMap.set(person.id, {
+        totalTransactions: 0,
+        checkouts: 0,
+        checkins: 0,
+        overdueItems: 0,
+        lastActivity: null
+      });
+    });
+    
+    // Calculate metrics based on transactions
+    for (const transaction of transactions) {
+      const personnelId = transaction.user.id;
+      const activity = activityMap.get(personnelId);
+      
+      if (activity) {
+        // Update total transactions
+        activity.totalTransactions++;
+        
+        // Update checkout or checkin count
+        if (transaction.type === 'check-out') {
+          activity.checkouts++;
+          
+          // Check if overdue (no return date and past due date)
+          if (!transaction.returnDate && transaction.dueDate && new Date() > new Date(transaction.dueDate)) {
+            activity.overdueItems++;
+          }
+        } else if (transaction.type === 'check-in') {
+          activity.checkins++;
+        }
+        
+        // Update last activity timestamp
+        const transactionDate = transaction.timestamp ? new Date(transaction.timestamp) : null;
+        if (transactionDate && (!activity.lastActivity || transactionDate > activity.lastActivity)) {
+          activity.lastActivity = transactionDate;
+        }
+      }
+    }
+    
+    // Convert map to array of PersonnelActivity objects
+    for (const person of personnel) {
+      const activity = activityMap.get(person.id);
+      if (activity) {
+        result.push({
+          personnelId: person.id,
+          personnelName: `${person.firstName} ${person.lastName}`,
+          division: person.division,
+          department: person.department,
+          totalTransactions: activity.totalTransactions,
+          checkouts: activity.checkouts,
+          checkins: activity.checkins,
+          overdueItems: activity.overdueItems,
+          lastActivity: activity.lastActivity ? activity.lastActivity.toISOString() : undefined
+        });
+      }
+    }
+    
+    // Sort by total transactions (descending)
+    result.sort((a, b) => b.totalTransactions - a.totalTransactions);
+    
+    return result;
+  }
+  
+  async getDepartmentUsage(): Promise<DepartmentUsage[]> {
+    // Get all transactions with details
+    const transactions = await this.getAllTransactionsWithDetails();
+    const personnel = await this.getAllPersonnel();
+    
+    // Group personnel by department
+    const departmentPersonnel = new Map<string, Set<number>>();
+    personnel.forEach(person => {
+      if (!person.department) return;
+      
+      if (!departmentPersonnel.has(person.department)) {
+        departmentPersonnel.set(person.department, new Set<number>());
+      }
+      departmentPersonnel.get(person.department)?.add(person.id);
+    });
+    
+    // Track item usage by department
+    const departmentItemUsage = new Map<string, Map<string, number>>();
+    
+    // Track total transactions by department
+    const departmentTransactions = new Map<string, number>();
+    
+    // Process transactions
+    for (const transaction of transactions) {
+      // Skip if transaction doesn't have user/personnel details
+      if (!transaction.user || !transaction.person || !transaction.person.department) continue;
+      
+      const department = transaction.person.department;
+      
+      // Update transaction count
+      departmentTransactions.set(
+        department, 
+        (departmentTransactions.get(department) || 0) + 1
+      );
+      
+      // Update item usage count
+      if (transaction.item) {
+        if (!departmentItemUsage.has(department)) {
+          departmentItemUsage.set(department, new Map<string, number>());
+        }
+        
+        const itemName = transaction.item.name;
+        const deptItems = departmentItemUsage.get(department)!;
+        deptItems.set(itemName, (deptItems.get(itemName) || 0) + 1);
+      }
+    }
+    
+    // Build result array
+    const result: DepartmentUsage[] = [];
+    
+    for (const [department, personIds] of departmentPersonnel.entries()) {
+      // Skip departments with no transactions
+      if (!departmentTransactions.has(department)) continue;
+      
+      const transactionCount = departmentTransactions.get(department) || 0;
+      const uniquePersonnelCount = personIds.size;
+      
+      // Calculate checkout frequency (transactions per person)
+      const checkoutFrequency = uniquePersonnelCount > 0 
+        ? transactionCount / uniquePersonnelCount 
+        : 0;
+      
+      // Get most frequently used items
+      const itemUsage = departmentItemUsage.get(department) || new Map<string, number>();
+      const mostFrequentItems = Array.from(itemUsage.entries())
+        .map(([itemName, count]) => ({ itemName, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5); // Top 5 most used items
+      
+      result.push({
+        department,
+        totalTransactions: transactionCount,
+        uniquePersonnel: uniquePersonnelCount,
+        mostFrequentItems,
+        checkoutFrequency
+      });
+    }
+    
+    // Sort by total transactions (descending)
+    result.sort((a, b) => b.totalTransactions - a.totalTransactions);
+    
+    return result;
+  }
+  
   // Privacy Agreement methods
   private privacyAgreementsDB: Map<number, PrivacyAgreement> = new Map();
   private privacyAgreementIdCounter: number = 1;
