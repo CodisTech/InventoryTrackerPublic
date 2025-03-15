@@ -4,7 +4,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
   Info, AlertCircle, ClockIcon, UserCircle, Package, CheckCircle2, Users, 
   ChevronRight, ArrowLeft, User, Check, Clock, AlertTriangle, Phone, RotateCw,
-  Mail, CopyIcon
+  Mail, CopyIcon, Loader2, BarChart3, PieChart, UserPlus, CalendarRange
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,10 +12,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { TransactionWithDetails } from "@shared/schema";
+import { TransactionWithDetails, PersonnelActivity, DepartmentUsage } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 import { useLocation } from "wouter";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Label } from "@/components/ui/label";
+import { ResponsiveBar } from "@nivo/bar";
+import { ResponsivePie } from "@nivo/pie";
 
 // Transaction Detail Component
 interface TransactionDetailProps {
@@ -1505,23 +1509,41 @@ const ReportsPage: React.FC = () => {
         <TabsContent value="personnel" className="pt-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle>Personnel Activity</CardTitle>
+                <Select defaultValue="30days">
+                  <SelectTrigger className="w-36">
+                    <SelectValue placeholder="Select period" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="7days">Last 7 days</SelectItem>
+                    <SelectItem value="30days">Last 30 days</SelectItem>
+                    <SelectItem value="90days">Last 90 days</SelectItem>
+                    <SelectItem value="year">This year</SelectItem>
+                  </SelectContent>
+                </Select>
               </CardHeader>
               <CardContent>
-                <div className="text-sm text-neutral-500">
-                  Personnel activity charts will be displayed here.
-                </div>
+                <PersonnelActivityChart />
               </CardContent>
             </Card>
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle>Department Usage</CardTitle>
+                <Select defaultValue="90days">
+                  <SelectTrigger className="w-36">
+                    <SelectValue placeholder="Select period" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="7days">Last 7 days</SelectItem>
+                    <SelectItem value="30days">Last 30 days</SelectItem>
+                    <SelectItem value="90days">Last 90 days</SelectItem>
+                    <SelectItem value="year">This year</SelectItem>
+                  </SelectContent>
+                </Select>
               </CardHeader>
               <CardContent>
-                <div className="text-sm text-neutral-500">
-                  Department usage analytics will be displayed here.
-                </div>
+                <DepartmentUsageChart />
               </CardContent>
             </Card>
           </div>
@@ -1530,6 +1552,216 @@ const ReportsPage: React.FC = () => {
           <CustomReportsTab />
         </TabsContent>
       </Tabs>
+    </div>
+  );
+};
+
+// Personnel Activity Chart Component
+const PersonnelActivityChart: React.FC = () => {
+  const { toast } = useToast();
+  const [period, setPeriod] = React.useState("30days");
+  
+  const { data: personnelActivity = [], isLoading, error } = useQuery<PersonnelActivity[]>({
+    queryKey: ["/api/reports/personnel-activity"],
+  });
+
+  React.useEffect(() => {
+    if (error) {
+      toast({
+        title: "Error fetching personnel activity data",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  }, [error, toast]);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col space-y-3">
+        <Skeleton className="h-[300px] w-full rounded-xl" />
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-[250px]" />
+          <Skeleton className="h-4 w-[200px]" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!personnelActivity || personnelActivity.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[300px] text-center p-4">
+        <Users className="h-12 w-12 text-neutral-300 mb-3" />
+        <h3 className="text-lg font-medium mb-1">No Personnel Activity Data</h3>
+        <p className="text-neutral-500 max-w-md">
+          There is no personnel activity data to display for the selected period.
+        </p>
+      </div>
+    );
+  }
+
+  const chartData = personnelActivity.map(item => ({
+    personnel: item.fullName,
+    checkouts: item.checkoutCount,
+    returns: item.returnsCount,
+    overdue: item.overdueCount
+  }));
+
+  return (
+    <div className="h-[300px]">
+      <ResponsiveBar
+        data={chartData}
+        keys={["checkouts", "returns", "overdue"]}
+        indexBy="personnel"
+        margin={{ top: 10, right: 20, bottom: 50, left: 60 }}
+        padding={0.3}
+        valueScale={{ type: "linear" }}
+        indexScale={{ type: "band", round: true }}
+        colors={["#4f46e5", "#10b981", "#f43f5e"]}
+        borderColor={{ from: "color", modifiers: [["darker", 1.6]] }}
+        axisTop={null}
+        axisRight={null}
+        axisBottom={{
+          tickSize: 5,
+          tickPadding: 5,
+          tickRotation: -45,
+          legendPosition: "middle",
+          legendOffset: 40,
+          truncateTickAt: 0
+        }}
+        axisLeft={{
+          tickSize: 5,
+          tickPadding: 5,
+          tickRotation: 0,
+          legend: "Count",
+          legendPosition: "middle",
+          legendOffset: -40,
+          truncateTickAt: 0
+        }}
+        labelSkipWidth={12}
+        labelSkipHeight={12}
+        labelTextColor={{ from: "color", modifiers: [["darker", 1.6]] }}
+        legends={[
+          {
+            dataFrom: "keys",
+            anchor: "bottom",
+            direction: "row",
+            justify: false,
+            translateX: 0,
+            translateY: 50,
+            itemsSpacing: 2,
+            itemWidth: 100,
+            itemHeight: 20,
+            itemDirection: "left-to-right",
+            itemOpacity: 0.85,
+            symbolSize: 20,
+            effects: [
+              {
+                on: "hover",
+                style: {
+                  itemOpacity: 1
+                }
+              }
+            ]
+          }
+        ]}
+        role="application"
+        ariaLabel="Personnel Activity Chart"
+      />
+    </div>
+  );
+};
+
+// Department Usage Chart Component
+const DepartmentUsageChart: React.FC = () => {
+  const { toast } = useToast();
+  
+  const { data: departmentUsage = [], isLoading, error } = useQuery<DepartmentUsage[]>({
+    queryKey: ["/api/reports/department-usage"],
+  });
+
+  React.useEffect(() => {
+    if (error) {
+      toast({
+        title: "Error fetching department usage data",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  }, [error, toast]);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col space-y-3">
+        <Skeleton className="h-[300px] w-full rounded-xl" />
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-[250px]" />
+          <Skeleton className="h-4 w-[200px]" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!departmentUsage || departmentUsage.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[300px] text-center p-4">
+        <PieChart className="h-12 w-12 text-neutral-300 mb-3" />
+        <h3 className="text-lg font-medium mb-1">No Department Usage Data</h3>
+        <p className="text-neutral-500 max-w-md">
+          There is no department usage data to display for the selected period.
+        </p>
+      </div>
+    );
+  }
+
+  const chartData = departmentUsage.map(item => ({
+    id: item.department,
+    label: item.department,
+    value: item.itemCount,
+  }));
+
+  return (
+    <div className="h-[300px]">
+      <ResponsivePie
+        data={chartData}
+        margin={{ top: 10, right: 20, bottom: 50, left: 20 }}
+        innerRadius={0.5}
+        padAngle={0.7}
+        cornerRadius={3}
+        activeOuterRadiusOffset={8}
+        borderWidth={1}
+        borderColor={{ from: "color", modifiers: [["darker", 0.2]] }}
+        arcLinkLabelsSkipAngle={10}
+        arcLinkLabelsTextColor="#333333"
+        arcLinkLabelsThickness={2}
+        arcLinkLabelsColor={{ from: "color" }}
+        arcLabelsSkipAngle={10}
+        arcLabelsTextColor={{ from: "color", modifiers: [["darker", 2]] }}
+        legends={[
+          {
+            anchor: "bottom",
+            direction: "row",
+            justify: false,
+            translateX: 0,
+            translateY: 50,
+            itemsSpacing: 0,
+            itemWidth: 100,
+            itemHeight: 18,
+            itemTextColor: "#999",
+            itemDirection: "left-to-right",
+            itemOpacity: 1,
+            symbolSize: 18,
+            symbolShape: "circle",
+            effects: [
+              {
+                on: "hover",
+                style: {
+                  itemTextColor: "#000"
+                }
+              }
+            ]
+          }
+        ]}
+      />
     </div>
   );
 };
