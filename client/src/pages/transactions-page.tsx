@@ -7,8 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { format } from "date-fns";
-import { Transaction, Personnel, InventoryItemWithCategory, User } from "@shared/schema";
-import { Printer, Eye, RotateCcw } from "lucide-react";
+import { Transaction, Personnel, InventoryItemWithCategory, User, TransactionWithDetails } from "@shared/schema";
+import { Printer, Eye, RotateCcw, UserCheck } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import CheckInOutModal from "@/components/inventory/check-in-out-modal";
 import ItemDetailModal from "@/components/inventory/item-detail-modal";
@@ -16,12 +16,12 @@ import ItemDetailModal from "@/components/inventory/item-detail-modal";
 const TransactionsPage: React.FC = () => {
   const { toast } = useToast();
   const [printModalOpen, setPrintModalOpen] = useState(false);
-  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [selectedTransaction, setSelectedTransaction] = useState<TransactionWithDetails | null>(null);
   const [isCheckInOutModalOpen, setIsCheckInOutModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<InventoryItemWithCategory | null>(null);
   const [viewModalOpen, setViewModalOpen] = useState(false);
 
-  const { data: transactions = [], isLoading, error } = useQuery<Transaction[]>({
+  const { data: transactions = [], isLoading, error } = useQuery<TransactionWithDetails[]>({
     queryKey: ["/api/transactions"],
     refetchInterval: 5000, // Refetch every 5 seconds
   });
@@ -51,26 +51,32 @@ const TransactionsPage: React.FC = () => {
     queryKey: ["/api/users"],
   });
 
-  const handlePrint = (transaction: Transaction) => {
+  const handlePrint = (transaction: TransactionWithDetails) => {
     setSelectedTransaction(transaction);
     setPrintModalOpen(true);
   };
   
-  const handleViewItem = (transaction: Transaction) => {
-    const item = inventory.find(i => i.id === transaction.itemId);
-    if (item) {
-      setSelectedItem(item);
+  const handleViewItem = (transaction: TransactionWithDetails) => {
+    if (transaction.item) {
+      setSelectedItem(transaction.item);
       setViewModalOpen(true);
     } else {
-      toast({
-        title: "Item not found",
-        description: "Could not find the item associated with this transaction.",
-        variant: "destructive",
-      });
+      // Fallback to find the item if not already included in the transaction details
+      const item = inventory.find(i => i.id === transaction.itemId);
+      if (item) {
+        setSelectedItem(item);
+        setViewModalOpen(true);
+      } else {
+        toast({
+          title: "Item not found",
+          description: "Could not find the item associated with this transaction.",
+          variant: "destructive",
+        });
+      }
     }
   };
   
-  const handleCheckIn = (transaction: Transaction) => {
+  const handleCheckIn = (transaction: TransactionWithDetails) => {
     // Only allow check-in for checked-out items that haven't been returned
     if (transaction.type !== "check-out" || transaction.returnDate) {
       toast({
@@ -81,16 +87,22 @@ const TransactionsPage: React.FC = () => {
       return;
     }
     
-    const item = inventory.find(i => i.id === transaction.itemId);
-    if (item) {
-      setSelectedItem(item);
+    if (transaction.item) {
+      setSelectedItem(transaction.item);
       setIsCheckInOutModalOpen(true);
     } else {
-      toast({
-        title: "Item not found",
-        description: "Could not find the item associated with this transaction.",
-        variant: "destructive",
-      });
+      // Fallback to find the item if not already included in the transaction details
+      const item = inventory.find(i => i.id === transaction.itemId);
+      if (item) {
+        setSelectedItem(item);
+        setIsCheckInOutModalOpen(true);
+      } else {
+        toast({
+          title: "Item not found",
+          description: "Could not find the item associated with this transaction.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -105,9 +117,10 @@ const TransactionsPage: React.FC = () => {
       return;
     }
 
-    // Find related data
-    const item = inventory.find(i => i.id === selectedTransaction?.itemId);
-    const person = personnel.find(p => p.id === selectedTransaction?.userId);
+    // Use data from the TransactionWithDetails object
+    const item = selectedTransaction?.item || inventory.find(i => i.id === selectedTransaction?.itemId);
+    const person = selectedTransaction?.person || personnel.find(p => p.id === selectedTransaction?.userId);
+    const administrator = selectedTransaction?.administrator;
 
     // Format dates
     const checkoutDate = selectedTransaction?.timestamp 
@@ -277,6 +290,10 @@ const TransactionsPage: React.FC = () => {
               <div class="label">Notes:</div>
               <div class="value">${selectedTransaction?.notes || 'N/A'}</div>
             </div>
+            <div class="row">
+              <div class="label">Administrator:</div>
+              <div class="value">${administrator ? administrator.fullName : 'N/A'}</div>
+            </div>
           </div>
           
           <div class="signature-area">
@@ -308,13 +325,13 @@ const TransactionsPage: React.FC = () => {
     {
       header: "Transaction ID",
       accessorKey: "id",
-      cell: (transaction: Transaction) => `TRX-${transaction.id.toString().padStart(4, "0")}`,
+      cell: (transaction: TransactionWithDetails) => `TRX-${transaction.id.toString().padStart(4, "0")}`,
       sortable: true,
     },
     {
       header: "Type",
       accessorKey: "type",
-      cell: (transaction: Transaction) => {
+      cell: (transaction: TransactionWithDetails) => {
         const isCheckout = transaction.type === "check-out";
         return (
           <div className="flex items-center">
@@ -332,23 +349,35 @@ const TransactionsPage: React.FC = () => {
     {
       header: "Item",
       accessorKey: "itemId",
-      cell: (transaction: Transaction) => {
-        const item = inventory.find((i: any) => i.id === transaction.itemId);
-        return item ? item.name : `Item #${transaction.itemId}`;
+      cell: (transaction: TransactionWithDetails) => {
+        return transaction.item ? transaction.item.name : `Item #${transaction.itemId}`;
       },
       sortable: true,
     },
     {
       header: "Personnel",
       accessorKey: "userId",
-      cell: (transaction: Transaction) => {
-        const person = personnel.find(p => p.id === transaction.userId);
-        if (person) {
-          return `${person.firstName} ${person.lastName}${person.division ? ` (${person.division})` : ''}`;
+      cell: (transaction: TransactionWithDetails) => {
+        if (transaction.person) {
+          return `${transaction.person.firstName} ${transaction.person.lastName}${transaction.person.division ? ` (${transaction.person.division})` : ''}`;
         }
-        // Fallback to users table for backward compatibility
-        const user = users && users.find((u: User) => u.id === transaction.userId);
-        return user ? user.fullName : `Personnel #${transaction.userId}`;
+        return transaction.user ? transaction.user.fullName : `Personnel #${transaction.userId}`;
+      },
+      sortable: true,
+    },
+    {
+      header: "Administrator",
+      accessorKey: "administratorId",
+      cell: (transaction: TransactionWithDetails) => {
+        if (transaction.administrator) {
+          return (
+            <div className="flex items-center">
+              <UserCheck className="h-4 w-4 mr-2 text-primary" />
+              <span>{transaction.administrator.fullName}</span>
+            </div>
+          );
+        }
+        return "-";
       },
       sortable: true,
     },
@@ -360,7 +389,7 @@ const TransactionsPage: React.FC = () => {
     {
       header: "Date",
       accessorKey: "timestamp",
-      cell: (transaction: Transaction) => {
+      cell: (transaction: TransactionWithDetails) => {
         return transaction.timestamp 
           ? format(new Date(transaction.timestamp), "MMM dd, yyyy h:mm a") 
           : "-";
@@ -370,7 +399,7 @@ const TransactionsPage: React.FC = () => {
     {
       header: "Due Date",
       accessorKey: "dueDate",
-      cell: (transaction: Transaction) => {
+      cell: (transaction: TransactionWithDetails) => {
         if (!transaction.dueDate) return "-";
         
         const dueDate = new Date(transaction.dueDate);
@@ -391,7 +420,7 @@ const TransactionsPage: React.FC = () => {
     {
       header: "Return Date",
       accessorKey: "returnDate",
-      cell: (transaction: Transaction) => {
+      cell: (transaction: TransactionWithDetails) => {
         if (transaction.type !== "check-out") return "-";
         return transaction.returnDate 
           ? format(new Date(transaction.returnDate), "MMM dd, yyyy h:mm a") 
@@ -402,7 +431,7 @@ const TransactionsPage: React.FC = () => {
     {
       header: "Actions",
       accessorKey: "actions",
-      cell: (transaction: Transaction) => (
+      cell: (transaction: TransactionWithDetails) => (
         <div className="flex items-center space-x-1">
           <Button
             variant="ghost"
