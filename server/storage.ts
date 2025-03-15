@@ -121,6 +121,15 @@ export class MemStorage implements IStorage {
 
   // Sample data initialization
   private async initSampleData() {
+    // Create super admin user
+    const superAdmin = await this.createUser({
+      username: "superadmin",
+      password: "superadmin123", // Plain password - will be hashed by the auth.ts createUser function
+      fullName: "Super Administrator",
+      role: "super_admin",
+      isAuthorized: true
+    });
+    
     // Create admin user
     const admin = await this.createUser({
       username: "admin",
