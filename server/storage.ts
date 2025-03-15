@@ -57,6 +57,12 @@ export interface IStorage {
   
   // Dashboard stats
   getDashboardStats(): Promise<DashboardStats>;
+  
+  // Privacy Agreement methods
+  createPrivacyAgreement(agreement: InsertPrivacyAgreement): Promise<PrivacyAgreement>;
+  getPrivacyAgreementByPersonnel(personnelId: number): Promise<PrivacyAgreement | undefined>;
+  getPrivacyAgreementsByVersion(version: string): Promise<PrivacyAgreement[]>;
+  checkPersonnelHasAgreed(personnelId: number): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -663,6 +669,44 @@ export class MemStorage implements IStorage {
       recentActivity,
       overdueItems
     };
+  }
+  
+  // Privacy Agreement methods
+  private privacyAgreementsDB: Map<number, PrivacyAgreement> = new Map();
+  private privacyAgreementIdCounter: number = 1;
+  
+  async createPrivacyAgreement(agreement: InsertPrivacyAgreement): Promise<PrivacyAgreement> {
+    const id = this.privacyAgreementIdCounter++;
+    const now = new Date();
+    
+    const privacyAgreement: PrivacyAgreement = {
+      ...agreement,
+      id,
+      agreedAt: now,
+      version: agreement.version || "1.0"
+    };
+    
+    this.privacyAgreementsDB.set(id, privacyAgreement);
+    return privacyAgreement;
+  }
+  
+  async getPrivacyAgreementByPersonnel(personnelId: number): Promise<PrivacyAgreement | undefined> {
+    return Array.from(this.privacyAgreementsDB.values())
+      .filter(agreement => agreement.personnelId === personnelId)
+      .sort((a, b) => {
+        if (!a.agreedAt || !b.agreedAt) return 0;
+        return new Date(b.agreedAt).getTime() - new Date(a.agreedAt).getTime();
+      })[0];
+  }
+  
+  async getPrivacyAgreementsByVersion(version: string): Promise<PrivacyAgreement[]> {
+    return Array.from(this.privacyAgreementsDB.values())
+      .filter(agreement => agreement.version === version);
+  }
+  
+  async checkPersonnelHasAgreed(personnelId: number): Promise<boolean> {
+    const agreement = await this.getPrivacyAgreementByPersonnel(personnelId);
+    return !!agreement;
   }
 }
 

@@ -67,6 +67,7 @@ export const inventoryItems = pgTable("inventory_items", {
   minStockLevel: integer("min_stock_level").default(5),
   status: text("status").notNull().default("available"),
   createdAt: timestamp("created_at").defaultNow(),
+  checkoutAlertDays: integer("checkout_alert_days").default(7),
 });
 
 export const insertInventoryItemSchema = createInsertSchema(inventoryItems).pick({
@@ -78,6 +79,7 @@ export const insertInventoryItemSchema = createInsertSchema(inventoryItems).pick
   availableQuantity: true,
   minStockLevel: true,
   status: true,
+  checkoutAlertDays: true,
 });
 
 // Transaction Schema
@@ -148,3 +150,21 @@ export const dashboardStatsSchema = z.object({
 });
 
 export type DashboardStats = z.infer<typeof dashboardStatsSchema>;
+
+// Privacy Agreement Schema
+export const privacyAgreements = pgTable("privacy_agreements", {
+  id: serial("id").primaryKey(),
+  personnelId: integer("personnel_id").notNull(),
+  agreedAt: timestamp("agreed_at").defaultNow(),
+  version: text("version").notNull().default("1.0"),
+  ipAddress: text("ip_address"),
+});
+
+export const insertPrivacyAgreementSchema = createInsertSchema(privacyAgreements).pick({
+  personnelId: true,
+  version: true,
+  ipAddress: true,
+});
+
+export type PrivacyAgreement = typeof privacyAgreements.$inferSelect;
+export type InsertPrivacyAgreement = z.infer<typeof insertPrivacyAgreementSchema>;

@@ -24,6 +24,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ isOpen, onClose }) => {
   const [categoryId, setCategoryId] = useState("");
   const [totalQuantity, setTotalQuantity] = useState("1");
   const [minStockLevel, setMinStockLevel] = useState("5");
+  const [checkoutAlertDays, setCheckoutAlertDays] = useState("7");
 
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ["/api/categories"],
@@ -60,6 +61,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ isOpen, onClose }) => {
     setCategoryId("");
     setTotalQuantity("1");
     setMinStockLevel("5");
+    setCheckoutAlertDays("7");
   };
 
   const handleSubmit = () => {
@@ -90,6 +92,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ isOpen, onClose }) => {
 
     const qty = parseInt(totalQuantity);
     const minStock = parseInt(minStockLevel);
+    const alertDays = parseInt(checkoutAlertDays);
 
     if (isNaN(qty) || qty < 1) {
       toast({
@@ -106,6 +109,14 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ isOpen, onClose }) => {
       });
       return;
     }
+    
+    if (isNaN(alertDays) || alertDays < 1) {
+      toast({
+        title: "Checkout alert days must be a positive number",
+        variant: "destructive",
+      });
+      return;
+    }
 
     const newItem = {
       itemCode,
@@ -115,6 +126,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ isOpen, onClose }) => {
       totalQuantity: qty,
       availableQuantity: qty,
       minStockLevel: minStock,
+      checkoutAlertDays: alertDays,
       status: "available",
     };
 
@@ -181,7 +193,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ isOpen, onClose }) => {
             />
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="quantity">Total Quantity</Label>
               <Input
@@ -201,6 +213,17 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ isOpen, onClose }) => {
                 min="0"
                 value={minStockLevel}
                 onChange={(e) => setMinStockLevel(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="checkout-alert">Checkout Alert (days)</Label>
+              <Input
+                id="checkout-alert"
+                type="number"
+                min="1"
+                value={checkoutAlertDays}
+                onChange={(e) => setCheckoutAlertDays(e.target.value)}
               />
             </div>
           </div>
