@@ -189,23 +189,17 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
     jDial: p.jDial
   }));
   
-  // Get list of personnel who have items checked out
-  const personnelWithItems = operationType === "check-in" 
-    ? items
-        .filter(item => item.checkedOutBy)
-        .map(item => item.checkedOutBy)
-        .filter((value, index, self) => 
-          index === self.findIndex(p => p!.id === value!.id)
-        )
-        .map(user => user!.id)
-    : [];
+  // For checked-in, we need to know which items are checked out
+  const checkedOutItems = items.filter(item => {
+    const availableQty = item.availableQuantity || 0;
+    const totalQty = item.totalQuantity || 0;
+    return availableQty < totalQty;
+  });
   
   // Filter personnel based on operation type
-  // For check-in: Only show personnel with items checked out
+  // For check-in: Show all personnel as they can check in any partially checked-out item
   // For check-out: Show all personnel
-  const eligiblePeople = operationType === "check-in"
-    ? allPeople.filter(person => personnelWithItems.includes(person.id))
-    : allPeople;
+  const eligiblePeople = allPeople;
   
   // Filter people based on search term
   const filteredPeople = eligiblePeople.filter(person => {
@@ -221,14 +215,15 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
 
   // Filter items based on operation type:
   // For check-out: Only show items with available quantity
-  // For check-in: Only show items that are checked out to the selected person
+  // For check-in: Only show items that are checked out (available < total)
   const availableItems = operationType === "check-out"
     ? items.filter(item => item.availableQuantity > 0)
     : selectedPerson
-      ? items.filter(item => 
-          item.checkedOutBy && 
-          item.checkedOutBy.id === selectedPerson.id
-        )
+      ? items.filter(item => {
+          const availableQty = item.availableQuantity || 0;
+          const totalQty = item.totalQuantity || 0;
+          return availableQty < totalQty;
+        })
       : [];
 
   return (
@@ -355,9 +350,11 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
                 <p className="text-xs text-destructive">
                   {operationType === "check-out" 
                     ? "No items available for checkout" 
-                    : selectedPerson
-                      ? `${selectedPerson.fullName} has no items checked out` 
-                      : "Please select a person with checked out items"}
+                    : checkedOutItems.length === 0
+                      ? "No items are currently checked out"
+                      : selectedPerson
+                        ? "No items are available for check-in" 
+                        : "Please select a person first"}
                 </p>
               )}
             </div>

@@ -639,7 +639,13 @@ export class MemStorage implements IStorage {
     const totalItems = items.length;
     const itemsWithNoAvailability = items.filter(item => item.availableQuantity === 0).length;
     const availableItems = totalItems - itemsWithNoAvailability;
-    const checkedOutItems = items.filter(item => item.availableQuantity < item.totalQuantity).length;
+    
+    // Count items that have at least one checked out (available < total)
+    const checkedOutItems = items.filter(item => {
+      const availableQty = item.availableQuantity || 0;
+      const totalQty = item.totalQuantity || 0;
+      return availableQty < totalQty;
+    }).length;
     
     // Get low stock items
     const lowStockItems = await Promise.all(
