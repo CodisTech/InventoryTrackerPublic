@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { USER_ROLES } from "@shared/schema";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -167,7 +168,15 @@ export default function AdminManagementPage() {
   // Handle role change confirmation
   const handleRoleChangeConfirm = () => {
     if (selectedUser) {
-      const newRole = selectedUser.role === "admin" ? "super_admin" : "admin";
+      let newRole;
+      if (selectedUser.role === USER_ROLES.ADMIN) {
+        newRole = USER_ROLES.SUPER_ADMIN;
+      } else if (selectedUser.role === USER_ROLES.SUPER_ADMIN) {
+        newRole = USER_ROLES.ADMIN;
+      } else {
+        newRole = USER_ROLES.ADMIN; // If standard user, promote to admin
+      }
+      
       changeRoleMutation.mutate({
         userId: selectedUser.id,
         newRole
@@ -196,21 +205,34 @@ export default function AdminManagementPage() {
       header: "Role",
       accessorKey: "role",
       cell: (user: User) => {
-        return (
-          <Badge variant={user.role === "super_admin" ? "destructive" : "default"}>
-            {user.role === "super_admin" ? (
+        if (user.role === USER_ROLES.SUPER_ADMIN) {
+          return (
+            <Badge variant="destructive">
               <div className="flex items-center gap-1">
                 <ShieldAlert className="h-3 w-3" />
                 <span>Super Admin</span>
               </div>
-            ) : (
+            </Badge>
+          );
+        } else if (user.role === USER_ROLES.ADMIN) {
+          return (
+            <Badge variant="default">
               <div className="flex items-center gap-1">
                 <Shield className="h-3 w-3" />
                 <span>Admin</span>
               </div>
-            )}
-          </Badge>
-        );
+            </Badge>
+          );
+        } else {
+          return (
+            <Badge variant="outline">
+              <div className="flex items-center gap-1">
+                <Shield className="h-3 w-3" />
+                <span>Standard User</span>
+              </div>
+            </Badge>
+          );
+        }
       },
       sortable: true,
     },
@@ -243,8 +265,8 @@ export default function AdminManagementPage() {
         // Don't allow users to modify themselves or super_admin role if the current user is just admin
         const isSelf = currentUser?.id === user.id;
         const isRestrictedSuperAdmin = 
-          user.role === "super_admin" && 
-          currentUser?.role !== "super_admin";
+          user.role === USER_ROLES.SUPER_ADMIN && 
+          currentUser?.role !== USER_ROLES.SUPER_ADMIN;
         
         return (
           <div className="flex space-x-2">
@@ -298,22 +320,22 @@ export default function AdminManagementPage() {
     <div className="container mx-auto py-6">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold">Administrator Management</h1>
+          <h1 className="text-3xl font-bold">User Management</h1>
           <p className="text-muted-foreground">
-            Manage administrator accounts and permissions
+            Manage user accounts and permissions
           </p>
         </div>
         <Button onClick={() => setIsAddModalOpen(true)}>
           <PlusCircle className="mr-2 h-4 w-4" />
-          Add Administrator
+          Add User
         </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Administrators</CardTitle>
+          <CardTitle>System Users</CardTitle>
           <CardDescription>
-            View and manage all administrator accounts in the system
+            View and manage all user accounts in the system
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -326,7 +348,7 @@ export default function AdminManagementPage() {
               data={users}
               columns={columns}
               searchable
-              searchPlaceholder="Search administrators..."
+              searchPlaceholder="Search users..."
             />
           )}
         </CardContent>
@@ -353,7 +375,7 @@ export default function AdminManagementPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the administrator account for{" "}
+              This will permanently delete the user account for{" "}
               <strong>{selectedUser?.fullName}</strong>. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -370,9 +392,14 @@ export default function AdminManagementPage() {
       <AlertDialog open={isRoleAlertOpen} onOpenChange={setIsRoleAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Change Administrator Role</AlertDialogTitle>
+            <AlertDialogTitle>Change User Role</AlertDialogTitle>
             <AlertDialogDescription>
-              {selectedUser?.role === "admin" ? (
+              {selectedUser?.role === USER_ROLES.STANDARD_USER ? (
+                <>
+                  Are you sure you want to promote <strong>{selectedUser?.fullName}</strong> from Standard User to Administrator?
+                  Administrators have additional permissions to manage the system.
+                </>
+              ) : selectedUser?.role === USER_ROLES.ADMIN ? (
                 <>
                   Are you sure you want to promote <strong>{selectedUser?.fullName}</strong> from Administrator to Super Administrator?
                   Super Administrators have complete control over the system.
