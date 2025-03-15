@@ -50,6 +50,8 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
   
   // Person state to control the workflow
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
+  // Quantity state for multi-item checkout
+  const [quantity, setQuantity] = useState<number>(1);
   
   const { data: items = [] } = useQuery<InventoryItemWithCategory[]>({
     queryKey: ["/api/inventory"],
@@ -95,6 +97,8 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
       }
       
       setNotes("");
+      // Reset quantity to 1
+      setQuantity(1);
     }
   }, [isOpen, selectedItem]);
 
@@ -158,12 +162,12 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
       }
     }
     
-    // Create the transaction object with fixed quantity of 1
+    // Create the transaction object with the selected quantity
     const transaction: any = {
       itemId: parseInt(itemId),
       userId: parseInt(userId),
       type: operationType,
-      quantity: 1, // Fixed to 1 for single-item operations
+      quantity: quantity, // Use the quantity from state
       notes,
     };
 
@@ -454,7 +458,76 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
               )}
             </div>
             
-            {/* Quantity is fixed at 1 for single-item operations */}
+            {/* Quantity selector */}
+            {operationType === "check-out" && itemId && (
+              <div className="space-y-2">
+                <Label htmlFor="quantity">Quantity</Label>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    disabled={quantity <= 1}
+                  >
+                    <MinusIcon className="h-3 w-3" />
+                  </Button>
+                  <Input
+                    id="quantity"
+                    type="number"
+                    min={1}
+                    value={quantity}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value);
+                      if (!isNaN(val) && val >= 1) {
+                        // Get the selected item to check available quantity
+                        const selectedItem = items.find(i => i.id.toString() === itemId);
+                        if (selectedItem) {
+                          // Ensure we can't check out more than available
+                          const maxQuantity = selectedItem.availableQuantity;
+                          setQuantity(Math.min(val, maxQuantity));
+                        } else {
+                          setQuantity(val);
+                        }
+                      }
+                    }}
+                    className="w-16 text-center"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => {
+                      // Get the selected item to check available quantity
+                      const selectedItem = items.find(i => i.id.toString() === itemId);
+                      if (selectedItem) {
+                        // Ensure we can't check out more than available
+                        const maxQuantity = selectedItem.availableQuantity;
+                        setQuantity(Math.min(quantity + 1, maxQuantity));
+                      } else {
+                        setQuantity(quantity + 1);
+                      }
+                    }}
+                    disabled={
+                      // Disable if we've reached max available quantity
+                      !!items.find(i => i.id.toString() === itemId) &&
+                      quantity >= items.find(i => i.id.toString() === itemId)!.availableQuantity
+                    }
+                  >
+                    <PlusIcon className="h-3 w-3" />
+                  </Button>
+                  
+                  {/* Display max available */}
+                  {itemId && (
+                    <span className="text-xs text-muted-foreground ml-2">
+                      {items.find(i => i.id.toString() === itemId)?.availableQuantity} available
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
             
             <div className="space-y-2">
               <Label htmlFor="notes">Notes</Label>
@@ -480,7 +553,7 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
               {transactionMutation.isPending 
                 ? "Processing..." 
                 : operationType === "check-out" 
-                  ? `Check Out to ${selectedPerson?.fullName || "..."}`
+                  ? `Check Out ${quantity > 1 ? `${quantity} units` : ''} to ${selectedPerson?.fullName || "..."}`
                   : `Check In from ${selectedPerson?.fullName || "..."}`}
             </Button>
           </DialogFooter>
