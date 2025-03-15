@@ -323,10 +323,11 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
       }
     }
     
-    // Create the transaction object with the selected quantity
+    // Create the transaction object with the selected quantity and administrator (current user)
     const transaction: any = {
       itemId: parseInt(itemId),
       userId: parseInt(userId),
+      administratorId: user?.id, // Add administrator ID (current user)
       type: operationType,
       quantity: quantity, // Use the quantity from state
       notes,
