@@ -35,6 +35,7 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
   const [itemId, setItemId] = useState<string>("");
   const [userId, setUserId] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
+  const [quantity, setQuantity] = useState<number>(1);
   // We removed due date selection - server handles it automatically (24hr)
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [isPersonnelSelectOpen, setIsPersonnelSelectOpen] = useState(false);
@@ -83,6 +84,7 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
       
       // Due date is set automatically by the server to 24 hours
       
+      setQuantity(1);
       setNotes("");
     }
   }, [isOpen, selectedItem]);
@@ -93,8 +95,11 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
       return await res.json();
     },
     onSuccess: () => {
+      const selectedItemName = items.find(i => i.id.toString() === itemId)?.name || "Item";
+      const quantityText = quantity > 1 ? `${quantity} units of ` : "";
+      
       toast({
-        title: `Item ${operationType === "check-out" ? "checked out to" : "checked in from"} ${selectedPerson?.fullName}`,
+        title: `${quantityText}${selectedItemName} ${operationType === "check-out" ? "checked out to" : "checked in from"} ${selectedPerson?.fullName}`,
         description: "The inventory has been updated.",
       });
       // Invalidate all necessary queries to ensure data consistency
@@ -150,7 +155,7 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
       itemId: parseInt(itemId),
       userId: parseInt(userId),
       type: operationType,
-      quantity: 1,
+      quantity: quantity,
       notes,
     };
 
@@ -491,6 +496,73 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
             
             {/* Due date field removed - server sets due date to 24 hours automatically */}
             
+            {/* Quantity selector */}
+            {operationType === "check-out" && itemId && (
+              <div className="space-y-2">
+                <Label htmlFor="quantity">Quantity</Label>
+                <div className="flex items-center">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8 rounded-r-none"
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    disabled={quantity <= 1}
+                  >
+                    -
+                  </Button>
+                  <Input
+                    id="quantity"
+                    type="number"
+                    min={1}
+                    className="h-8 rounded-none text-center w-16"
+                    value={quantity}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value);
+                      if (!isNaN(val) && val >= 1) {
+                        const selectedItem = items.find(i => i.id.toString() === itemId);
+                        // Limit quantity to what's available
+                        if (selectedItem) {
+                          const maxAvailable = selectedItem.availableQuantity || 0;
+                          setQuantity(Math.min(val, maxAvailable));
+                        } else {
+                          setQuantity(val);
+                        }
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8 rounded-l-none"
+                    onClick={() => {
+                      const selectedItem = items.find(i => i.id.toString() === itemId);
+                      if (selectedItem) {
+                        const maxAvailable = selectedItem.availableQuantity || 0;
+                        setQuantity(Math.min(quantity + 1, maxAvailable));
+                      } else {
+                        setQuantity(quantity + 1);
+                      }
+                    }}
+                    disabled={
+                      itemId ? 
+                        quantity >= (items.find(i => i.id.toString() === itemId)?.availableQuantity || 1) 
+                        : true
+                    }
+                  >
+                    +
+                  </Button>
+                  
+                  {itemId && (
+                    <span className="ml-3 text-xs text-muted-foreground">
+                      {items.find(i => i.id.toString() === itemId)?.availableQuantity || 0} available
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+            
             <div className="space-y-2">
               <Label htmlFor="notes">Notes</Label>
               <Textarea
@@ -515,7 +587,9 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
               {transactionMutation.isPending 
                 ? "Processing..." 
                 : operationType === "check-out" 
-                  ? `Check Out to ${selectedPerson?.fullName || "..."}` 
+                  ? (quantity > 1 
+                    ? `Check Out ${quantity} units to ${selectedPerson?.fullName || "..."}` 
+                    : `Check Out to ${selectedPerson?.fullName || "..."}`)
                   : `Check In from ${selectedPerson?.fullName || "..."}`}
             </Button>
           </DialogFooter>
