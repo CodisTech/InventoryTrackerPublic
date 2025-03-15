@@ -1,0 +1,10 @@
+# Commit message
+feat: Add automatic print functionality to checkout flows
+
+- Implemented automatic print dialog prompt after successful checkouts
+- Added detailed print layout for single-item checkout receipts 
+- Ensured consistent formatting between single and multi-item receipts
+- Added user-friendly print confirmation dialog with skip option
+- Enhanced receipts with personnel and item details
+- Added transaction timestamps and signature lines for physical records
+
