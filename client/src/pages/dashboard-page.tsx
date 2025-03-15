@@ -59,10 +59,8 @@ const DashboardPage: React.FC = () => {
         </div>
       </div>
       
-      {/* Overdue Items Alert */}
-      {stats?.overdueItems && stats.overdueItems.length > 0 && (
-        <OverdueItemsAlert />
-      )}
+      {/* Overdue Items Alert - Always rendered and handles its own data fetching */}
+      <OverdueItemsAlert />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">

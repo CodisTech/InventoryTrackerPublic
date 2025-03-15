@@ -39,7 +39,7 @@ const OverdueItemsAlert = () => {
     );
   }
 
-  if (overdueItems.length === 0) {
+  if (!overdueItems || overdueItems.length === 0) {
     return null; // Don't show anything if there are no overdue items
   }
 

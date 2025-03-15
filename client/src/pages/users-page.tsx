@@ -49,8 +49,7 @@ const UsersPage: React.FC = () => {
       const url = debouncedSearch 
         ? `/api/personnel?q=${encodeURIComponent(debouncedSearch)}` 
         : "/api/personnel";
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("Failed to fetch personnel");
+      const res = await apiRequest("GET", url);
       return res.json();
     }
   });
