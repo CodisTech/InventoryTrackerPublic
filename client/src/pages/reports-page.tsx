@@ -1482,23 +1482,78 @@ const ReportsPage: React.FC = () => {
         <TabsContent value="inventory" className="pt-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle>Inventory Status</CardTitle>
+                <Select defaultValue="all">
+                  <SelectTrigger className="w-36">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Items</SelectItem>
+                    <SelectItem value="available">Available</SelectItem>
+                    <SelectItem value="checkedout">Checked Out</SelectItem>
+                    <SelectItem value="lowstock">Low Stock</SelectItem>
+                  </SelectContent>
+                </Select>
               </CardHeader>
               <CardContent>
-                <div className="text-sm text-neutral-500">
-                  Inventory analytics content will be displayed here.
-                </div>
+                <InventoryStatusChart />
               </CardContent>
             </Card>
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle>Category Distribution</CardTitle>
+                <Select defaultValue="quantity">
+                  <SelectTrigger className="w-36">
+                    <SelectValue placeholder="View by" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="quantity">By Quantity</SelectItem>
+                    <SelectItem value="value">By Value</SelectItem>
+                    <SelectItem value="items">By Item Count</SelectItem>
+                  </SelectContent>
+                </Select>
               </CardHeader>
               <CardContent>
-                <div className="text-sm text-neutral-500">
-                  Category distribution charts will be displayed here.
-                </div>
+                <CategoryDistributionChart />
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle>Top Items by Usage</CardTitle>
+                <Select defaultValue="30days">
+                  <SelectTrigger className="w-36">
+                    <SelectValue placeholder="Time period" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="7days">Last 7 days</SelectItem>
+                    <SelectItem value="30days">Last 30 days</SelectItem>
+                    <SelectItem value="90days">Last 90 days</SelectItem>
+                    <SelectItem value="year">This year</SelectItem>
+                  </SelectContent>
+                </Select>
+              </CardHeader>
+              <CardContent>
+                <TopItemsUsageChart />
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle>Inventory Trend</CardTitle>
+                <Select defaultValue="90days">
+                  <SelectTrigger className="w-36">
+                    <SelectValue placeholder="Time period" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="30days">Last 30 days</SelectItem>
+                    <SelectItem value="90days">Last 90 days</SelectItem>
+                    <SelectItem value="year">This year</SelectItem>
+                    <SelectItem value="alltime">All time</SelectItem>
+                  </SelectContent>
+                </Select>
+              </CardHeader>
+              <CardContent>
+                <InventoryTrendChart />
               </CardContent>
             </Card>
           </div>
@@ -1762,6 +1817,631 @@ const DepartmentUsageChart: React.FC = () => {
           }
         ]}
       />
+    </div>
+  );
+};
+
+// Inventory Status Chart Component
+const InventoryStatusChart: React.FC = () => {
+  const { toast } = useToast();
+  const [status, setStatus] = React.useState("all");
+  
+  const { data: inventory = [], isLoading, error } = useQuery<InventoryItemWithCategory[]>({
+    queryKey: ["/api/inventory"],
+  });
+
+  React.useEffect(() => {
+    if (error) {
+      toast({
+        title: "Error fetching inventory data",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  }, [error, toast]);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col space-y-3">
+        <Skeleton className="h-[300px] w-full rounded-xl" />
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-[250px]" />
+          <Skeleton className="h-4 w-[200px]" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!inventory || inventory.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[300px] text-center p-4">
+        <Package className="h-12 w-12 text-neutral-300 mb-3" />
+        <h3 className="text-lg font-medium mb-1">No Inventory Data</h3>
+        <p className="text-neutral-500 max-w-md">
+          There is no inventory data to display at this time.
+        </p>
+      </div>
+    );
+  }
+
+  // Calculate total available and checked out quantities
+  const totalQuantity = inventory.reduce((sum, item) => sum + item.totalQuantity, 0);
+  const availableQuantity = inventory.reduce((sum, item) => sum + item.availableQuantity, 0);
+  const checkedOutQuantity = totalQuantity - availableQuantity;
+  
+  // Count items that are below their minimum stock level
+  const lowStockItems = inventory.filter(item => item.availableQuantity <= item.minStockLevel).length;
+  
+  const chartData = [
+    {
+      id: "available",
+      label: "Available",
+      value: availableQuantity,
+      color: "#10b981" // Green
+    },
+    {
+      id: "checkedOut",
+      label: "Checked Out",
+      value: checkedOutQuantity,
+      color: "#4f46e5" // Indigo
+    },
+    {
+      id: "lowStock",
+      label: "Low Stock",
+      value: lowStockItems,
+      color: "#f43f5e" // Red
+    }
+  ];
+
+  return (
+    <div className="h-[300px]">
+      <ResponsivePie
+        data={chartData}
+        margin={{ top: 10, right: 20, bottom: 60, left: 20 }}
+        innerRadius={0.6}
+        padAngle={0.7}
+        cornerRadius={3}
+        colors={{ datum: 'data.color' }}
+        activeOuterRadiusOffset={8}
+        borderWidth={1}
+        borderColor={{ from: "color", modifiers: [["darker", 0.2]] }}
+        arcLinkLabelsSkipAngle={10}
+        arcLinkLabelsTextColor="#333333"
+        arcLinkLabelsThickness={2}
+        arcLinkLabelsColor={{ from: "color" }}
+        arcLabelsSkipAngle={10}
+        arcLabelsTextColor={{ from: "color", modifiers: [["darker", 2]] }}
+        legends={[
+          {
+            anchor: "bottom",
+            direction: "row",
+            justify: false,
+            translateX: 0,
+            translateY: 50,
+            itemsSpacing: 0,
+            itemWidth: 100,
+            itemHeight: 18,
+            itemTextColor: "#999",
+            itemDirection: "left-to-right",
+            itemOpacity: 1,
+            symbolSize: 18,
+            symbolShape: "circle",
+            effects: [
+              {
+                on: "hover",
+                style: {
+                  itemTextColor: "#000"
+                }
+              }
+            ]
+          }
+        ]}
+      />
+    </div>
+  );
+};
+
+// Category Distribution Chart
+const CategoryDistributionChart: React.FC = () => {
+  const { toast } = useToast();
+  const [viewBy, setViewBy] = React.useState("quantity");
+  
+  const { data: inventory = [], isLoading: isLoadingInventory, error: inventoryError } = useQuery<InventoryItemWithCategory[]>({
+    queryKey: ["/api/inventory"],
+  });
+
+  const { data: categories = [], isLoading: isLoadingCategories, error: categoriesError } = useQuery({
+    queryKey: ["/api/categories"],
+  });
+
+  React.useEffect(() => {
+    if (inventoryError) {
+      toast({
+        title: "Error fetching inventory data",
+        description: inventoryError.message,
+        variant: "destructive",
+      });
+    }
+    if (categoriesError) {
+      toast({
+        title: "Error fetching categories data",
+        description: categoriesError.message,
+        variant: "destructive",
+      });
+    }
+  }, [inventoryError, categoriesError, toast]);
+
+  const isLoading = isLoadingInventory || isLoadingCategories;
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col space-y-3">
+        <Skeleton className="h-[300px] w-full rounded-xl" />
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-[250px]" />
+          <Skeleton className="h-4 w-[200px]" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!inventory || inventory.length === 0 || !categories || categories.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[300px] text-center p-4">
+        <Package className="h-12 w-12 text-neutral-300 mb-3" />
+        <h3 className="text-lg font-medium mb-1">No Category Data</h3>
+        <p className="text-neutral-500 max-w-md">
+          There is no category data to display at this time.
+        </p>
+      </div>
+    );
+  }
+
+  // Group inventory by category
+  const categoryMap = new Map();
+  
+  inventory.forEach(item => {
+    const categoryId = item.category.id;
+    const categoryName = item.category.name;
+    
+    if (!categoryMap.has(categoryId)) {
+      categoryMap.set(categoryId, {
+        id: categoryName,
+        label: categoryName,
+        totalQuantity: 0,
+        availableQuantity: 0,
+        itemCount: 0
+      });
+    }
+    
+    const category = categoryMap.get(categoryId);
+    category.totalQuantity += item.totalQuantity;
+    category.availableQuantity += item.availableQuantity;
+    category.itemCount += 1;
+  });
+  
+  // Convert map to array for chart
+  let chartData = Array.from(categoryMap.values()).map(category => {
+    let value = category.totalQuantity;
+    
+    if (viewBy === "items") {
+      value = category.itemCount;
+    }
+    
+    return {
+      id: category.id,
+      label: category.label,
+      value: value
+    };
+  });
+
+  return (
+    <div className="h-[300px]">
+      <ResponsivePie
+        data={chartData}
+        margin={{ top: 10, right: 20, bottom: 60, left: 20 }}
+        innerRadius={0.5}
+        padAngle={0.7}
+        cornerRadius={3}
+        activeOuterRadiusOffset={8}
+        borderWidth={1}
+        borderColor={{ from: "color", modifiers: [["darker", 0.2]] }}
+        arcLinkLabelsSkipAngle={10}
+        arcLinkLabelsTextColor="#333333"
+        arcLinkLabelsThickness={2}
+        arcLinkLabelsColor={{ from: "color" }}
+        arcLabelsSkipAngle={10}
+        arcLabelsTextColor={{ from: "color", modifiers: [["darker", 2]] }}
+        legends={[
+          {
+            anchor: "bottom",
+            direction: "row",
+            justify: false,
+            translateX: 0,
+            translateY: 50,
+            itemsSpacing: 0,
+            itemWidth: 100,
+            itemHeight: 18,
+            itemTextColor: "#999",
+            itemDirection: "left-to-right",
+            itemOpacity: 1,
+            symbolSize: 18,
+            symbolShape: "circle",
+            effects: [
+              {
+                on: "hover",
+                style: {
+                  itemTextColor: "#000"
+                }
+              }
+            ]
+          }
+        ]}
+      />
+    </div>
+  );
+};
+
+// Top Items by Usage Chart
+const TopItemsUsageChart: React.FC = () => {
+  const { toast } = useToast();
+  const [timePeriod, setTimePeriod] = React.useState("30days");
+  
+  const { data: transactions = [], isLoading, error } = useQuery<TransactionWithDetails[]>({
+    queryKey: ["/api/transactions/details"],
+  });
+
+  React.useEffect(() => {
+    if (error) {
+      toast({
+        title: "Error fetching transaction data",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  }, [error, toast]);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col space-y-3">
+        <Skeleton className="h-[300px] w-full rounded-xl" />
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-[250px]" />
+          <Skeleton className="h-4 w-[200px]" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!transactions || transactions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[300px] text-center p-4">
+        <BarChart3 className="h-12 w-12 text-neutral-300 mb-3" />
+        <h3 className="text-lg font-medium mb-1">No Usage Data</h3>
+        <p className="text-neutral-500 max-w-md">
+          There is no usage data to display for the selected period.
+        </p>
+      </div>
+    );
+  }
+
+  // Filter transactions based on the selected time period
+  const now = new Date();
+  let cutoffDate = new Date();
+  
+  switch (timePeriod) {
+    case "7days":
+      cutoffDate.setDate(now.getDate() - 7);
+      break;
+    case "30days":
+      cutoffDate.setDate(now.getDate() - 30);
+      break;
+    case "90days":
+      cutoffDate.setDate(now.getDate() - 90);
+      break;
+    case "year":
+      cutoffDate.setFullYear(now.getFullYear() - 1);
+      break;
+    default:
+      cutoffDate.setDate(now.getDate() - 30);
+  }
+  
+  const filteredTransactions = transactions.filter(trx => {
+    if (!trx.timestamp) return false;
+    return new Date(trx.timestamp) >= cutoffDate;
+  });
+  
+  // Group transactions by item
+  const itemUsageMap = new Map();
+  
+  filteredTransactions.forEach(trx => {
+    const itemId = trx.item.id;
+    const itemName = trx.item.name;
+    
+    if (!itemUsageMap.has(itemId)) {
+      itemUsageMap.set(itemId, {
+        item: itemName,
+        checkouts: 0,
+        returns: 0
+      });
+    }
+    
+    const itemUsage = itemUsageMap.get(itemId);
+    if (trx.type === "checkout") {
+      itemUsage.checkouts += 1;
+    } else if (trx.type === "checkin") {
+      itemUsage.returns += 1;
+    }
+  });
+  
+  // Convert to array and sort by total usage
+  let itemUsage = Array.from(itemUsageMap.values())
+    .map(item => ({
+      ...item,
+      totalUsage: item.checkouts + item.returns
+    }))
+    .sort((a, b) => b.totalUsage - a.totalUsage)
+    .slice(0, 5); // Get top 5 items
+  
+  // Format for the bar chart
+  const chartData = itemUsage.map(item => ({
+    item: item.item.length > 15 ? item.item.substring(0, 15) + '...' : item.item,
+    checkouts: item.checkouts,
+    returns: item.returns
+  }));
+
+  return (
+    <div className="h-[300px]">
+      {chartData.length > 0 ? (
+        <ResponsiveBar
+          data={chartData}
+          keys={["checkouts", "returns"]}
+          indexBy="item"
+          margin={{ top: 10, right: 20, bottom: 50, left: 60 }}
+          padding={0.3}
+          groupMode="grouped"
+          valueScale={{ type: "linear" }}
+          indexScale={{ type: "band", round: true }}
+          colors={["#4f46e5", "#10b981"]}
+          borderColor={{ from: "color", modifiers: [["darker", 1.6]] }}
+          axisTop={null}
+          axisRight={null}
+          axisBottom={{
+            tickSize: 5,
+            tickPadding: 5,
+            tickRotation: -45,
+            legendPosition: "middle",
+            legendOffset: 32,
+            truncateTickAt: 0
+          }}
+          axisLeft={{
+            tickSize: 5,
+            tickPadding: 5,
+            tickRotation: 0,
+            legend: "Count",
+            legendPosition: "middle",
+            legendOffset: -40,
+            truncateTickAt: 0
+          }}
+          labelSkipWidth={12}
+          labelSkipHeight={12}
+          labelTextColor={{ from: "color", modifiers: [["darker", 1.6]] }}
+          legends={[
+            {
+              dataFrom: "keys",
+              anchor: "bottom",
+              direction: "row",
+              justify: false,
+              translateX: 0,
+              translateY: 50,
+              itemsSpacing: 2,
+              itemWidth: 100,
+              itemHeight: 20,
+              itemDirection: "left-to-right",
+              itemOpacity: 0.85,
+              symbolSize: 20,
+              effects: [
+                {
+                  on: "hover",
+                  style: {
+                    itemOpacity: 1
+                  }
+                }
+              ]
+            }
+          ]}
+          role="application"
+          ariaLabel="Top Items by Usage"
+        />
+      ) : (
+        <div className="flex flex-col items-center justify-center h-full">
+          <p className="text-neutral-500">No usage data available for this period</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Inventory Trend Chart
+const InventoryTrendChart: React.FC = () => {
+  const { toast } = useToast();
+  const [timePeriod, setTimePeriod] = React.useState("90days");
+  
+  const { data: transactions = [], isLoading, error } = useQuery<TransactionWithDetails[]>({
+    queryKey: ["/api/transactions/details"],
+  });
+
+  React.useEffect(() => {
+    if (error) {
+      toast({
+        title: "Error fetching transaction data",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  }, [error, toast]);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col space-y-3">
+        <Skeleton className="h-[300px] w-full rounded-xl" />
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-[250px]" />
+          <Skeleton className="h-4 w-[200px]" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!transactions || transactions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[300px] text-center p-4">
+        <BarChart3 className="h-12 w-12 text-neutral-300 mb-3" />
+        <h3 className="text-lg font-medium mb-1">No Trend Data</h3>
+        <p className="text-neutral-500 max-w-md">
+          There is no transaction data to display inventory trends for the selected period.
+        </p>
+      </div>
+    );
+  }
+
+  // Filter transactions based on the selected time period
+  const now = new Date();
+  let cutoffDate = new Date();
+  
+  switch (timePeriod) {
+    case "30days":
+      cutoffDate.setDate(now.getDate() - 30);
+      break;
+    case "90days":
+      cutoffDate.setDate(now.getDate() - 90);
+      break;
+    case "year":
+      cutoffDate.setFullYear(now.getFullYear() - 1);
+      break;
+    case "alltime":
+      cutoffDate = new Date(0); // Beginning of time
+      break;
+    default:
+      cutoffDate.setDate(now.getDate() - 90);
+  }
+  
+  const filteredTransactions = transactions.filter(trx => {
+    if (!trx.timestamp) return false;
+    return new Date(trx.timestamp) >= cutoffDate;
+  });
+  
+  // Group transactions by month and type (checkout or checkin)
+  const monthlyDataMap = new Map();
+  
+  filteredTransactions.forEach(trx => {
+    if (!trx.timestamp) return;
+    
+    const date = new Date(trx.timestamp);
+    const monthKey = `${date.getFullYear()}-${date.getMonth() + 1}`;
+    const monthLabel = date.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+    
+    if (!monthlyDataMap.has(monthKey)) {
+      monthlyDataMap.set(monthKey, {
+        month: monthLabel,
+        checkouts: 0,
+        checkins: 0
+      });
+    }
+    
+    const monthData = monthlyDataMap.get(monthKey);
+    if (trx.type === "checkout") {
+      monthData.checkouts += 1;
+    } else if (trx.type === "checkin") {
+      monthData.checkins += 1;
+    }
+  });
+  
+  // Convert to array and sort by date
+  let monthlyData = Array.from(monthlyDataMap.values());
+  
+  // Sort by date (assuming month format is MMM YYYY)
+  monthlyData.sort((a, b) => {
+    const dateA = new Date(a.month);
+    const dateB = new Date(b.month);
+    return dateA.getTime() - dateB.getTime();
+  });
+  
+  // Format for chart
+  const chartData = monthlyData.map(data => ({
+    month: data.month,
+    "Items Checked Out": data.checkouts,
+    "Items Returned": data.checkins
+  }));
+
+  return (
+    <div className="h-[300px]">
+      {chartData.length > 0 ? (
+        <ResponsiveBar
+          data={chartData}
+          keys={["Items Checked Out", "Items Returned"]}
+          indexBy="month"
+          margin={{ top: 10, right: 20, bottom: 50, left: 60 }}
+          padding={0.3}
+          groupMode="grouped"
+          valueScale={{ type: "linear" }}
+          indexScale={{ type: "band", round: true }}
+          colors={["#4f46e5", "#10b981"]}
+          borderColor={{ from: "color", modifiers: [["darker", 1.6]] }}
+          axisTop={null}
+          axisRight={null}
+          axisBottom={{
+            tickSize: 5,
+            tickPadding: 5,
+            tickRotation: -45,
+            legendPosition: "middle",
+            legendOffset: 32,
+            truncateTickAt: 0
+          }}
+          axisLeft={{
+            tickSize: 5,
+            tickPadding: 5,
+            tickRotation: 0,
+            legend: "Items",
+            legendPosition: "middle",
+            legendOffset: -40,
+            truncateTickAt: 0
+          }}
+          labelSkipWidth={12}
+          labelSkipHeight={12}
+          labelTextColor={{ from: "color", modifiers: [["darker", 1.6]] }}
+          legends={[
+            {
+              dataFrom: "keys",
+              anchor: "bottom",
+              direction: "row",
+              justify: false,
+              translateX: 0,
+              translateY: 50,
+              itemsSpacing: 2,
+              itemWidth: 100,
+              itemHeight: 20,
+              itemDirection: "left-to-right",
+              itemOpacity: 0.85,
+              symbolSize: 20,
+              effects: [
+                {
+                  on: "hover",
+                  style: {
+                    itemOpacity: 1
+                  }
+                }
+              ]
+            }
+          ]}
+          role="application"
+          ariaLabel="Inventory Trend Chart"
+        />
+      ) : (
+        <div className="flex flex-col items-center justify-center h-full">
+          <p className="text-neutral-500">No trend data available for this period</p>
+        </div>
+      )}
     </div>
   );
 };
