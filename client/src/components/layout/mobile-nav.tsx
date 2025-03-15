@@ -34,6 +34,7 @@ const MobileNav: React.FC<MobileNavProps> = ({ isOpen, onClose }) => {
   const navItems = [
     { name: "Dashboard", icon: "dashboard", path: "/" },
     { name: "Inventory", icon: "inventory", path: "/inventory" },
+    { name: "Checked Out", icon: "shopping_bag", path: "/checked-out" },
     { name: "Transactions", icon: "sync_alt", path: "/transactions" },
     { name: "Personnel", icon: "people", path: "/users" },
     { name: "Reports", icon: "assessment", path: "/reports" },
