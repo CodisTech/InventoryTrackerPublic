@@ -51,14 +51,25 @@ export function setupAuth(app: Express) {
   
   const sessionSettings: session.SessionOptions = {
     secret: sessionSecret,
-    resave: false,
-    saveUninitialized: false,
+    resave: true, // Changed to true to ensure session is saved back to the store
+    saveUninitialized: true, // Changed to true to create sessions for non-logged-in users
     store: storage.sessionStore,
     cookie: {
       secure: process.env.NODE_ENV === "production",
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      httpOnly: true,
+      sameSite: 'lax'
     }
   };
+  
+  console.log(`[AUTH DEBUG] Session store type: ${storage.sessionStore.constructor.name}`);
+  console.log(`[AUTH DEBUG] Session secret: ${sessionSecret}`);
+  console.log(`[AUTH DEBUG] Setting up session with settings: ${JSON.stringify({
+    resave: sessionSettings.resave,
+    saveUninitialized: sessionSettings.saveUninitialized,
+    cookieSecure: sessionSettings.cookie?.secure,
+    cookieMaxAge: sessionSettings.cookie?.maxAge
+  })}`);
 
   app.set("trust proxy", 1);
   app.use(session(sessionSettings));
@@ -88,18 +99,36 @@ export function setupAuth(app: Express) {
     }),
   );
 
-  passport.serializeUser((user, done) => done(null, user.id));
-  passport.deserializeUser(async (id: number, done) => {
+  passport.serializeUser((user, done) => {
+    console.log(`[SERIALIZE DEBUG] Serializing user: ${JSON.stringify({ id: user.id, username: user.username })}`);
+    done(null, user.id);
+  });
+  
+  passport.deserializeUser(async (id, done) => {
     try {
-      const user = await storage.getUser(id);
+      console.log(`[DESERIALIZE DEBUG] Attempting to deserialize user ID: ${id}`);
+      const numericId = typeof id === 'string' ? parseInt(id, 10) : id;
+      
+      if (isNaN(numericId)) {
+        console.log(`[DESERIALIZE DEBUG] Invalid user ID: ${id}`);
+        return done(null, false);
+      }
+      
+      const user = await storage.getUser(numericId);
       if (!user) {
+        console.log(`[DESERIALIZE DEBUG] User not found for ID: ${numericId}`);
         return done(null, false);
       }
+      
       if (!user.isAuthorized) {
+        console.log(`[DESERIALIZE DEBUG] User found but not authorized: ${user.username}`);
         return done(null, false);
       }
+      
+      console.log(`[DESERIALIZE DEBUG] Successfully deserialized user: ${user.username}`);
       done(null, user);
     } catch (err) {
+      console.log(`[DESERIALIZE DEBUG] Error deserializing user: ${err.message}`);
       done(err);
     }
   });
@@ -130,13 +159,28 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
+    console.log(`[LOGIN DEBUG] Login attempt with username: ${req.body.username}`);
+    
     passport.authenticate("local", (err, user, info) => {
-      if (err) return next(err);
+      if (err) {
+        console.log(`[LOGIN DEBUG] Login error: ${err.message}`);
+        return next(err);
+      }
       if (!user) {
+        console.log(`[LOGIN DEBUG] Authentication failed: ${info?.message || "No user returned"}`);
         return res.status(401).json({ message: info?.message || "Authentication failed" });
       }
+      
+      console.log(`[LOGIN DEBUG] User authenticated successfully: ${user.username} (${user.id})`);
+      
       req.login(user, (err) => {
-        if (err) return next(err);
+        if (err) {
+          console.log(`[LOGIN DEBUG] Session creation error: ${err.message}`);
+          return next(err);
+        }
+        
+        console.log(`[LOGIN DEBUG] Session created successfully, user logged in`);
+        
         // Don't return the password hash to the client
         const { password, ...userWithoutPassword } = user;
         res.status(200).json(userWithoutPassword);
@@ -152,9 +196,17 @@ export function setupAuth(app: Express) {
   });
 
   app.get("/api/user", (req, res) => {
+    console.log(`[USER DEBUG] Session ID: ${req.sessionID || 'no session ID'}`);
+    console.log(`[USER DEBUG] isAuthenticated: ${req.isAuthenticated()}`);
+    console.log(`[USER DEBUG] req.user: ${req.user ? JSON.stringify(req.user) : 'undefined'}`);
+    console.log(`[USER DEBUG] Session data: ${JSON.stringify(req.session || {})}`);
+    
     if (!req.isAuthenticated()) {
+      console.log(`[USER DEBUG] User not authenticated, returning 401`);
       return res.sendStatus(401);
     }
+    
+    console.log(`[USER DEBUG] User authenticated, returning user data`);
     // Don't return the password hash to the client
     const { password, ...userWithoutPassword } = req.user!;
     res.json(userWithoutPassword);
