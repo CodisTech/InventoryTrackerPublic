@@ -48,6 +48,8 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
   const [notes, setNotes] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [isPersonnelSelectOpen, setIsPersonnelSelectOpen] = useState(false);
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+  const [completedTransaction, setCompletedTransaction] = useState<Transaction | null>(null);
   
   // Person state to control the workflow
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
@@ -103,12 +105,163 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
     }
   }, [isOpen, selectedItem]);
 
+  // Handle printing of transaction document
+  const printTransaction = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast({
+        title: "Print failed",
+        description: "Unable to open print window. Please check your browser settings.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Find the selected item
+    const item = items.find(i => i.id.toString() === itemId);
+    if (!item) {
+      toast({
+        title: "Print failed",
+        description: "Could not find item information.",
+        variant: "destructive",
+      });
+      printWindow.close();
+      return;
+    }
+
+    // Current date and time
+    const now = new Date();
+    const formattedDate = format(now, "MMMM dd, yyyy");
+    const formattedTime = format(now, "h:mm a");
+
+    // Create HTML content for printing
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${operationType === "check-out" ? "Checkout" : "Return"} Receipt</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              margin: 40px;
+              line-height: 1.6;
+            }
+            .header {
+              text-align: center;
+              margin-bottom: 30px;
+              border-bottom: 2px solid #333;
+              padding-bottom: 10px;
+            }
+            .transaction-id {
+              font-size: 24px;
+              font-weight: bold;
+              color: #333;
+            }
+            .section {
+              margin-bottom: 20px;
+            }
+            .section-title {
+              font-weight: bold;
+              margin-bottom: 5px;
+              border-bottom: 1px solid #ddd;
+              padding-bottom: 5px;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-top: 10px;
+            }
+            th, td {
+              border: 1px solid #ddd;
+              padding: 8px;
+              text-align: left;
+            }
+            th {
+              background-color: #f2f2f2;
+            }
+            .signatures {
+              margin-top: 30px;
+              display: flex;
+              justify-content: space-between;
+            }
+            .signature-line {
+              width: 45%;
+              margin-top: 80px;
+              border-top: 1px solid #333;
+              text-align: center;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Inventory ${operationType === "check-out" ? "Checkout" : "Return"} Receipt</h1>
+            <p>Date: ${formattedDate} at ${formattedTime}</p>
+          </div>
+          
+          <div class="section">
+            <div class="section-title">Person Information</div>
+            <p><strong>Name:</strong> ${selectedPerson?.fullName || "Unknown"}</p>
+            ${selectedPerson?.division ? `<p><strong>Division:</strong> ${selectedPerson.division}</p>` : ''}
+            ${selectedPerson?.department ? `<p><strong>Department:</strong> ${selectedPerson.department}</p>` : ''}
+            ${selectedPerson?.jDial ? `<p><strong>J-Dial:</strong> ${selectedPerson.jDial}</p>` : ''}
+          </div>
+          
+          <div class="section">
+            <div class="section-title">Item Information</div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Item Name</th>
+                  <th>Item Code</th>
+                  <th>Category</th>
+                  <th>Quantity</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>${item.name}</td>
+                  <td>${item.itemCode}</td>
+                  <td>${item.category.name}</td>
+                  <td>${quantity}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          ${notes ? `
+            <div class="section">
+              <div class="section-title">Notes</div>
+              <p>${notes}</p>
+            </div>
+          ` : ''}
+          
+          <div class="signatures">
+            <div class="signature-line">
+              ${operationType === "check-out" ? "Issued By" : "Received By"} (Inventory Manager)
+            </div>
+            <div class="signature-line">
+              ${operationType === "check-out" ? "Received By" : "Returned By"} (${selectedPerson?.fullName || "User"})
+            </div>
+          </div>
+        </body>
+      </html>
+    `);
+    
+    printWindow.document.close();
+    printWindow.focus();
+    
+    // Auto-print
+    setTimeout(() => {
+      printWindow.print();
+    }, 500);
+  };
+
   const transactionMutation = useMutation({
     mutationFn: async (data: any) => {
       const res = await apiRequest("POST", "/api/transactions", data);
       return await res.json();
     },
-    onSuccess: () => {
+    onSuccess: (transaction) => {
       const selectedItemName = items.find(i => i.id.toString() === itemId)?.name || "Item";
       
       toast({
@@ -120,7 +273,14 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
       queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/overdue-items"] });
-      onClose();
+      
+      // For check-out operations, show print dialog
+      if (operationType === "check-out") {
+        setCompletedTransaction(transaction);
+        setIsPrintModalOpen(true);
+      } else {
+        onClose();
+      }
     },
     onError: (error: Error) => {
       toast({
@@ -556,6 +716,47 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
                 : operationType === "check-out" 
                   ? `Check Out ${quantity > 1 ? `${quantity} units` : ''} to ${selectedPerson?.fullName || "..."}`
                   : `Check In from ${selectedPerson?.fullName || "..."}`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Print Confirmation Dialog */}
+      <Dialog open={isPrintModalOpen} onOpenChange={setIsPrintModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Print Checkout Receipt</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-muted-foreground mb-4">
+              Would you like to print a receipt for this checkout?
+            </p>
+            <div className="flex justify-center mb-4">
+              <div className="rounded-full bg-primary/10 p-3">
+                <Printer className="h-6 w-6 text-primary" />
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="flex sm:justify-between">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsPrintModalOpen(false);
+                onClose();
+              }}
+            >
+              Skip
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                printTransaction();
+                setIsPrintModalOpen(false);
+                onClose();
+              }}
+            >
+              Print Receipt
             </Button>
           </DialogFooter>
         </DialogContent>
