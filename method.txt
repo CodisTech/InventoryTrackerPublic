@@ -1,53 +1,42 @@
-  async getAllTransactionsWithDetails(): Promise<TransactionWithDetails[]> {
-    const allTransactions = await this.getAllTransactions();
-    const result: TransactionWithDetails[] = [];
-    
-    for (const transaction of allTransactions) {
-      const item = await this.getInventoryItemWithCategory(transaction.itemId);
-      const user = this.personnelDB.get(transaction.userId);
-      
-      if (item && user) {
-        // Add in category information to make it a complete item with category
-        const itemWithCategory = {
-          ...item,
-          category: {
-            id: item.categoryId,
-            name: (await this.getCategoryById(item.categoryId))?.name || "Unknown"
-          }
-        };
-        
-        result.push({
-          ...transaction,
-          item: itemWithCategory,
-          user: {
-            id: user.id,
-            username: `${user.firstName.toLowerCase()}.${user.lastName.toLowerCase()}`,
-            fullName: `${user.firstName} ${user.lastName}`,
-            role: 'personnel',
-            isAuthorized: true,
-            password: '' // We don't actually store passwords for personnel
-          },
-          person: user // Include the full personnel data for transaction details
-        });
+# Print Functionality Implementation Method
 
-        // Log for debugging
-        console.log(`[TRANSACTION DEBUG] Added transaction detail for ID ${transaction.id}`);
-        console.log(`[TRANSACTION DEBUG] Item: ${item.name}, User: ${user.firstName} ${user.lastName}`);
-      } else {
-        console.log(`[TRANSACTION DEBUG] Skipped transaction ID ${transaction.id}, item or user not found`);
-        console.log(`[TRANSACTION DEBUG] Item ID: ${transaction.itemId}, User ID: ${transaction.userId}`);
-        if (!item) console.log(`[TRANSACTION DEBUG] Item not found with ID ${transaction.itemId}`);
-        if (!user) console.log(`[TRANSACTION DEBUG] User not found with ID ${transaction.userId}`);
-      }
-    }
-    
-    // Sort by timestamp, newest first
-    result.sort((a, b) => {
-      if (!a.timestamp || !b.timestamp) return 0;
-      return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
-    });
-    
-    console.log(`[TRANSACTION DEBUG] Returning ${result.length} transaction details`);
-    
-    return result;
-  }
+## Overview
+The automatic print functionality was implemented across both single and multi-item checkout workflows to provide a seamless experience for users who need physical records of transactions.
+
+## Key Components
+
+### 1. Automatic Print Dialog
+- Added a confirmation dialog that automatically appears after successful checkout operations
+- Implemented a skip option for users who don't need to print at that moment
+- Used React's window.print() API triggered from useEffect after modal open
+
+### 2. Print Layout Design
+- Created a specialized CSS print layout using @media print queries
+- Hid navigation elements and UI controls during printing
+- Designed a receipt-style format with clear headers and structured information
+
+### 3. Transaction Receipt Content
+- Added comprehensive item details including:
+  - Item name, category, and identification code
+  - Serial numbers and inventory specifics
+  - Quantity being checked out
+- Included personnel information for accountability:
+  - Name, ID, department, and division
+  - Contact details for follow-up
+- Added timestamps and due dates for return tracking
+- Included signature lines for physical record verification
+
+### 4. Implementation Consistency
+- Maintained visual consistency between single and multi-item checkout receipts
+- Ensured all receipt components scale properly for different print sizes
+- Added printer-friendly styling with appropriate margins and spacing
+
+### 5. Error Handling
+- Added fallback content if certain fields are missing
+- Implemented print-specific error catching to prevent failed print attempts
+
+## Technical Details
+- Used custom CSS classes with print-only visibility
+- Leveraged React's useRef to capture printable content
+- Implemented responsive design patterns for different paper sizes
+- Stored print preferences in local storage for user convenience
