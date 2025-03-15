@@ -1,7 +1,10 @@
 import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Info, AlertCircle, ClockIcon, UserCircle, Package, CheckCircle2 } from "lucide-react";
+import { 
+  Info, AlertCircle, ClockIcon, UserCircle, Package, CheckCircle2, Users, 
+  ChevronRight, ArrowLeft, User, Check, Clock, AlertTriangle, Phone, RotateCw
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -10,10 +13,252 @@ import { useToast } from "@/hooks/use-toast";
 import { TransactionWithDetails } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
+import { useLocation } from "wouter";
+
+// Transaction Detail Component
+interface TransactionDetailProps {
+  transactionId: number;
+  onBack: () => void;
+}
+
+const TransactionDetail: React.FC<TransactionDetailProps> = ({ transactionId, onBack }) => {
+  const { toast } = useToast();
+  
+  const { data: overdueItems = [], isLoading, error } = useQuery<TransactionWithDetails[]>({
+    queryKey: ["/api/overdue-items"],
+  });
+
+  React.useEffect(() => {
+    if (error) {
+      toast({
+        title: "Error fetching transaction details",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  }, [error, toast]);
+
+  const transaction = React.useMemo(() => {
+    return overdueItems.find(item => item.id === transactionId);
+  }, [overdueItems, transactionId]);
+
+  if (isLoading) {
+    return (
+      <Card className="border-neutral-200 bg-neutral-50 shadow-sm">
+        <CardContent className="p-6 flex justify-center items-center">
+          <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span>Loading transaction details...</span>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!transaction) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex flex-col items-center justify-center text-center py-6">
+            <div className="rounded-full bg-orange-50 p-3 mb-3">
+              <AlertCircle className="h-6 w-6 text-orange-500" />
+            </div>
+            <h3 className="text-lg font-medium mb-1">Transaction Not Found</h3>
+            <p className="text-neutral-500 max-w-md mb-4">
+              The transaction you are looking for could not be found. It may have been returned or deleted.
+            </p>
+            <Button variant="outline" onClick={onBack}>
+              Back to Overdue Items
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center mb-4">
+        <Button variant="ghost" onClick={onBack} className="mr-2 p-2">
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <h3 className="text-lg font-medium">Overdue Transaction Details</h3>
+      </div>
+
+      <Card className="border-red-200 overflow-hidden">
+        <CardHeader className="bg-red-50 pb-3">
+          <div className="flex justify-between items-center">
+            <CardTitle className="text-lg">
+              TRX-{transaction.id.toString().padStart(4, '0')}
+            </CardTitle>
+            <Badge variant="destructive" className="font-medium">
+              <ClockIcon className="h-3 w-3 mr-1" />
+              {transaction.dueDate
+                ? `Overdue by ${formatDistanceToNow(new Date(transaction.dueDate))}`
+                : "Overdue"}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="pt-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-sm font-medium text-neutral-500 mb-1">Item Information</h4>
+                <div className="bg-neutral-50 rounded-lg p-4 border">
+                  <div className="flex items-center mb-2">
+                    <div className="mr-3 p-2 rounded-full bg-primary/10">
+                      <Package className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <h5 className="font-medium">{transaction.item.name}</h5>
+                      <p className="text-sm text-neutral-500">Code: {transaction.item.itemCode}</p>
+                    </div>
+                  </div>
+                  <div className="mt-3 pt-3 border-t grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <p className="text-neutral-500">Category:</p>
+                      <p className="font-medium">{transaction.item.category?.name || "Uncategorized"}</p>
+                    </div>
+                    <div>
+                      <p className="text-neutral-500">Status:</p>
+                      <p className="font-medium text-red-600">Checked Out</p>
+                    </div>
+                    <div>
+                      <p className="text-neutral-500">Total Quantity:</p>
+                      <p className="font-medium">{transaction.item.totalQuantity}</p>
+                    </div>
+                    <div>
+                      <p className="text-neutral-500">Available:</p>
+                      <p className="font-medium">{transaction.item.availableQuantity}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div>
+                <h4 className="text-sm font-medium text-neutral-500 mb-1">Transaction Timeline</h4>
+                <div className="bg-neutral-50 rounded-lg p-4 border space-y-3">
+                  <div className="flex">
+                    <div className="mr-3 p-1">
+                      <div className="h-6 w-6 rounded-full bg-green-500 flex items-center justify-center">
+                        <Check className="h-4 w-4 text-white" />
+                      </div>
+                    </div>
+                    <div>
+                      <p className="font-medium">Checked Out</p>
+                      <p className="text-sm text-neutral-500">
+                        {transaction.timestamp ? new Date(transaction.timestamp).toLocaleString() : "N/A"}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex">
+                    <div className="mr-3 p-1">
+                      <div className="h-6 w-6 rounded-full bg-yellow-500 flex items-center justify-center">
+                        <Clock className="h-4 w-4 text-white" />
+                      </div>
+                    </div>
+                    <div>
+                      <p className="font-medium">Due Date</p>
+                      <p className="text-sm text-neutral-500">
+                        {transaction.dueDate ? new Date(transaction.dueDate).toLocaleString() : "N/A"}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex">
+                    <div className="mr-3 p-1">
+                      <div className="h-6 w-6 rounded-full bg-red-500 flex items-center justify-center">
+                        <AlertTriangle className="h-4 w-4 text-white" />
+                      </div>
+                    </div>
+                    <div>
+                      <p className="font-medium">Marked Overdue</p>
+                      <p className="text-sm text-neutral-500">
+                        {new Date().toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-sm font-medium text-neutral-500 mb-1">User Information</h4>
+                <div className="bg-neutral-50 rounded-lg p-4 border">
+                  <div className="flex items-center mb-2">
+                    <div className="mr-3 p-2 rounded-full bg-blue-50">
+                      <User className="h-5 w-5 text-blue-500" />
+                    </div>
+                    <div>
+                      <h5 className="font-medium">{transaction.user.fullName}</h5>
+                      <p className="text-sm text-neutral-500">User ID: {transaction.user.id}</p>
+                    </div>
+                  </div>
+                  <div className="mt-3 pt-3 border-t text-sm">
+                    <div className="mb-2">
+                      <p className="text-neutral-500">Username:</p>
+                      <p className="font-medium">{transaction.user.username}</p>
+                    </div>
+                    <div className="mb-2">
+                      <p className="text-neutral-500">Role:</p>
+                      <p className="font-medium">{transaction.user.role || "Standard User"}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div>
+                <h4 className="text-sm font-medium text-neutral-500 mb-1">Transaction Notes</h4>
+                <div className="bg-neutral-50 rounded-lg p-4 border h-32">
+                  <p className="text-sm">
+                    {transaction.notes || "No notes provided for this transaction."}
+                  </p>
+                </div>
+              </div>
+              
+              <div>
+                <h4 className="text-sm font-medium text-neutral-500 mb-1">Actions</h4>
+                <div className="bg-neutral-50 rounded-lg p-4 border">
+                  <div className="grid grid-cols-2 gap-3">
+                    <Button variant="outline" className="border-blue-200 text-blue-600 hover:bg-blue-50">
+                      <Phone className="h-4 w-4 mr-2" />
+                      Contact User
+                    </Button>
+                    <Button variant="outline" className="border-green-200 text-green-600 hover:bg-green-50">
+                      <RotateCw className="h-4 w-4 mr-2" />
+                      Process Return
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
 
 // Overdue Reports Tab Component
 const OverdueReportsTab: React.FC = () => {
   const { toast } = useToast();
+  const [location] = useLocation();
+  const [selectedUserId, setSelectedUserId] = React.useState<number | null>(null);
+  const [selectedTransactionId, setSelectedTransactionId] = React.useState<number | null>(null);
+  
+  // Parse the transaction ID from the URL if present
+  React.useEffect(() => {
+    const params = new URLSearchParams(location.split('?')[1]);
+    const id = params.get('id');
+    if (id) {
+      setSelectedTransactionId(parseInt(id));
+    } else {
+      setSelectedTransactionId(null);
+    }
+  }, [location]);
   
   const { data: overdueItems = [], isLoading, error } = useQuery<TransactionWithDetails[]>({
     queryKey: ["/api/overdue-items"],
@@ -30,6 +275,42 @@ const OverdueReportsTab: React.FC = () => {
     }
   }, [error, toast]);
 
+  // Group overdueItems by user
+  const userOverdueMap = React.useMemo(() => {
+    const map = new Map();
+    
+    overdueItems.forEach(item => {
+      const userId = item.user.id;
+      if (!map.has(userId)) {
+        map.set(userId, {
+          user: item.user,
+          items: []
+        });
+      }
+      map.get(userId).items.push(item);
+    });
+    
+    return Array.from(map.values());
+  }, [overdueItems]);
+
+  // Filter transactions based on selected user
+  const filteredTransactions = React.useMemo(() => {
+    if (selectedUserId === null) {
+      return overdueItems;
+    }
+    return overdueItems.filter(item => item.user.id === selectedUserId);
+  }, [overdueItems, selectedUserId]);
+
+  // If a transaction is selected, show the detail view
+  if (selectedTransactionId !== null) {
+    return (
+      <TransactionDetail 
+        transactionId={selectedTransactionId} 
+        onBack={() => setSelectedTransactionId(null)} 
+      />
+    );
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between mb-2">
@@ -38,6 +319,29 @@ const OverdueReportsTab: React.FC = () => {
           {isLoading ? "Loading..." : `${overdueItems.length} Overdue Items`}
         </Badge>
       </div>
+
+      {/* User filter dropdown */}
+      {userOverdueMap.length > 0 && (
+        <div className="flex items-center space-x-3 mb-4">
+          <div className="text-sm font-medium">Filter by:</div>
+          <Select
+            value={selectedUserId === null ? 'all' : selectedUserId.toString()}
+            onValueChange={(value) => setSelectedUserId(value === 'all' ? null : parseInt(value))}
+          >
+            <SelectTrigger className="w-[220px]">
+              <SelectValue placeholder="Select user/division" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Users</SelectItem>
+              {userOverdueMap.map((group) => (
+                <SelectItem key={group.user.id} value={group.user.id.toString()}>
+                  {group.user.fullName} ({group.items.length})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
       {isLoading ? (
         <Card className="border-neutral-200 bg-neutral-50 shadow-sm">
@@ -49,24 +353,58 @@ const OverdueReportsTab: React.FC = () => {
             <span>Loading overdue items data...</span>
           </CardContent>
         </Card>
-      ) : !overdueItems.length ? (
+      ) : !filteredTransactions.length ? (
         <Card>
           <CardContent className="p-6">
             <div className="flex flex-col items-center justify-center text-center py-6">
               <div className="rounded-full bg-green-50 p-3 mb-3">
                 <CheckCircle2 className="h-6 w-6 text-green-500" />
               </div>
-              <h3 className="text-lg font-medium mb-1">No Overdue Items</h3>
+              <h3 className="text-lg font-medium mb-1">No Overdue Items {selectedUserId !== null && 'for Selected User'}</h3>
               <p className="text-neutral-500 max-w-md">
-                All items are currently within the 24-hour checkout limit. This report will update as items become overdue.
+                {selectedUserId === null 
+                  ? 'All items are currently within the 24-hour checkout limit. This report will update as items become overdue.'
+                  : 'The selected user has no overdue items. Try selecting a different user or view all users.'}
               </p>
+              {selectedUserId !== null && (
+                <Button variant="outline" className="mt-4" onClick={() => setSelectedUserId(null)}>
+                  View All Users
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-4">
-          {overdueItems.map((transaction) => (
-            <Card key={transaction.id} className="border-red-100 shadow-sm">
+          {/* If filtering by user, show user header */}
+          {selectedUserId !== null && userOverdueMap.find(g => g.user.id === selectedUserId) && (
+            <div className="flex items-center px-4 py-3 bg-red-100 rounded-lg mb-2">
+              <Users className="h-5 w-5 mr-3 text-red-700" />
+              <div>
+                <h4 className="font-medium text-red-900">
+                  {userOverdueMap.find(g => g.user.id === selectedUserId)?.user.fullName}
+                </h4>
+                <p className="text-sm text-red-700">
+                  {userOverdueMap.find(g => g.user.id === selectedUserId)?.items.length} overdue item(s)
+                </p>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="ml-auto text-red-700 hover:bg-red-200"
+                onClick={() => setSelectedUserId(null)}
+              >
+                Clear Filter
+              </Button>
+            </div>
+          )}
+        
+          {filteredTransactions.map((transaction) => (
+            <Card 
+              key={transaction.id} 
+              className="border-red-100 shadow-sm cursor-pointer hover:border-red-300"
+              onClick={() => setSelectedTransactionId(transaction.id)}
+            >
               <CardContent className="p-4">
                 <div className="flex items-start justify-between">
                   <div className="flex items-start">
@@ -95,16 +433,19 @@ const OverdueReportsTab: React.FC = () => {
                           Transaction ID: TRX-{transaction.id.toString().padStart(4, '0')}
                         </div>
                         <div className="text-xs bg-neutral-100 px-2 py-1 rounded">
-                          Checkout date: {new Date(transaction.checkoutDate).toLocaleDateString()}
+                          Checkout date: {transaction.timestamp ? new Date(transaction.timestamp).toLocaleDateString() : "N/A"}
                         </div>
                       </div>
                     </div>
+                  </div>
+                  <div className="w-8 h-8 flex items-center justify-center">
+                    <ChevronRight className="h-5 w-5 text-neutral-400" />
                   </div>
                 </div>
               </CardContent>
             </Card>
           ))}
-          <div className="flex justify-end">
+          <div className="flex justify-end mt-4">
             <Button variant="outline" className="text-xs">
               Export Overdue Report
             </Button>
