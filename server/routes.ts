@@ -163,7 +163,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/transactions", ensureAuthenticated, async (req, res, next) => {
     try {
-      const validatedData = insertTransactionSchema.parse(req.body);
+      // Ensure quantity is always set with a default value if not provided
+      const dataWithDefaults = {
+        ...req.body,
+        quantity: req.body.quantity || 1
+      };
+      
+      const validatedData = insertTransactionSchema.parse(dataWithDefaults);
       
       // Check if item exists
       const item = await storage.getInventoryItem(validatedData.itemId);
@@ -178,7 +184,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // For check-out, verify that enough quantity is available
-      if (validatedData.type === 'check-out' && item.availableQuantity < validatedData.quantity) {
+      const quantity = validatedData.quantity || 1; // Ensure quantity is defined
+      if (validatedData.type === 'check-out' && item.availableQuantity < quantity) {
         return res.status(400).json({ 
           message: "Not enough quantity available",
           available: item.availableQuantity

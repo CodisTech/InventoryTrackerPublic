@@ -493,37 +493,43 @@ export class MemStorage implements IStorage {
     const id = this.transactionIdCounter++;
     const now = new Date();
     
+    // Ensure quantity is defined
+    const transactionData = {
+      ...insertTransaction,
+      quantity: insertTransaction.quantity || 1  // Default to 1 if quantity is undefined
+    };
+    
     // Set a default due date of 24 hours from now for check-outs if not provided
-    let dueDate = insertTransaction.dueDate;
-    if (insertTransaction.type === 'check-out' && !dueDate) {
+    let dueDate = transactionData.dueDate;
+    if (transactionData.type === 'check-out' && !dueDate) {
       dueDate = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours from now
     }
     
     const transaction: Transaction = { 
-      ...insertTransaction, 
+      ...transactionData, 
       id, 
       timestamp: now, 
       dueDate,
-      returnDate: undefined,
+      returnDate: null,
       isOverdue: false
     };
     
     this.transactionsDB.set(id, transaction);
     
     // Update inventory item availability
-    const item = this.itemsDB.get(insertTransaction.itemId);
+    const item = this.itemsDB.get(transactionData.itemId);
     if (item) {
-      if (insertTransaction.type === 'check-out') {
+      if (transactionData.type === 'check-out') {
         // Decrease available quantity
-        const newAvailable = Math.max(0, item.availableQuantity - insertTransaction.quantity);
+        const newAvailable = Math.max(0, item.availableQuantity - transactionData.quantity);
         this.itemsDB.set(item.id, {
           ...item,
           availableQuantity: newAvailable,
           status: newAvailable === 0 ? 'out-of-stock' : 'available'
         });
-      } else if (insertTransaction.type === 'check-in') {
+      } else if (transactionData.type === 'check-in') {
         // Increase available quantity
-        const newAvailable = Math.min(item.totalQuantity, item.availableQuantity + insertTransaction.quantity);
+        const newAvailable = Math.min(item.totalQuantity, item.availableQuantity + transactionData.quantity);
         this.itemsDB.set(item.id, {
           ...item,
           availableQuantity: newAvailable,
