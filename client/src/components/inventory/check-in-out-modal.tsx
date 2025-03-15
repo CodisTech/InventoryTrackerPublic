@@ -4,11 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
-import { format } from "date-fns";
-import { CalendarIcon, Search, User as UserIcon, Users as UsersIcon, Building } from "lucide-react";
+import { Search, User as UserIcon, Users as UsersIcon } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { apiRequest } from "@/lib/queryClient";
@@ -71,8 +69,7 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
             // Create a Person object for the user who has the item
             const personWithItem = {
               id: selectedItem.checkedOutBy.id,
-              fullName: selectedItem.checkedOutBy.fullName,
-              isPersonnel: false
+              fullName: selectedItem.checkedOutBy.fullName
             };
             setSelectedPerson(personWithItem);
           }
@@ -84,10 +81,7 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
         setSelectedPerson(null);
       }
       
-      // Set due date to 7 days from now
-      const defaultDueDate = new Date();
-      defaultDueDate.setDate(defaultDueDate.getDate() + 7);
-      setDueDate(defaultDueDate);
+      // Due date is set automatically by the server to 24 hours
       
       setNotes("");
     }
@@ -134,13 +128,7 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
       return;
     }
 
-    if (operationType === "check-out" && !dueDate) {
-      toast({
-        title: "Please select a due date",
-        variant: "destructive",
-      });
-      return;
-    }
+    // Due date validation removed as it's handled by the server
 
     const transaction: any = {
       itemId: parseInt(itemId),
