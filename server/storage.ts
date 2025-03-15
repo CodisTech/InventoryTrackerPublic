@@ -639,14 +639,22 @@ export class MemStorage implements IStorage {
     const result: TransactionWithDetails[] = [];
     
     for (const transaction of allTransactions) {
-      const item = this.itemsDB.get(transaction.itemId);
-      // We're using personnel instead of users for transactions
+      const item = await this.getInventoryItemWithCategory(transaction.itemId);
       const user = this.personnelDB.get(transaction.userId);
       
       if (item && user) {
+        // Add in category information to make it a complete item with category
+        const itemWithCategory = {
+          ...item,
+          category: {
+            id: item.categoryId,
+            name: (await this.getCategoryById(item.categoryId))?.name || "Unknown"
+          }
+        };
+        
         result.push({
           ...transaction,
-          item,
+          item: itemWithCategory,
           user: {
             id: user.id,
             username: `${user.firstName.toLowerCase()}.${user.lastName.toLowerCase()}`,
@@ -656,6 +664,15 @@ export class MemStorage implements IStorage {
             password: '' // We don't actually store passwords for personnel
           }
         });
+
+        // Log for debugging
+        console.log(`[TRANSACTION DEBUG] Added transaction detail for ID ${transaction.id}`);
+        console.log(`[TRANSACTION DEBUG] Item: ${item.name}, User: ${user.firstName} ${user.lastName}`);
+      } else {
+        console.log(`[TRANSACTION DEBUG] Skipped transaction ID ${transaction.id}, item or user not found`);
+        console.log(`[TRANSACTION DEBUG] Item ID: ${transaction.itemId}, User ID: ${transaction.userId}`);
+        if (!item) console.log(`[TRANSACTION DEBUG] Item not found with ID ${transaction.itemId}`);
+        if (!user) console.log(`[TRANSACTION DEBUG] User not found with ID ${transaction.userId}`);
       }
     }
     
@@ -665,7 +682,14 @@ export class MemStorage implements IStorage {
       return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
     });
     
+    console.log(`[TRANSACTION DEBUG] Returning ${result.length} transaction details`);
+    
     return result;
+  }
+  
+  // Helper method to get category by ID
+  async getCategoryById(id: number): Promise<Category | undefined> {
+    return this.categoriesDB.get(id);
   }
   
   // Get all overdue items
@@ -680,14 +704,30 @@ export class MemStorage implements IStorage {
     // Add item and user details
     const result: TransactionWithDetails[] = [];
     for (const transaction of overdueTransactions) {
-      const item = this.itemsDB.get(transaction.itemId);
-      const user = this.usersDB.get(transaction.userId);
+      const item = await this.getInventoryItemWithCategory(transaction.itemId);
+      const user = this.personnelDB.get(transaction.userId);
       
       if (item && user) {
+        // Add in category information
+        const itemWithCategory = {
+          ...item,
+          category: {
+            id: item.categoryId,
+            name: (await this.getCategoryById(item.categoryId))?.name || "Unknown"
+          }
+        };
+        
         result.push({
           ...transaction,
-          item,
-          user
+          item: itemWithCategory,
+          user: {
+            id: user.id,
+            username: `${user.firstName.toLowerCase()}.${user.lastName.toLowerCase()}`,
+            fullName: `${user.firstName} ${user.lastName}`,
+            role: 'personnel',
+            isAuthorized: true,
+            password: '' // We don't actually store passwords for personnel
+          }
         });
       }
     }
@@ -734,14 +774,30 @@ export class MemStorage implements IStorage {
     
     const recentActivity: TransactionWithDetails[] = [];
     for (const transaction of sortedTransactions) {
-      const item = this.itemsDB.get(transaction.itemId);
-      const user = this.usersDB.get(transaction.userId);
+      const item = await this.getInventoryItemWithCategory(transaction.itemId);
+      const user = this.personnelDB.get(transaction.userId);
       
       if (item && user) {
+        // Add in category information
+        const itemWithCategory = {
+          ...item,
+          category: {
+            id: item.categoryId,
+            name: (await this.getCategoryById(item.categoryId))?.name || "Unknown"
+          }
+        };
+        
         recentActivity.push({
           ...transaction,
-          item,
-          user
+          item: itemWithCategory,
+          user: {
+            id: user.id,
+            username: `${user.firstName.toLowerCase()}.${user.lastName.toLowerCase()}`,
+            fullName: `${user.firstName} ${user.lastName}`,
+            role: 'personnel',
+            isAuthorized: true,
+            password: '' // We don't actually store passwords for personnel
+          }
         });
       }
     }
