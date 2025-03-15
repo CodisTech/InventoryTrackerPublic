@@ -46,10 +46,8 @@ export default function EditUserModal({ isOpen, onClose, user }: EditUserModalPr
         ...(data.password ? { password: data.password } : {}),
       };
       
-      return await apiRequest(`/api/users/${user.id}`, {
-        method: "PATCH",
-        data: payload,
-      });
+      const res = await apiRequest("PATCH", `/api/users/${user.id}`, payload);
+      return await res.json();
     },
     onSuccess: () => {
       toast({

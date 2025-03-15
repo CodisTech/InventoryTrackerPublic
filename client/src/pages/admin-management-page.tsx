@@ -31,8 +31,8 @@ import {
   UserX 
 } from "lucide-react";
 
-import AddAdminModal from "@/components/users/add-admin-modal";
-import EditAdminModal from "@/components/users/edit-admin-modal";
+import AddUserModal from "@/components/users/add-user-modal";
+import EditUserModal from "@/components/users/edit-user-modal";
 
 type User = {
   id: number;
@@ -72,15 +72,15 @@ export default function AdminManagementPage() {
     },
     onSuccess: () => {
       toast({
-        title: "Administrator deleted",
-        description: "The administrator account has been deleted successfully",
+        title: "User deleted",
+        description: "The user account has been deleted successfully",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       setIsDeleteAlertOpen(false);
     },
     onError: (error: Error) => {
       toast({
-        title: "Error deleting administrator",
+        title: "Error deleting user",
         description: error.message,
         variant: "destructive",
       });
@@ -96,7 +96,7 @@ export default function AdminManagementPage() {
     onSuccess: () => {
       toast({
         title: "Role updated",
-        description: "The administrator role has been updated successfully",
+        description: "The user role has been updated successfully",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       setIsRoleAlertOpen(false);
@@ -118,8 +118,8 @@ export default function AdminManagementPage() {
     },
     onSuccess: (_, variables) => {
       toast({
-        title: variables.isAuthorized ? "Administrator activated" : "Administrator deactivated",
-        description: `The administrator account has been ${variables.isAuthorized ? "activated" : "deactivated"} successfully`,
+        title: variables.isAuthorized ? "User activated" : "User deactivated",
+        description: `The user account has been ${variables.isAuthorized ? "activated" : "deactivated"} successfully`,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
     },
@@ -354,15 +354,15 @@ export default function AdminManagementPage() {
         </CardContent>
       </Card>
 
-      {/* Add Admin Modal */}
-      <AddAdminModal 
+      {/* Add User Modal */}
+      <AddUserModal 
         isOpen={isAddModalOpen} 
         onClose={() => setIsAddModalOpen(false)} 
       />
 
-      {/* Edit Admin Modal */}
+      {/* Edit User Modal */}
       {selectedUser && (
-        <EditAdminModal
+        <EditUserModal
           isOpen={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}
           user={selectedUser}
