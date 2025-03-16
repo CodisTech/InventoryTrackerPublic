@@ -20,23 +20,29 @@ import { promisify } from "util";
 import { scrypt, randomBytes } from "crypto";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Add password change endpoint
+  // Add password change endpoint for superadmins
   app.post("/api/change-password", async (req, res, next) => {
     try {
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "Unauthorized" });
       }
       
+      // Verify req.user is correctly typed and available
+      const authenticatedUser = req.user as any; // Cast to any to avoid typescript issues
+      if (!authenticatedUser || !authenticatedUser.id) {
+        return res.status(401).json({ message: "Invalid user session" });
+      }
+      
       const { currentPassword, newPassword } = req.body;
-      const userId = req.user.id;
+      const userId = authenticatedUser.id;
+      
+      console.log("Attempting to change password for user ID:", userId);
       
       // Get user from storage
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-      
-      // We already imported comparePasswords and hashPassword at the top of the file
       
       // Verify current password
       const isCorrectPassword = await comparePasswords(currentPassword, user.password);
@@ -56,8 +62,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ message: "Failed to update password" });
       }
       
+      console.log("Password successfully updated for user ID:", userId);
       res.status(200).json({ message: "Password updated successfully" });
     } catch (err) {
+      console.error("Error changing password:", err);
       next(err);
     }
   });

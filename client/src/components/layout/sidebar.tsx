@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth, Permission } from "@/hooks/use-auth";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -13,14 +13,17 @@ import {
   ShieldCheck,
   ClipboardList,
   FileText,
-  UserCog
+  UserCog,
+  Key
 } from "lucide-react";
 import codisLogoLight from "../../assets/images/codis-logo-light.svg";
 import { USER_ROLES } from "@shared/schema";
+import ChangePasswordModal from "../users/change-password-modal";
 
 const Sidebar: React.FC = () => {
   const [location] = useLocation();
   const { user, logoutMutation, hasPermission } = useAuth();
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
   // Determine which nav items to show based on user role
   const isAdmin = user?.role === USER_ROLES.ADMIN || user?.role === USER_ROLES.SUPER_ADMIN;
@@ -196,14 +199,32 @@ const Sidebar: React.FC = () => {
               {user?.role === USER_ROLES.STANDARD_USER && "Standard User"}
             </p>
           </div>
+          
+          {/* Show change password button only for superadmin */}
+          {isSuperAdmin && (
+            <button 
+              className="ml-auto mr-1 hover:bg-neutral-100 p-2 rounded-full transition-colors" 
+              onClick={() => setIsPasswordModalOpen(true)}
+              title="Change Password"
+            >
+              <Key className="h-5 w-5 text-neutral-500" />
+            </button>
+          )}
+          
           <button 
-            className="ml-auto hover:bg-neutral-100 p-2 rounded-full transition-colors" 
+            className={isSuperAdmin ? "hover:bg-neutral-100 p-2 rounded-full transition-colors" : "ml-auto hover:bg-neutral-100 p-2 rounded-full transition-colors"}
             onClick={handleLogout}
             title="Logout"
           >
             <LogOut className="h-5 w-5 text-neutral-500" />
           </button>
         </div>
+        
+        {/* Change Password Modal */}
+        <ChangePasswordModal 
+          isOpen={isPasswordModalOpen} 
+          onClose={() => setIsPasswordModalOpen(false)} 
+        />
       </div>
     </aside>
   );
