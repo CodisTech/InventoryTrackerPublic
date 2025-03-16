@@ -1,6 +1,6 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
-import { setupAuth } from "./auth";
+import { setupAuth, comparePasswords, hashPassword } from "./auth";
 import { storage } from "./storage";
 import { 
   insertInventoryItemSchema, 
@@ -20,6 +20,47 @@ import { promisify } from "util";
 import { scrypt, randomBytes } from "crypto";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Add password change endpoint
+  app.post("/api/change-password", async (req, res, next) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const { currentPassword, newPassword } = req.body;
+      const userId = req.user.id;
+      
+      // Get user from storage
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // We already imported comparePasswords and hashPassword at the top of the file
+      
+      // Verify current password
+      const isCorrectPassword = await comparePasswords(currentPassword, user.password);
+      if (!isCorrectPassword) {
+        return res.status(400).json({ message: "Current password is incorrect" });
+      }
+      
+      // Hash new password
+      const hashedPassword = await hashPassword(newPassword);
+      
+      // Update user with new password
+      const updatedUser = await storage.updateUser(userId, {
+        password: hashedPassword
+      });
+      
+      if (!updatedUser) {
+        return res.status(500).json({ message: "Failed to update password" });
+      }
+      
+      res.status(200).json({ message: "Password updated successfully" });
+    } catch (err) {
+      next(err);
+    }
+  });
   // Authentication routes
   const { ensureAuthenticated } = setupAuth(app);
   
