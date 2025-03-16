@@ -1,10 +1,50 @@
+# Node.js dependencies
 node_modules
 npm-debug.log
-Dockerfile
-.dockerignore
+
+# Version control
 .git
-.github
 .gitignore
-README.md
+
+# Environment files
 .env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Build artifacts
 dist
+client/dist
+out
+
+# Editor directories and files
+.vscode
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Development files
+*.md
+*.txt
+*.log
+tests
+coverage
+.coverage
+docs
+
+# Docker specific
+Dockerfile
+docker-compose.yml
+docker-compose.*.yml
+
+# Temporary files
+tmp
+temp

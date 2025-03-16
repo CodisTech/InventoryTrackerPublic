@@ -1,30 +1,60 @@
 # Docker Update Method
 
-After committing changes to Git, follow these steps to update Docker:
+## Prerequisites
+- Docker and Docker Compose must be installed on your system
+- Git repository with latest changes pulled
 
-1. Build the new Docker image:
+## Update Steps
+After successfully pushing changes to Git, follow these steps to update your Docker deployment:
+
+1. Pull the latest changes from your Git repository:
+```
+git pull origin main
+```
+
+2. Build the new Docker image with no cache to ensure all changes are included:
 ```
 docker-compose build --no-cache
 ```
 
-2. Stop and remove existing containers:
+3. Stop and remove existing containers:
 ```
 docker-compose down
 ```
 
-3. Start the updated containers:
+4. Start the updated containers in detached mode:
 ```
 docker-compose up -d
 ```
 
-4. Verify the containers are running:
+5. Verify the containers are running:
 ```
 docker-compose ps
 ```
 
-5. Check logs for any errors:
+6. Check logs for any errors:
 ```
 docker-compose logs
 ```
 
-The changes should now be deployed with the new password change functionality working in the Docker environment.
+7. Test the application to verify password change functionality:
+   - Log in as superadmin (username: superadmin, password: superadmin123)
+   - Look for the key icon in the sidebar
+   - Test changing the password
+   - Log out and log back in with the new password
+
+## Troubleshooting
+- If containers fail to start, check logs with `docker-compose logs app`
+- If database connection fails, ensure PostgreSQL container is running with `docker-compose logs db`
+- For permission issues, check that Docker has appropriate permissions to access your files
+
+## Rollback Procedure
+If needed, you can rollback to a previous version:
+```
+git checkout <previous-commit-hash>
+docker-compose down
+docker-compose build --no-cache
+docker-compose up -d
+```
+
+The changes should now be deployed with the password change functionality working in the Docker environment.
