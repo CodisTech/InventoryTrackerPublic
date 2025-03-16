@@ -1,6 +1,6 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { Express } from "express";
+import { Express, Request, Response, NextFunction } from "express";
 import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
@@ -104,10 +104,10 @@ export function setupAuth(app: Express) {
     done(null, user.id);
   });
   
-  passport.deserializeUser(async (id, done) => {
+  passport.deserializeUser(async (id: unknown, done) => {
     try {
       console.log(`[DESERIALIZE DEBUG] Attempting to deserialize user ID: ${id}`);
-      const numericId = typeof id === 'string' ? parseInt(id, 10) : id;
+      const numericId = typeof id === 'string' ? parseInt(id, 10) : id as number;
       
       if (isNaN(numericId)) {
         console.log(`[DESERIALIZE DEBUG] Invalid user ID: ${id}`);
@@ -127,7 +127,7 @@ export function setupAuth(app: Express) {
       
       console.log(`[DESERIALIZE DEBUG] Successfully deserialized user: ${user.username}`);
       done(null, user);
-    } catch (err) {
+    } catch (err: any) {
       console.log(`[DESERIALIZE DEBUG] Error deserializing user: ${err.message}`);
       done(err);
     }
@@ -161,7 +161,7 @@ export function setupAuth(app: Express) {
   app.post("/api/login", (req, res, next) => {
     console.log(`[LOGIN DEBUG] Login attempt with username: ${req.body.username}`);
     
-    passport.authenticate("local", (err, user, info) => {
+    passport.authenticate("local", (err: any, user: any, info: any) => {
       if (err) {
         console.log(`[LOGIN DEBUG] Login error: ${err.message}`);
         return next(err);
@@ -213,7 +213,7 @@ export function setupAuth(app: Express) {
   });
 
   // Middleware to check if the user is authenticated
-  const ensureAuthenticated = (req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
+  const ensureAuthenticated = (req: Request, res: Response, next: NextFunction) => {
     if (req.isAuthenticated()) {
       return next();
     }
