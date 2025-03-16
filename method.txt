@@ -1,42 +1,30 @@
-# Print Functionality Implementation Method
+# Docker Update Method
 
-## Overview
-The automatic print functionality was implemented across both single and multi-item checkout workflows to provide a seamless experience for users who need physical records of transactions.
+After committing changes to Git, follow these steps to update Docker:
 
-## Key Components
+1. Build the new Docker image:
+```
+docker-compose build --no-cache
+```
 
-### 1. Automatic Print Dialog
-- Added a confirmation dialog that automatically appears after successful checkout operations
-- Implemented a skip option for users who don't need to print at that moment
-- Used React's window.print() API triggered from useEffect after modal open
+2. Stop and remove existing containers:
+```
+docker-compose down
+```
 
-### 2. Print Layout Design
-- Created a specialized CSS print layout using @media print queries
-- Hid navigation elements and UI controls during printing
-- Designed a receipt-style format with clear headers and structured information
+3. Start the updated containers:
+```
+docker-compose up -d
+```
 
-### 3. Transaction Receipt Content
-- Added comprehensive item details including:
-  - Item name, category, and identification code
-  - Serial numbers and inventory specifics
-  - Quantity being checked out
-- Included personnel information for accountability:
-  - Name, ID, department, and division
-  - Contact details for follow-up
-- Added timestamps and due dates for return tracking
-- Included signature lines for physical record verification
+4. Verify the containers are running:
+```
+docker-compose ps
+```
 
-### 4. Implementation Consistency
-- Maintained visual consistency between single and multi-item checkout receipts
-- Ensured all receipt components scale properly for different print sizes
-- Added printer-friendly styling with appropriate margins and spacing
+5. Check logs for any errors:
+```
+docker-compose logs
+```
 
-### 5. Error Handling
-- Added fallback content if certain fields are missing
-- Implemented print-specific error catching to prevent failed print attempts
-
-## Technical Details
-- Used custom CSS classes with print-only visibility
-- Leveraged React's useRef to capture printable content
-- Implemented responsive design patterns for different paper sizes
-- Stored print preferences in local storage for user convenience
+The changes should now be deployed with the new password change functionality working in the Docker environment.

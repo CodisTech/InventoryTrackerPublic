@@ -1,8 +1,7 @@
-Update Docker deployment configurations and add super admin
+Add password change functionality for superadmin users
 
-- Add super admin user creation in setup-db.js with default credentials
-- Improve docker-entrypoint.sh with robust database connection retry
-- Enhance Dockerfile with multi-stage build for smaller image size
-- Use non-root user in Docker container for better security
-- Update session secret in docker-compose.yml
-- General deployment improvements for production readiness
+- Added backend API endpoint for changing passwords
+- Created password change form modal in the frontend 
+- Added key icon in sidebar for password change access
+- Fixed TypeScript type issues in authentication system
+- Enhanced error handling for password validation
