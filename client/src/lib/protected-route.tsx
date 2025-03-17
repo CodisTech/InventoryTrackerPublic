@@ -16,7 +16,7 @@ export function ProtectedRoute({
   requiredPermission,
   requiredRole
 }: ProtectedRouteProps) {
-  const { user, isLoading, hasPermission } = useAuth();
+  const { user, isLoading, hasPermission, activeRole } = useAuth();
 
   // Show loading state while checking authentication
   if (isLoading) {
@@ -38,8 +38,8 @@ export function ProtectedRoute({
     );
   }
 
-  // Check required role if specified
-  if (requiredRole && user.role !== requiredRole) {
+  // Check required role if specified - use activeRole instead of user.role
+  if (requiredRole && activeRole !== requiredRole) {
     return (
       <Route path={path}>
         <div className="flex flex-col items-center justify-center min-h-screen">
