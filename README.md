@@ -30,6 +30,10 @@ This Inventory Management System is an advanced tool designed to streamline equi
   - Exportable reports in multiple formats
 
 - **Security Features**
+  - CSRF protection for all state-changing operations
+  - Rate limiting to prevent abuse
+  - Secure HTTP response headers
+  - Session security with timeouts and secure cookies
   - EULA and privacy policy agreements
   - Fine-grained permission system
   - Audit logging for compliance

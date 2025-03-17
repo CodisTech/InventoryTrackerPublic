@@ -2,9 +2,38 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
+// Security headers middleware
+function addSecurityHeaders(req: Request, res: Response, next: NextFunction) {
+  // Protect against XSS attacks
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  
+  // Prevent MIME type sniffing
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  
+  // Prevent clickjacking
+  res.setHeader('X-Frame-Options', 'DENY');
+  
+  // Strict Transport Security (for production with HTTPS)
+  if (process.env.NODE_ENV === 'production') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+  
+  // Content Security Policy - slightly permissive for development
+  res.setHeader(
+    'Content-Security-Policy',
+    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self';"
+  );
+  
+  // Referrer Policy
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  
+  next();
+}
+
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+app.use(addSecurityHeaders);
 
 app.use((req, res, next) => {
   const start = Date.now();

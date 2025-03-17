@@ -77,6 +77,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/health", async (_req, res) => {
     res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
   });
+  
+  // CSRF token endpoint for authenticated users
+  app.get("/api/csrf-token", ensureAuthenticated, (req, res) => {
+    res.json({ csrfToken: req.csrfToken() });
+  });
 
   // Dashboard
   app.get("/api/dashboard/stats", ensureAuthenticated, async (req, res, next) => {
@@ -191,7 +196,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/inventory/:id", ensureAuthenticated, async (req, res, next) => {
+  app.patch("/api/inventory/:id", ensureAuthenticated, csrfProtection, async (req, res, next) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {

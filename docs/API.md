@@ -467,7 +467,52 @@ Common HTTP status codes:
 - 404: Not Found
 - 500: Internal Server Error
 
-## Rate Limiting
+## Security Features
+
+### CSRF Protection
+
+Cross-Site Request Forgery (CSRF) protection is implemented for all state-changing endpoints (POST, PATCH, DELETE). 
+To make requests to these endpoints, you need to:
+
+1. Obtain a CSRF token by making a GET request to `/api/csrf-token`
+2. Include this token in subsequent requests as either:
+   - An HTTP header: `X-CSRF-Token: <token>`
+   - A request body parameter: `_csrf: <token>`
+
+Example:
+```javascript
+// 1. Get the CSRF token
+const tokenResponse = await fetch('/api/csrf-token', {
+  credentials: 'include'  // Important: include cookies
+});
+const { csrfToken } = await tokenResponse.json();
+
+// 2. Use the token in subsequent requests
+const response = await fetch('/api/inventory', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-CSRF-Token': csrfToken  // Include the token
+  },
+  body: JSON.stringify({
+    // request data
+  }),
+  credentials: 'include'  // Important: include cookies
+});
+```
+
+### Security Headers
+
+The API implements the following security headers:
+
+- `X-XSS-Protection`: Prevents reflected XSS attacks
+- `X-Content-Type-Options`: Prevents MIME type sniffing
+- `X-Frame-Options`: Protects against clickjacking
+- `Content-Security-Policy`: Restricts what resources can be loaded
+- `Referrer-Policy`: Controls how much referrer information is included
+- `Strict-Transport-Security`: Forces HTTPS usage (in production)
+
+### Rate Limiting
 
 API rate limiting is implemented to protect the service from abuse. Current limits:
 - 100 requests per minute for authenticated users
