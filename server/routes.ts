@@ -9,7 +9,9 @@ import {
   insertTransactionSchema, 
   insertPersonnelSchema,
   insertPrivacyAgreementSchema,
-  insertEulaAgreementSchema
+  insertEulaAgreementSchema,
+  User,
+  USER_ROLES
 } from "@shared/schema";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
@@ -301,7 +303,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Users
+  // Validate admin password for role elevation
+  app.post("/api/validate-admin-password", ensureAuthenticated, csrfProtection, async (req, res, next) => {
+    try {
+      // Get user roles from schema
+      const USER_ROLES_VALUES = {
+        STANDARD_USER: "standard",
+        ADMIN: "admin",
+        SUPER_ADMIN: "super_admin"
+      };
+      
+      // Check if the current user is authorized to switch roles
+      const currentUser = req.user as any;
+      const { password, targetRole } = req.body;
+      
+      if (!password) {
+        return res.status(400).json({ message: "Password is required" });
+      }
+      
+      if (!targetRole) {
+        return res.status(400).json({ message: "Target role is required" });
+      }
+
+      // If user is already an admin or super admin, they can switch to lower roles without validation
+      if (currentUser.role === USER_ROLES_VALUES.ADMIN || currentUser.role === USER_ROLES_VALUES.SUPER_ADMIN) {
+        if (targetRole === USER_ROLES_VALUES.STANDARD_USER || 
+            (currentUser.role === USER_ROLES_VALUES.SUPER_ADMIN && targetRole === USER_ROLES_VALUES.ADMIN)) {
+          return res.status(200).json({ isValid: true });
+        }
+      }
+      
+      // For elevation to ADMIN or SUPER_ADMIN, validate with admin credentials
+      // Get an admin user to validate against (most basic one will work)
+      const adminUsers = (await storage.getAllUsers()).filter(
+        (user) => user.role === USER_ROLES_VALUES.ADMIN || user.role === USER_ROLES_VALUES.SUPER_ADMIN
+      );
+      
+      if (!adminUsers.length) {
+        return res.status(500).json({ message: "No admin users found in the system" });
+      }
+      
+      // Check if the password matches with any admin account
+      let isValidAdminPassword = false;
+      
+      for (const admin of adminUsers) {
+        try {
+          if (await comparePasswords(password, admin.password)) {
+            isValidAdminPassword = true;
+            break;
+          }
+        } catch (err) {
+          console.error("Error comparing passwords:", err);
+        }
+      }
+      
+      if (!isValidAdminPassword) {
+        return res.status(401).json({ 
+          message: "Invalid admin password", 
+          isValid: false 
+        });
+      }
+      
+      res.status(200).json({ isValid: true });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+// Users
   app.get("/api/users", ensureAuthenticated, async (req, res, next) => {
     try {
       const users = await storage.getAllUsers();
