@@ -1,6 +1,6 @@
-# CODIS User Guide
+# Inventory Management System User Guide
 
-This guide provides detailed instructions for using the CODIS Inventory Management System.
+This guide provides detailed instructions for using the Inventory Management System.
 
 ## Table of Contents
 
@@ -16,7 +16,7 @@ This guide provides detailed instructions for using the CODIS Inventory Manageme
 ## Login and Authentication
 
 ### Logging In
-1. Navigate to the CODIS login page
+1. Navigate to the login page
 2. Enter your username and password
 3. Click "Sign In"
 

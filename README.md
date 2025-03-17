@@ -1,10 +1,10 @@
-# CODIS - Inventory Management System
+# Inventory Management System
 
-![CODIS Logo](client/src/assets/images/codis-logo.svg)
+![Inventory Tracker Logo](client/src/assets/images/codis-logo.svg)
 
 ## Overview
 
-CODIS is an advanced inventory management system designed to streamline equipment tracking, check-in/out processes, and user interactions. It's built with a focus on user experience, data integrity, and intuitive design, making it perfect for organizations that need to track valuable equipment and manage user access.
+This Inventory Management System is an advanced tool designed to streamline equipment tracking, check-in/out processes, and user interactions. It's built with a focus on user experience, data integrity, and intuitive design, making it perfect for organizations that need to track valuable equipment and manage user access.
 
 ## Key Features
 
@@ -164,4 +164,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Support
 
-For support requests, please contact support@codistech.com or open an issue in the GitHub repository.
+For support requests, please open an issue in the GitHub repository.
