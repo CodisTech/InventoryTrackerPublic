@@ -8,8 +8,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import codisLogoLight from "../assets/images/codis-logo-light.svg";
-import codisLogoDark from "../assets/images/codis-logo-dark.svg";
+import inventoryLogoLight from "../assets/images/inventory-logo-light.svg";
+import inventoryLogoDark from "../assets/images/inventory-logo-dark.svg";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -54,7 +54,7 @@ export default function AuthPage() {
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <div className="flex justify-center mb-3">
-              <img src={codisLogoLight} alt="Codis Technology" className="w-48 h-48" />
+              <img src={inventoryLogoLight} alt="Inventory Management" className="w-48 h-48" />
             </div>
             <h1 className="text-2xl font-bold">Inventory Management System</h1>
             <p className="text-neutral-500 mt-2">
@@ -138,10 +138,10 @@ export default function AuthPage() {
       <div className="hidden lg:flex flex-1 bg-black p-12 text-white items-center justify-center">
         <div className="max-w-md">
           <div className="mb-6 flex justify-center">
-            <img src={codisLogoDark} alt="Codis Technology" className="w-52 h-52" />
+            <img src={inventoryLogoDark} alt="Inventory Management" className="w-52 h-52" />
           </div>
           <h2 className="text-3xl font-bold mb-6 text-center">
-            Codis Technology Inventory Management
+            Inventory Management System
           </h2>
           <ul className="space-y-4">
             <li className="flex items-start">
@@ -182,7 +182,7 @@ export default function AuthPage() {
           </ul>
           <div className="mt-8 text-center">
             <p className="text-sm text-white/70">
-              © Codis Technology 2020-{new Date().getFullYear()}
+              © Inventory Management System 2020-{new Date().getFullYear()}
             </p>
           </div>
         </div>

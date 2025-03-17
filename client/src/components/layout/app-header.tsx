@@ -82,8 +82,8 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onMenuClick }) => {
         <button className="p-2" aria-label="Menu" onClick={onMenuClick}>
           <Menu className="h-5 w-5" />
         </button>
-        <img src={codisLogoDark} alt="Codis Technology" className="ml-2 h-8 w-8" />
-        <h1 className="text-lg font-medium ml-2">Codis Inventory</h1>
+        <img src={inventoryLogoDark} alt="Inventory Management" className="ml-2 h-8 w-8" />
+        <h1 className="text-lg font-medium ml-2">Inventory System</h1>
       </div>
 
       <div className="hidden md:block w-full max-w-md">
