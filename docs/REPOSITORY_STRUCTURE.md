@@ -1,133 +1,102 @@
-# Repository Structure
+# Repository Structure Guide
 
-The Inventory Management System is distributed across three repositories with different access levels and purposes:
+This document explains the multi-repository structure used in the Inventory Management System.
 
 ## Repository Types
 
-### 1. Private Repository
-- **Repository Type:** `private`
-- **Access Level:** Internal team only
-- **Purpose:** Main development repository with all features and capabilities
-- **Features:** All features enabled, including experimental and beta features
-- **Deployment:** Internal development and staging environments
+The application is organized into three separate repository types:
 
-### 2. Public Repository
-- **Repository Type:** `public`
-- **Access Level:** Available to all users
-- **Purpose:** Limited functionality open-source version
-- **Features:** Core functionality only, without advanced or experimental features
-- **Deployment:** Public demo and open-source distribution
+| Repository | Access | Features | Purpose |
+|------------|--------|----------|---------|
+| **Private** | Internal only | All features enabled | Production deployment with full functionality |
+| **Public** | Open source | Limited feature set | Public demonstration and community contributions |
+| **Sandbox** | Development team | All features enabled | Testing and experimentation |
 
-### 3. Sandbox Repository
-- **Repository Type:** `sandbox`
-- **Access Level:** Internal testing team
-- **Purpose:** Testing ground for new features
-- **Features:** All features enabled, including experimental and beta features
-- **Deployment:** Testing environments
+## Feature Availability
 
-## Repository Detection
-
-The system automatically detects which repository it's running from using the `.repository-type` file at the root of the project. This file contains a simple JSON-like structure:
-
-```
-repository: private
-```
-
-Valid values are `private`, `public`, and `sandbox`.
+| Feature | Private | Public | Sandbox | Description |
+|---------|---------|--------|---------|-------------|
+| Core Features | ✅ | ✅ | ✅ | Essential inventory management functionality |
+| User Management | ✅ | ✅ | ✅ | User and permission management |
+| Enhanced Security | ✅ | ✅ | ✅ | Security features and protections |
+| Advanced Reporting | ✅ | ❌ | ✅ | Detailed analytics and reporting |
+| Experimental UI | ✅ | ❌ | ✅ | Experimental UI components |
+| Beta Features | ✅ | ❌ | ✅ | Upcoming features in development |
 
 ## Feature Flag System
 
-Features are controlled through the feature flag system defined in `client/src/lib/version-config.ts`. Each feature has availability settings for each repository type:
+The application uses a feature flag system to conditionally enable features based on the repository type. This is implemented in `client/src/lib/version-config.ts`.
 
-```typescript
-export const FEATURE_FLAGS = {
-  ADVANCED_REPORTING: {
-    title: "Advanced Reporting",
-    description: "Enhanced reporting capabilities with charts, exports, and custom filters",
-    availability: {
-      private: true,
-      public: false,
-      sandbox: true
-    }
-  },
-  // Other features...
-};
-```
+### Using Feature Flags
 
-The React hook `useFeatureFlags` provides easy access to feature availability in components:
+```tsx
+import { FeatureFlagGuard, useFeatureFlags } from "@/hooks/use-feature-flags";
 
-```typescript
-import { useFeatureFlags, FeatureFlagGuard } from "@/hooks/use-feature-flags";
-
-// Using the hook directly
-function MyComponent() {
-  const { isEnabled } = useFeatureFlags();
-  
-  return (
-    <div>
-      {isEnabled("ADVANCED_REPORTING") && (
-        <AdvancedReportingUI />
-      )}
-    </div>
-  );
+// To check if a feature is enabled in your component:
+const { isEnabled } = useFeatureFlags();
+if (isEnabled('ADVANCED_REPORTING')) {
+  // Implement advanced reporting features
 }
 
-// Using the guard component
-function AnotherComponent() {
-  return (
-    <FeatureFlagGuard feature="ADVANCED_REPORTING">
-      <AdvancedReportingUI />
-    </FeatureFlagGuard>
-  );
-}
+// Or use the guard component to conditionally render elements:
+<FeatureFlagGuard feature="BETA_FEATURES">
+  <BetaFeatureComponent />
+</FeatureFlagGuard>
 ```
 
-## Repository Synchronization
+## Repository Type Detection
 
-Repositories can be synchronized using the provided scripts:
+The application detects which repository it's running in using the following hierarchy:
 
-- `setup-git-repositories.sh`: Initial setup of all three repositories
-- `sync-repositories.sh`: Synchronize changes between repositories
-- `setup-repository-permissions.sh`: Configure appropriate permissions for each repository
+1. `.repository-type` file in the root directory
+2. Environment variable: `REPOSITORY_TYPE`
+3. Git branch name: `main` (private), `public`, `sandbox`
+4. Default fallback to `private`
 
-## Version Indicator
+The detection logic is implemented in `check-repository-type.cjs`.
 
-The current repository type is clearly indicated in the UI via the `VersionIndicator` component, which displays:
+## Deployment
 
-- Current version number
-- Repository type (PRIVATE, PUBLIC, or SANDBOX)
-- Build information (when available)
-- Environment (development, sandbox, or production)
-- List of enabled features (on hover)
+### GitHub Actions Workflows
 
-## GitHub Actions Workflows
+Three GitHub Actions workflows are set up to handle deployment:
 
-Each repository has specific GitHub Actions workflows:
+- `.github/workflows/deploy.yml` - Main deployment pipeline for the `private` repository
+- `.github/workflows/deploy-sandbox.yml` - Deployment for the `sandbox` repository
+- `.github/workflows/pages.yml` - Documentation deployment to GitHub Pages
 
-### Private Repository
-- `deploy.yml`: Deploys to internal environments
-- `pages.yml`: Deploys documentation to GitHub Pages
+### Documentation
 
-### Public Repository
-- `deploy.yml`: Deploys to public demo environments
-- `pages.yml`: Deploys public documentation
+Documentation is automatically generated and deployed to GitHub Pages whenever changes are made to the documentation files or the main branch.
 
-### Sandbox Repository
-- `deploy-sandbox.yml`: Deploys to testing environments
+## Development
 
-## Adding New Features
+### Switching Repository Types
 
-When adding new features, follow these steps to ensure proper repository management:
+For local development, you can switch between repository types using:
 
-1. Develop the feature in the `private` repository
-2. Add a feature flag in `client/src/lib/version-config.ts`
-3. Use `FeatureFlagGuard` or `useFeatureFlags` to conditionally render UI elements
-4. Test thoroughly in the `sandbox` repository
-5. If appropriate for public release, enable it for the `public` repository
+```bash
+# Switch to private repository mode
+node change-repository-type.js private
 
-## Reference
+# Switch to public repository mode
+node change-repository-type.js public
 
-For more information, see:
-- `client/src/lib/version-config.ts` - Feature flag definitions
-- `client/src/hooks/use-feature-flags.tsx` - React hooks for feature flags
-- `client/src/components/layout/version-indicator.tsx` - UI component showing repository type
+# Switch to sandbox repository mode
+node change-repository-type.js sandbox
+```
+
+The change takes effect immediately after refreshing the browser.
+
+### Visual Indicators
+
+The current repository type is indicated in the UI with:
+
+1. A version indicator in the header showing the version number and a colored dot:
+   - 🔴 Red: Private repository
+   - 🟢 Green: Public repository
+   - 🟠 Amber: Sandbox repository
+
+2. A repository type badge on the login page
+
+3. A repository type indicator in the mobile navigation sidebar
