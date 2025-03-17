@@ -255,8 +255,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const now = new Date();
       
       if (dataWithDefaults.type === 'check-in') {
-        // For check-in, set returnDate to now
-        dataWithDefaults.returnDate = now;
+        // For check-in, set returnDate to now as ISO string
+        dataWithDefaults.returnDate = now.toISOString();
       } else if (dataWithDefaults.type === 'check-out') {
         // For check-out, set dueDate to 24 hours from now
         const dueDate = new Date(now);
@@ -294,11 +294,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(transaction);
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.log("[TRANSACTION ERROR] Validation failed:", error.format());
+        console.log("[TRANSACTION ERROR] Request data:", JSON.stringify(req.body));
         return res.status(400).json({ 
           message: "Validation error", 
-          errors: fromZodError(error).message 
+          errors: fromZodError(error).message,
+          details: error.format()
         });
       }
+      console.log("[TRANSACTION ERROR] Non-validation error:", error);
       next(error);
     }
   });
