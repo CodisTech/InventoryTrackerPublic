@@ -412,7 +412,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/personnel", ensureAuthenticated, async (req, res, next) => {
+  app.post("/api/personnel", ensureAuthenticated, csrfProtection, async (req, res, next) => {
     try {
       const validatedData = insertPersonnelSchema.parse(req.body);
       const person = await storage.createPersonnel(validatedData);
@@ -428,7 +428,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/personnel/:id", ensureAuthenticated, async (req, res, next) => {
+  app.patch("/api/personnel/:id", ensureAuthenticated, csrfProtection, async (req, res, next) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
@@ -447,7 +447,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/personnel/:id", ensureAuthenticated, async (req, res, next) => {
+  app.delete("/api/personnel/:id", ensureAuthenticated, csrfProtection, async (req, res, next) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
@@ -466,7 +466,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Privacy Agreement endpoints
-  app.post("/api/privacy-agreements", ensureAuthenticated, async (req, res, next) => {
+  app.post("/api/privacy-agreements", ensureAuthenticated, csrfProtection, async (req, res, next) => {
     try {
       const validatedData = insertPrivacyAgreementSchema.parse(req.body);
       
@@ -528,7 +528,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // EULA Agreement endpoints
-  app.post("/api/eula-agreements", ensureAuthenticated, async (req, res, next) => {
+  app.post("/api/eula-agreements", ensureAuthenticated, csrfProtection, async (req, res, next) => {
     try {
       const validatedData = insertEulaAgreementSchema.parse(req.body);
       
@@ -618,7 +618,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Bulk upload routes
   // CSV Upload for Personnel
-  app.post("/api/personnel/bulk-upload", ensureAuthenticated, upload.single('file'), async (req, res, next) => {
+  app.post("/api/personnel/bulk-upload", ensureAuthenticated, csrfProtection, upload.single('file'), async (req, res, next) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
@@ -710,7 +710,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // CSV Upload for Inventory Items
-  app.post("/api/inventory/bulk-upload", ensureAuthenticated, upload.single('file'), async (req, res, next) => {
+  app.post("/api/inventory/bulk-upload", ensureAuthenticated, csrfProtection, upload.single('file'), async (req, res, next) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
