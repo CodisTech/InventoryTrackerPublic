@@ -131,7 +131,7 @@ The project includes configuration for GitHub Pages to showcase the application:
    git init
    git add .
    git commit -m "Initial GitHub Pages deployment"
-   git remote add origin https://github.com/your-username/inventory-management-system.git
+   git remote add origin https://github.com/codistech/inventory-management-system.git
    git push -u origin main
    ```
 
@@ -139,7 +139,7 @@ The project includes configuration for GitHub Pages to showcase the application:
 
 4. Your GitHub Pages site will be available at:
    ```
-   https://your-username.github.io/inventory-management-system/
+   https://codistech.github.io/inventory-management-system/
    ```
 
 Note: The GitHub Pages deployment provides a static showcase of the application UI. For full functionality, deploy the application with a backend server.
