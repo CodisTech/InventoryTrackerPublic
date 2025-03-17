@@ -73,6 +73,13 @@ The Transactions view allows you to track all equipment check-ins and check-outs
   - Department usage analytics
   - Exportable reports in multiple formats
 
+- **Repository Configuration**
+  - Support for three repository types (Private, Public, Sandbox)
+  - Feature flags tailored to each repository type
+  - Visual indicators of current repository type in UI
+  - Easy switching between repository types for testing
+  - Comprehensive documentation for repository types and features
+
 - **Security Features**
   - CSRF protection for all state-changing operations
   - Rate limiting to prevent abuse
@@ -233,6 +240,12 @@ Configuration can be managed through environment variables:
 | `PORT` | Application port | 5000 |
 | `SESSION_SECRET` | Secret for session encryption | (auto-generated) |
 | `NODE_ENV` | Environment (development/production) | development |
+| `REPOSITORY_TYPE` | Repository type (private/public/sandbox) | private |
+
+Repository type can also be configured by:
+1. Creating a `.repository-type` file in the root directory with "private", "public", or "sandbox"
+2. Using the provided script: `node change-repository-type.js <repository-type>`
+3. Git branch name (main → private, public → public, sandbox → sandbox)
 
 ## Documentation
 
@@ -242,6 +255,7 @@ For more detailed documentation, see:
 - [API Documentation](docs/API.md)
 - [Database Schema](docs/DATABASE.md)
 - [Docker Deployment](docs/DOCKER.md)
+- [Repository Types](docs/REPOSITORY_TYPES.md)
 
 ## Contributing
 
