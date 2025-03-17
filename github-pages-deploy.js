@@ -6,9 +6,14 @@
  * deployment repository structure.
  */
 
-const fs = require('fs');
-const path = require('path');
-const { execSync } = require('child_process');
+import fs from 'fs';
+import path from 'path';
+import { execSync } from 'child_process';
+import { fileURLToPath } from 'url';
+
+// ES module compatibility
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Configuration
 const config = {
@@ -16,7 +21,7 @@ const config = {
   docsDir: 'docs',              // Documentation directory
   screenshotsDir: 'screenshots', // Screenshot directory
   tempDir: 'gh-pages-temp',     // Temporary directory for building
-  repoUrl: 'https://github.com/yourusername/inventory-management', // Replace with your repo URL
+  repoUrl: 'https://github.com/CodisTech/InventoryTrackerSandbox', // Sandbox repository URL
   branch: 'gh-pages',           // The branch to deploy to
 };
 
@@ -42,7 +47,16 @@ function copyFile(source, destination) {
  * Create a simple HTML index page for GitHub Pages
  */
 function createIndexPage() {
-  const repoType = require('./check-repository-type.cjs').repositoryType;
+  let repoType = "sandbox";
+  
+  // Try to get repo type from .repository-type file
+  try {
+    if (fs.existsSync('.repository-type')) {
+      repoType = fs.readFileSync('.repository-type', 'utf8').trim();
+    }
+  } catch (error) {
+    console.warn('Could not read repository type from file, using default: sandbox');
+  }
   
   const indexHtml = `
 <!DOCTYPE html>
@@ -210,10 +224,10 @@ function createIndexPage() {
   
   <h2>Documentation</h2>
   <ul>
-    <li><a href="https://github.com/yourusername/inventory-management/blob/main/README.md">README</a></li>
-    <li><a href="https://github.com/yourusername/inventory-management/blob/main/docs/USER_GUIDE.md">User Guide</a></li>
-    <li><a href="https://github.com/yourusername/inventory-management/blob/main/docs/API.md">API Documentation</a></li>
-    <li><a href="https://github.com/yourusername/inventory-management/blob/main/docs/DATABASE.md">Database Schema</a></li>
+    <li><a href="https://github.com/CodisTech/InventoryTrackerSandbox/blob/main/README.md">README</a></li>
+    <li><a href="https://github.com/CodisTech/InventoryTrackerSandbox/blob/main/docs/USER_GUIDE.md">User Guide</a></li>
+    <li><a href="https://github.com/CodisTech/InventoryTrackerSandbox/blob/main/docs/API.md">API Documentation</a></li>
+    <li><a href="https://github.com/CodisTech/InventoryTrackerSandbox/blob/main/docs/DATABASE.md">Database Schema</a></li>
   </ul>
   
   <footer style="margin-top: 3rem; border-top: 1px solid #eee; padding-top: 1rem;">
@@ -287,7 +301,7 @@ function createDemoPage() {
   <p><strong>Note:</strong> This is a static demo. For the full interactive experience, please run the application locally.</p>
   
   <div>
-    <iframe src="https://replit.com/@yourusername/inventory-management?embed=true" class="demo-frame"></iframe>
+    <iframe src="https://codistech-inventorytrackersandbox.replit.app?embed=true" class="demo-frame"></iframe>
   </div>
   
   <p style="margin-top: 2rem;">
