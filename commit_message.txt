@@ -1,7 +1,1 @@
-Deploy Inventory Management System with Live Demo
-
-This commit includes:
-- Complete inventory management system with user authentication
-- Interactive demo for GitHub Pages
-- GitHub Actions workflow for automated deployment
-- Comprehensive documentation and setup guides
+Fix role switching functionality and improve type safety in multi-item checkout modal
