@@ -22,7 +22,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { USER_ROLES, UserRole } from "@shared/schema";
-import codisLogoDark from "../../assets/images/codis-logo-dark.svg";
+import inventoryLogoDark from "../../assets/images/inventory-logo.svg";
 import SwitchRoleModal from "@/components/users/switch-role-modal";
 
 interface AppHeaderProps {

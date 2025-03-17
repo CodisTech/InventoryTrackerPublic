@@ -68,8 +68,8 @@ This Inventory Management System is an advanced tool designed to streamline equi
 
 1. Clone the repository
    ```
-   git clone https://github.com/CodisTech/InventoryTracker.git
-   cd InventoryTracker
+   git clone https://github.com/yourusername/inventory-management-system.git
+   cd inventory-management-system
    ```
 
 2. Install dependencies

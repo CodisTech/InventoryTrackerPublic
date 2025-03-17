@@ -21,8 +21,8 @@
   <!-- Established year -->
   <text x="30" y="180" font-family="Arial, sans-serif" font-size="14" fill="#000000">est.</text>
   <text x="420" y="180" font-family="Arial, sans-serif" font-size="14" fill="#000000">2020</text>
-  <!-- CODIS -->
-  <text x="250" y="240" font-family="Arial, sans-serif" font-size="42" font-weight="bold" fill="#000000" text-anchor="middle">CODIS</text>
-  <!-- technology -->
-  <text x="250" y="280" font-family="Arial, sans-serif" font-size="20" fill="#000000" text-anchor="middle" letter-spacing="4">t e c h n o l o g y</text>
+  <!-- Inventory -->
+  <text x="250" y="240" font-family="Arial, sans-serif" font-size="42" font-weight="bold" fill="#000000" text-anchor="middle">INVENTORY</text>
+  <!-- management -->
+  <text x="250" y="280" font-family="Arial, sans-serif" font-size="20" fill="#000000" text-anchor="middle" letter-spacing="4">m a n a g e m e n t</text>
 </svg>
