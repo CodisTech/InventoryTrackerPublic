@@ -1,10 +1,10 @@
-# CODIS Database Schema
+# Inventory Management System Database Schema
 
-This document provides a detailed overview of the database schema used in the CODIS Inventory Management System.
+This document provides a detailed overview of the database schema used in the Inventory Management System.
 
 ## Overview
 
-CODIS uses a relational database structure powered by PostgreSQL (in production) with an in-memory storage option available for development and testing. The schema is designed to efficiently track inventory items, personnel, transactions, and user accounts.
+The system uses a relational database structure powered by PostgreSQL (in production) with an in-memory storage option available for development and testing. The schema is designed to efficiently track inventory items, personnel, transactions, and user accounts.
 
 ## Tables
 
@@ -158,4 +158,4 @@ In development mode, an in-memory database with the same schema can be used inst
 
 ## Contact Information
 
-For questions regarding the database schema, please contact the database administrator at dba@codistech.com.
+For questions regarding the database schema, please open an issue in the GitHub repository.

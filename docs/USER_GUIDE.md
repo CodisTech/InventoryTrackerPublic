@@ -26,7 +26,7 @@ This guide provides detailed instructions for using the Inventory Management Sys
 - If you forget your password, contact your system administrator
 
 ### Role-Based Access
-CODIS features three primary user roles, each with specific permissions:
+The system features three primary user roles, each with specific permissions:
 - **User**: Basic inventory viewing and check-in/out capabilities
 - **Admin**: User capabilities plus personnel and inventory management
 - **Superadmin**: Admin capabilities plus system configuration and user management
@@ -181,4 +181,4 @@ If you encounter any issues:
 2. Try logging out and back in
 3. Contact your system administrator if problems persist
 
-For critical issues, please contact support@codistech.com.
+For critical issues, please contact your system administrator.

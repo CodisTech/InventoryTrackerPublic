@@ -1,6 +1,6 @@
-# Docker Deployment Guide for CODIS
+# Docker Deployment Guide
 
-This guide explains how to deploy the CODIS Inventory Management System using Docker and Docker Compose.
+This guide explains how to deploy the Inventory Management System using Docker and Docker Compose.
 
 ## Prerequisites
 

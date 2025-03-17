@@ -1,10 +1,10 @@
-# CODIS API Documentation
+# Inventory Management System API Documentation
 
-This document provides information about the CODIS REST API endpoints for developers who need to integrate with the system.
+This document provides information about the Inventory Management System REST API endpoints for developers who need to integrate with the system.
 
 ## API Overview
 
-The CODIS API follows REST principles and returns JSON responses. All endpoints are prefixed with `/api`.
+The API follows REST principles and returns JSON responses. All endpoints are prefixed with `/api`.
 
 ## Authentication
 
@@ -479,4 +479,4 @@ The current API version is v1. All endpoints are accessed via `/api/` without a 
 
 ## Support
 
-For API support or to report issues, please contact support@codistech.com.
+For API support or to report issues, please open an issue in the GitHub repository.
