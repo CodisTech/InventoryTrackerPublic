@@ -283,7 +283,10 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
     mutationFn: async (data: any) => {
       try {
         console.log('Sending transaction data:', data);
-        const res = await apiRequest("POST", "/api/transactions", { data });
+        // Pass data directly, not wrapped in an object
+        const res = await apiRequest("POST", "/api/transactions", { 
+          data: data // This is the correct format for apiRequest
+        });
         return await res.json();
       } catch (error) {
         console.error('Transaction mutation error:', error);
