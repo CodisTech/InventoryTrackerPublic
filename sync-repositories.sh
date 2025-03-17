@@ -26,20 +26,13 @@ echo "----------------------------------------"
 # Helper function to commit and push to a specific branch
 commit_and_push() {
   local repo_type=$1
-  local branch_name=$repo_type
+  local branch_name="main" # We use main for all repositories
   
   # Switch to the repository type
   echo "Switching to ${repo_type} repository..."
   node change-repository-type.js ${repo_type}
   
-  # Check if branch exists, if not create it
-  if ! git show-ref --verify --quiet refs/heads/${branch_name}; then
-    echo "Creating ${branch_name} branch..."
-    git checkout -b ${branch_name}
-  else
-    echo "Checking out ${branch_name} branch..."
-    git checkout ${branch_name}
-  fi
+  # We're already on main branch, no need to switch or create
   
   # Add all files
   echo "Adding files..."
@@ -51,7 +44,13 @@ commit_and_push() {
   
   # Push to remote
   echo "Pushing to remote..."
-  git push origin ${branch_name} || echo "Failed to push, remote may not be set up"
+  if [ "${repo_type}" == "private" ]; then
+    git push origin ${branch_name} || echo "Failed to push to private repository"
+  elif [ "${repo_type}" == "public" ]; then
+    git push public ${branch_name} || echo "Failed to push to public repository"
+  elif [ "${repo_type}" == "sandbox" ]; then
+    git push sandbox ${branch_name} || echo "Failed to push to sandbox repository"
+  fi
   
   echo ""
   echo "----------------------------------------"
