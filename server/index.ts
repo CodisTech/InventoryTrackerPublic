@@ -1,6 +1,8 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import path from "path";
+import fs from "fs";
 
 // Security headers middleware
 function addSecurityHeaders(req: Request, res: Response, next: NextFunction) {
@@ -67,6 +69,25 @@ app.use((req, res, next) => {
 
 (async () => {
   const server = await registerRoutes(app);
+  
+  // Serve the repository-type.js file directly
+  app.get('/repository-type.js', (_req, res) => {
+    try {
+      const repoTypeFile = path.resolve(process.cwd(), 'repository-type.js');
+      if (fs.existsSync(repoTypeFile)) {
+        res.setHeader('Content-Type', 'application/javascript');
+        res.sendFile(repoTypeFile);
+      } else {
+        // Create a default one if it doesn't exist
+        const content = 'window.__REPOSITORY_TYPE__ = "private";';
+        res.setHeader('Content-Type', 'application/javascript');
+        res.send(content);
+      }
+    } catch (error) {
+      console.error('Error serving repository-type.js:', error);
+      res.status(500).send('// Error loading repository type');
+    }
+  });
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

@@ -1,0 +1,1 @@
+window.__REPOSITORY_TYPE__ = "public";
