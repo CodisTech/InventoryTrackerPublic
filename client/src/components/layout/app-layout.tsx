@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import AppHeader from "@/components/layout/app-header";
 import MobileNav from "@/components/layout/mobile-nav";
+import Sidebar from "@/components/layout/sidebar";
 import { FeatureFlagsProvider } from "@/hooks/use-feature-flags";
 import { cn } from "@/lib/utils";
 
@@ -30,9 +31,10 @@ export default function AppLayout({ children }: AppLayoutProps) {
         <AppHeader onMenuClick={() => setMobileNavOpen(true)} />
         
         <div className="flex flex-1">
+          <Sidebar />
           <MobileNav isOpen={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
           
-          <main className={cn("flex-1 px-4 pb-12 pt-6", mobileNavOpen && "md:pl-64")}>
+          <main className={cn("flex-1 px-4 pb-12 pt-6")}>
             {children}
           </main>
         </div>
