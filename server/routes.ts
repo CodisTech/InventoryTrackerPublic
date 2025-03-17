@@ -70,7 +70,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   // Authentication routes
-  const { ensureAuthenticated } = setupAuth(app);
+  const { ensureAuthenticated, csrfProtection } = setupAuth(app);
   
   // Health check endpoint for Docker (no authentication required)
   app.get("/api/health", async (_req, res) => {

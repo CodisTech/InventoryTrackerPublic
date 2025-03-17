@@ -5,6 +5,7 @@ import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import csrf from "csurf";
+import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
 
@@ -48,6 +49,26 @@ export async function comparePasswords(supplied: string, stored: string) {
 }
 
 export function setupAuth(app: Express) {
+  // Configure rate limiters
+  const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // Limit each IP to 5 login attempts per window
+    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+    message: { message: "Too many login attempts, please try again after 15 minutes" },
+  });
+
+  const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // limit each IP to 100 requests per windowMs
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { message: "Too many requests, please try again after 15 minutes" },
+  });
+  
+  // Apply API rate limiting to all routes
+  app.use('/api/', apiLimiter);
+  
   const sessionSecret = process.env.SESSION_SECRET || "inventory-management-secret-key";
   
   const sessionSettings: session.SessionOptions = {
@@ -138,7 +159,7 @@ export function setupAuth(app: Express) {
     }
   });
 
-  app.post("/api/register", async (req, res, next) => {
+  app.post("/api/register", loginLimiter, async (req, res, next) => {
     try {
       const existingUser = await storage.getUserByUsername(req.body.username);
       if (existingUser) {
@@ -163,7 +184,7 @@ export function setupAuth(app: Express) {
     }
   });
 
-  app.post("/api/login", (req, res, next) => {
+  app.post("/api/login", loginLimiter, (req, res, next) => {
     console.log(`[LOGIN DEBUG] Login attempt with username: ${req.body.username}`);
     
     passport.authenticate("local", (err: any, user: any, info: any) => {
