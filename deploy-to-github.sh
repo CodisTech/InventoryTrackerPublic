@@ -1,21 +1,51 @@
 #!/bin/bash
 
-# GitHub Pages Deployment Script
-echo -e "\033[36m====== GitHub Pages Deployment Script ======\033[0m"
-echo -e "\033[33;1mThis script will deploy the interactive demo to GitHub Pages.\033[0m"
+# This script helps deploy the inventory management system to a GitHub repository
+# Usage: ./deploy-to-github.sh <github_username> <repository_name> <github_token>
 
-# Ensure gh-pages directory exists
-if [ ! -d "gh-pages" ]; then
-  echo -e "\033[31mError: gh-pages directory not found. Running demo preparation script first...\033[0m"
-  ./deploy-live-demo.sh
+# Check if required arguments are provided
+if [ $# -lt 3 ]; then
+  echo "Usage: ./deploy-to-github.sh <github_username> <repository_name> <github_token>"
+  exit 1
 fi
 
-# Navigate to gh-pages directory
-cd gh-pages
+GITHUB_USERNAME=$1
+REPO_NAME=$2
+GITHUB_TOKEN=$3
 
-# Initialize git repository
-echo -e "\033[36mInitializing git repository...\033[0m"
-git init
+echo -e "\033[36m====== Deploying to GitHub ======\033[0m"
+
+# Initialize git if not already initialized
+if [ ! -d .git ]; then
+  echo -e "\033[36mInitializing git repository...\033[0m"
+  git init
+fi
+
+# Create a commit message
+echo -e "\033[36mCreating commit message...\033[0m"
+cat > commit_message.txt << EOL
+Deploy Inventory Management System
+
+This commit includes:
+- Complete inventory management system with user authentication
+- Interactive demo for GitHub Pages
+- GitHub Actions workflow for automated deployment
+- Comprehensive documentation
+EOL
+
+# Check if remote exists, if not add it
+if ! git remote | grep -q origin; then
+  echo -e "\033[36mAdding GitHub remote...\033[0m"
+  git remote add origin https://${GITHUB_USERNAME}:${GITHUB_TOKEN}@github.com/${GITHUB_USERNAME}/${REPO_NAME}.git
+else
+  echo -e "\033[36mUpdating GitHub remote...\033[0m"
+  git remote set-url origin https://${GITHUB_USERNAME}:${GITHUB_TOKEN}@github.com/${GITHUB_USERNAME}/${REPO_NAME}.git
+fi
+
+# Configure git user
+echo -e "\033[36mConfiguring git user...\033[0m"
+git config user.name "${GITHUB_USERNAME}"
+git config user.email "${GITHUB_USERNAME}@users.noreply.github.com"
 
 # Add all files
 echo -e "\033[36mAdding files to git...\033[0m"
@@ -23,24 +53,13 @@ git add .
 
 # Commit changes
 echo -e "\033[36mCommitting changes...\033[0m"
-git commit -m "GitHub Pages Interactive Demo"
-
-# Create gh-pages branch
-echo -e "\033[36mCreating gh-pages branch...\033[0m"
-git branch -M gh-pages
-
-# Add GitHub remote
-echo -e "\033[36mAdding GitHub remote...\033[0m"
-git remote add origin https://github.com/codistech/inventory-management-system.git
+git commit -F commit_message.txt
 
 # Push to GitHub
 echo -e "\033[36mPushing to GitHub...\033[0m"
-echo -e "\033[33;1mYou will be prompted for your GitHub username and password or token.\033[0m"
-git push -u origin gh-pages --force
+git push -u origin main --force
 
-echo -e "\033[36mDeployment completed!\033[0m"
-echo ""
-echo -e "\033[36mYour interactive demo will be available at:\033[0m https://codistech.github.io/inventory-management-system/demo.html"
-echo -e "\033[36mNote: It may take a few minutes for GitHub Pages to build and deploy your site.\033[0m"
-
-cd ..
+echo -e "\033[32mDeployment complete!\033[0m"
+echo -e "\033[36mYour code has been pushed to: https://github.com/${GITHUB_USERNAME}/${REPO_NAME}\033[0m"
+echo -e "\033[36mGitHub Pages demo will be available at: https://${GITHUB_USERNAME}.github.io/${REPO_NAME}/demo.html\033[0m"
+echo -e "\033[36m(Note: It may take a few minutes for the GitHub Pages site to be built and deployed)\033[0m"
