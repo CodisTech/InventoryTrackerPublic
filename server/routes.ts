@@ -905,6 +905,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Validate admin password for role switching
+  app.post("/api/validate-admin-password", ensureAuthenticated, csrfProtection, async (req, res, next) => {
+    try {
+      const { password, targetRole } = req.body;
+      
+      // Input validation
+      if (!password || !targetRole) {
+        return res.status(400).json({ 
+          message: "Missing required fields",
+          isValid: false
+        });
+      }
+      
+      // Get all admin users (simplified approach - always allow with any admin password)
+      const allUsers = await storage.getAllUsers();
+      const adminUsers = allUsers.filter(user => 
+        user.role === USER_ROLES.ADMIN || user.role === USER_ROLES.SUPER_ADMIN
+      );
+      
+      // Check if password matches any admin user
+      let isValidPassword = false;
+      
+      for (const admin of adminUsers) {
+        const passwordMatches = await comparePasswords(password, admin.password);
+        if (passwordMatches) {
+          isValidPassword = true;
+          break;
+        }
+      }
+      
+      return res.status(200).json({
+        isValid: isValidPassword
+      });
+    } catch (error) {
+      console.error("Error validating admin password:", error);
+      next(error);
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
