@@ -1,1 +1,1 @@
-# Inventory Management System - GitHub Pages Demo
+<a href="index.html">Back to Home</a>

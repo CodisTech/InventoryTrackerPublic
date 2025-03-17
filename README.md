@@ -116,33 +116,50 @@ This Inventory Management System is an advanced tool designed to streamline equi
    npm start
    ```
 
-#### GitHub Pages Deployment
+#### GitHub Pages Deployment (Interactive Demo)
 
-The project includes configuration for GitHub Pages to showcase the application:
+The project includes configuration for GitHub Pages to showcase an interactive demo of the application:
 
-1. Run the test deployment script
+1. Run the live demo deployment script
    ```
-   ./test-github-deploy.sh
+   ./deploy-live-demo.sh
    ```
 
-2. Create a GitHub repository and push the gh-pages directory
+2. Deploy to GitHub Pages using one of these methods:
+
+   **Option 1: Manual Deployment**
    ```
    cd gh-pages
    git init
    git add .
-   git commit -m "Initial GitHub Pages deployment"
+   git commit -m "GitHub Pages Interactive Demo"
+   git branch -M gh-pages
    git remote add origin https://github.com/codistech/inventory-management-system.git
-   git push -u origin main
+   git push -u origin gh-pages --force
    ```
 
-3. Enable GitHub Pages in your repository settings, selecting the main branch
+   **Option 2: Automated GitHub Actions Deployment**
+   - Configure GitHub Actions using the provided workflow file in `.github/workflows/pages.yml`
+   - Push changes to your repository, and GitHub Actions will automatically deploy the demo
 
-4. Your GitHub Pages site will be available at:
+3. Your interactive demo will be available at:
    ```
-   https://codistech.github.io/inventory-management-system/
+   https://codistech.github.io/inventory-management-system/demo.html
    ```
 
-Note: The GitHub Pages deployment provides a static showcase of the application UI. For full functionality, deploy the application with a backend server.
+4. For detailed deployment instructions, see:
+   ```
+   github-pages-manual-deploy.md
+   ```
+
+**Live Demo Features:**
+- Interactive UI showcase with animated components
+- Sample dashboard with mock metrics and charts
+- Inventory and transaction management demos
+- Form interactions for common workflows
+- Mobile-responsive design preview
+
+Note: The GitHub Pages deployment provides an interactive showcase of the application UI. For full functionality, deploy the application with a backend server.
 
 ## Default Credentials
 
