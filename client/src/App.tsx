@@ -17,6 +17,7 @@ import { ProtectedRoute } from "./lib/protected-route";
 import { AuthProvider, Permission } from "./hooks/use-auth";
 import AppLayout from "./components/layout/app-layout";
 import { USER_ROLES } from "@shared/schema";
+import { FeatureFlagsProvider } from "./hooks/use-feature-flags";
 
 function Router() {
   return (
@@ -112,10 +113,12 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <Router />
-        <Toaster />
-      </AuthProvider>
+      <FeatureFlagsProvider>
+        <AuthProvider>
+          <Router />
+          <Toaster />
+        </AuthProvider>
+      </FeatureFlagsProvider>
     </QueryClientProvider>
   );
 }

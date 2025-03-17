@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
+import { useFeatureFlags } from "@/hooks/use-feature-flags";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { VersionIndicator } from "@/components/layout/version-indicator";
 import inventoryLogoLight from "../assets/images/inventory-logo-light.svg";
 import inventoryLogoDark from "../assets/images/inventory-logo-dark.svg";
 
@@ -47,6 +49,8 @@ export default function AuthPage() {
     });
   };
 
+  const { repoType } = useFeatureFlags();
+
   return (
     <div className="min-h-screen bg-neutral-50 flex flex-col lg:flex-row">
       {/* Left side: Auth form */}
@@ -56,10 +60,25 @@ export default function AuthPage() {
             <div className="flex justify-center mb-3">
               <img src={inventoryLogoLight} alt="Inventory Management" className="w-48 h-48" />
             </div>
-            <h1 className="text-2xl font-bold">Inventory Management System</h1>
+            <div className="flex items-center justify-center gap-2">
+              <h1 className="text-2xl font-bold">Inventory Management System</h1>
+              <span 
+                className={`
+                  inline-block text-xs font-bold text-white px-2 py-0.5 rounded
+                  ${repoType === 'private' ? 'bg-red-600' : 
+                  repoType === 'public' ? 'bg-green-600' : 'bg-amber-500'}
+                `}
+              >
+                {repoType.toUpperCase()}
+              </span>
+            </div>
             <p className="text-neutral-500 mt-2">
               Administrator access only
             </p>
+            
+            <div className="mt-2 flex justify-center">
+              <VersionIndicator />
+            </div>
           </div>
 
           <Card>
