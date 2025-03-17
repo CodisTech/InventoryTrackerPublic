@@ -139,13 +139,13 @@ docker-compose up -d
 ### Backing Up Data
 
 ```bash
-docker exec -t inventory_db_1 pg_dumpall -c -U postgres > backup_$(date +%Y-%m-%d_%H-%M-%S).sql
+docker exec -t inventory-db pg_dumpall -c -U postgres > backup_$(date +%Y-%m-%d_%H-%M-%S).sql
 ```
 
 ### Restoring Data
 
 ```bash
-cat backup_file.sql | docker exec -i inventory_db_1 psql -U postgres
+cat backup_file.sql | docker exec -i inventory-db psql -U postgres
 ```
 
 ## Monitoring
@@ -182,7 +182,7 @@ docker-compose exec app nc -zv db 5432
 If you encounter permission issues with the PostgreSQL volume:
 ```bash
 docker-compose down
-docker volume rm postgres_data
+docker volume rm inventory-db-data
 docker-compose up -d
 ```
 

@@ -1,7 +1,9 @@
-Add password change functionality for superadmin users
+refactor: rebrand from CODIS to Inventory Management System
 
-- Added backend API endpoint for changing passwords
-- Created password change form modal in the frontend 
-- Added key icon in sidebar for password change access
-- Fixed TypeScript type issues in authentication system
-- Enhanced error handling for password validation
+- Created new logo SVG files (inventory-logo-dark.svg, inventory-logo-light.svg)
+- Updated app-header.tsx and auth-page.tsx to reference new logo files
+- Replaced "CODIS" text references with "Inventory Management System"
+- Updated copyright information in application footer
+- Updated Docker documentation with consistent container naming conventions
+- Updated volume names and database container references in documentation
+- Maintained consistent branding across user interface components
