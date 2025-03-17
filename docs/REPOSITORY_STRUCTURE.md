@@ -1,196 +1,133 @@
-# Repository Structure Documentation
+# Repository Structure
 
-## Overview
-
-The Inventory Management System is distributed across three different GitHub repositories to support various levels of access and feature availability. This document provides detailed information about the repository structure, branching strategy, and deployment workflow.
+The Inventory Management System is distributed across three repositories with different access levels and purposes:
 
 ## Repository Types
 
-### 1. Private Repository (Main)
-- **Repository Name**: `InventoryTracker`
-- **Branch Name**: `main`
-- **Purpose**: Development repository with all features enabled
-- **Access**: Restricted to authorized team members
-- **Features**: All features are available, including experimental ones
-- **Environment**: Development and production builds
+### 1. Private Repository
+- **Repository Type:** `private`
+- **Access Level:** Internal team only
+- **Purpose:** Main development repository with all features and capabilities
+- **Features:** All features enabled, including experimental and beta features
+- **Deployment:** Internal development and staging environments
 
-### 2. Sandbox Repository
-- **Repository Name**: `InventoryTrackerSandbox`
-- **Branch Name**: `main` (synced from private repo's `sandbox` branch)
-- **Purpose**: Testing ground for experimental features
-- **Access**: Available to beta testers and development team
-- **Features**: All features including experimental ones
-- **Environment**: Sandbox testing environment
+### 2. Public Repository
+- **Repository Type:** `public`
+- **Access Level:** Available to all users
+- **Purpose:** Limited functionality open-source version
+- **Features:** Core functionality only, without advanced or experimental features
+- **Deployment:** Public demo and open-source distribution
 
-### 3. Public Repository
-- **Repository Name**: `InventoryTrackerPublic`
-- **Branch Name**: `main` (synced from private repo's `public` branch)
-- **Purpose**: Public-facing version with stable features
-- **Access**: Available to anyone
-- **Features**: Limited feature set (stable features only)
-- **Environment**: Production-ready builds
+### 3. Sandbox Repository
+- **Repository Type:** `sandbox`
+- **Access Level:** Internal testing team
+- **Purpose:** Testing ground for new features
+- **Features:** All features enabled, including experimental and beta features
+- **Deployment:** Testing environments
 
-## Branch Strategy
+## Repository Detection
+
+The system automatically detects which repository it's running from using the `.repository-type` file at the root of the project. This file contains a simple JSON-like structure:
 
 ```
-Private Repository (origin/main)
-   │
-   ├── sandbox branch ────────► Sandbox Repository (sandbox/main)
-   │
-   └── public branch ─────────► Public Repository (public/main)
+repository: private
 ```
 
-- **main**: The primary development branch in the private repository
-- **sandbox**: Branch for experimental features and testing
-- **public**: Branch for stable, public-facing features
+Valid values are `private`, `public`, and `sandbox`.
 
 ## Feature Flag System
 
-The application uses a feature flag system to control which features are available in each repository type. The feature flags are defined in:
-
-`client/src/lib/version-config.ts`
-
-Each feature has availability settings for different repository types:
+Features are controlled through the feature flag system defined in `client/src/lib/version-config.ts`. Each feature has availability settings for each repository type:
 
 ```typescript
 export const FEATURE_FLAGS = {
   ADVANCED_REPORTING: {
     title: "Advanced Reporting",
-    description: "Advanced reporting and analytics features",
+    description: "Enhanced reporting capabilities with charts, exports, and custom filters",
     availability: {
       private: true,
       public: false,
       sandbox: true
     }
   },
-  // ... other features
+  // Other features...
 };
 ```
 
-## Repository Type Detection
+The React hook `useFeatureFlags` provides easy access to feature availability in components:
 
-The repository type is detected in two ways:
+```typescript
+import { useFeatureFlags, FeatureFlagGuard } from "@/hooks/use-feature-flags";
 
-1. **Server-side**: Using the `.repository-type` file at the root of the project
-2. **Client-side**: Using the `versionInfo.repository` property in `version-config.ts`
+// Using the hook directly
+function MyComponent() {
+  const { isEnabled } = useFeatureFlags();
+  
+  return (
+    <div>
+      {isEnabled("ADVANCED_REPORTING") && (
+        <AdvancedReportingUI />
+      )}
+    </div>
+  );
+}
 
-## Deployment Workflow
-
-### Setting Up Repositories
-
-Use the `setup-git-repositories.sh` script to initialize the Git repositories:
-
-```bash
-./setup-git-repositories.sh
+// Using the guard component
+function AnotherComponent() {
+  return (
+    <FeatureFlagGuard feature="ADVANCED_REPORTING">
+      <AdvancedReportingUI />
+    </FeatureFlagGuard>
+  );
+}
 ```
 
-This will:
-- Create the necessary repositories if they don't exist
-- Set up the proper Git remotes
-- Create and configure branches with the correct repository type markers
+## Repository Synchronization
 
-### Setting Up Permissions
+Repositories can be synchronized using the provided scripts:
 
-Use the `setup-repository-permissions.sh` script to configure repository permissions:
+- `setup-git-repositories.sh`: Initial setup of all three repositories
+- `sync-repositories.sh`: Synchronize changes between repositories
+- `setup-repository-permissions.sh`: Configure appropriate permissions for each repository
 
-```bash
-./setup-repository-permissions.sh --add-collaborator username private,sandbox
-./setup-repository-permissions.sh --protect-branch
-./setup-repository-permissions.sh --setup-teams your-organization
-```
+## Version Indicator
 
-### Synchronizing Repositories
+The current repository type is clearly indicated in the UI via the `VersionIndicator` component, which displays:
 
-Use the `sync-repositories.sh` script to keep repositories in sync:
+- Current version number
+- Repository type (PRIVATE, PUBLIC, or SANDBOX)
+- Build information (when available)
+- Environment (development, sandbox, or production)
+- List of enabled features (on hover)
 
-```bash
-# Sync all repositories
-./sync-repositories.sh --all
+## GitHub Actions Workflows
 
-# Sync only public repository
-./sync-repositories.sh --public
+Each repository has specific GitHub Actions workflows:
 
-# Sync only sandbox repository
-./sync-repositories.sh --sandbox
-```
+### Private Repository
+- `deploy.yml`: Deploys to internal environments
+- `pages.yml`: Deploys documentation to GitHub Pages
 
-### Deploying to Specific Repositories
+### Public Repository
+- `deploy.yml`: Deploys to public demo environments
+- `pages.yml`: Deploys public documentation
 
-Use the specific deployment scripts:
+### Sandbox Repository
+- `deploy-sandbox.yml`: Deploys to testing environments
 
-```bash
-# Deploy to public repository
-./deploy-public.sh
+## Adding New Features
 
-# Deploy to sandbox repository
-./deploy-sandbox.sh
-```
+When adding new features, follow these steps to ensure proper repository management:
 
-## CI/CD Integration
+1. Develop the feature in the `private` repository
+2. Add a feature flag in `client/src/lib/version-config.ts`
+3. Use `FeatureFlagGuard` or `useFeatureFlags` to conditionally render UI elements
+4. Test thoroughly in the `sandbox` repository
+5. If appropriate for public release, enable it for the `public` repository
 
-The repository structure supports CI/CD workflows with GitHub Actions. The workflows can detect the repository type and apply the appropriate build and deployment steps.
+## Reference
 
-Sample GitHub Actions workflow snippet:
-
-```yaml
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Detect repository type
-        run: |
-          REPO_TYPE=$(node check-repository-type.cjs)
-          echo "REPO_TYPE=$REPO_TYPE" >> $GITHUB_ENV
-          
-      - name: Build application
-        run: |
-          echo "Building for repository type: $REPO_TYPE"
-          npm ci
-          npm run build
-```
-
-## Best Practices
-
-1. **Feature Development**:
-   - Develop features in the private repository
-   - Use feature flags to control availability
-   - Test thoroughly in the sandbox environment before public release
-
-2. **Repository Synchronization**:
-   - Keep repositories in sync regularly
-   - Always push changes to the private repository first
-   - Use deployment scripts to update public and sandbox repositories
-
-3. **Access Control**:
-   - Restrict access to the private repository
-   - Configure branch protection rules
-   - Use GitHub teams for managing access
-
-4. **Version Management**:
-   - Update version numbers consistently across repositories
-   - Tag releases in all repositories
-   - Maintain a changelog for each repository
-
-## Troubleshooting
-
-### Repository Type Detection Issues
-
-If the repository type detection is not working correctly:
-
-1. Check the `.repository-type` file at the root of the project
-2. Verify the `versionInfo.repository` property in `version-config.ts`
-3. Run `node check-repository-type.cjs` to see the detected repository type
-
-### Synchronization Issues
-
-If you encounter issues with repository synchronization:
-
-1. Check for uncommitted changes
-2. Verify remote URLs with `git remote -v`
-3. Try forcing the sync with `./sync-repositories.sh --all --force`
-
-## Conclusion
-
-This repository structure provides a flexible and secure way to manage different versions of the Inventory Management System. By following the guidelines in this document, you can ensure consistent deployment and feature availability across all repositories.
+For more information, see:
+- `client/src/lib/version-config.ts` - Feature flag definitions
+- `client/src/hooks/use-feature-flags.tsx` - React hooks for feature flags
+- `client/src/components/layout/version-indicator.tsx` - UI component showing repository type

@@ -23,7 +23,7 @@ export type FeatureFlag = keyof typeof FEATURE_FLAGS;
 export const FEATURE_FLAGS = {
   ADVANCED_REPORTING: {
     title: "Advanced Reporting",
-    description: "Advanced reporting and analytics features",
+    description: "Enhanced reporting capabilities with charts, exports, and custom filters",
     availability: {
       private: true,
       public: false,
@@ -32,25 +32,43 @@ export const FEATURE_FLAGS = {
   },
   EXPERIMENTAL_UI: {
     title: "Experimental UI",
-    description: "New experimental user interface components",
+    description: "Preview of upcoming UI enhancements and features",
     availability: {
       private: true,
       public: false,
       sandbox: true
     }
   },
-  PRIVACY_AGREEMENTS: {
-    title: "Privacy Agreements",
-    description: "Privacy agreement tracking and management",
+  MULTI_CHECKOUT: {
+    title: "Multi-Item Checkout",
+    description: "Check out multiple items at once to a single person",
     availability: {
       private: true,
       public: true,
       sandbox: true
     }
   },
-  AUDIT_LOGGING: {
-    title: "Audit Logging",
-    description: "Detailed audit logging of all system actions",
+  BULK_IMPORT: {
+    title: "Bulk Import",
+    description: "Import inventory items or personnel from CSV files",
+    availability: {
+      private: true,
+      public: true,
+      sandbox: true
+    }
+  },
+  PRIVACY_AGREEMENT: {
+    title: "Privacy Agreements",
+    description: "Track user acceptance of privacy policies",
+    availability: {
+      private: true,
+      public: true,
+      sandbox: true
+    }
+  },
+  EULA_TRACKING: {
+    title: "EULA Tracking",
+    description: "Track user acceptance of end-user license agreements",
     availability: {
       private: true,
       public: true,
@@ -59,7 +77,7 @@ export const FEATURE_FLAGS = {
   },
   BETA_FEATURES: {
     title: "Beta Features",
-    description: "Upcoming features in beta testing",
+    description: "Early access to beta features under development",
     availability: {
       private: true,
       public: false,
@@ -89,12 +107,11 @@ export type VersionInfo = {
  */
 export const versionInfo: VersionInfo = {
   version: "1.0.0",
-  repository: "private", // Default to private, will be updated by deployment scripts
-  environment: "development", // Default to development
-  buildDate: new Date().toISOString(),
-  features: Object.keys(FEATURE_FLAGS).filter(key => 
-    FEATURE_FLAGS[key as FeatureFlag].availability.private
-  )
+  repository: "private", // Will be replaced during build for each repository
+  environment: "development",
+  buildDate: "",
+  buildNumber: "",
+  gitCommit: ""
 };
 
 /**
@@ -108,7 +125,17 @@ export function getDisplayVersion(): string {
  * Get a detailed version string including build information
  */
 export function getDetailedVersion(): string {
-  return `v${versionInfo.version} (${versionInfo.repository} - ${versionInfo.environment})`;
+  const parts = [`v${versionInfo.version}`, versionInfo.repository];
+  
+  if (versionInfo.buildNumber) {
+    parts.push(`build ${versionInfo.buildNumber}`);
+  }
+  
+  if (versionInfo.gitCommit) {
+    parts.push(`commit ${versionInfo.gitCommit.substring(0, 7)}`);
+  }
+  
+  return parts.join(' • ');
 }
 
 /**
@@ -136,9 +163,9 @@ export function getRepositoryType(): RepositoryType {
  * Check if a feature flag is enabled in the current repository
  */
 export function isFeatureEnabled(feature: FeatureFlag): boolean {
-  // If the feature doesn't exist, it's not enabled
-  if (!FEATURE_FLAGS[feature]) return false;
+  const featureConfig = FEATURE_FLAGS[feature];
+  if (!featureConfig) return false;
   
-  // Check if the feature is available in the current repository
-  return FEATURE_FLAGS[feature].availability[versionInfo.repository] === true;
+  const repoType = getRepositoryType();
+  return featureConfig.availability[repoType] === true;
 }

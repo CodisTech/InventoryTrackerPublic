@@ -1,105 +1,93 @@
-#!/usr/bin/env node
+/**
+ * Repository Type Detector
+ * 
+ * This script detects which repository type (private, public, sandbox) the code is running in
+ * by checking the .repository-type file at the root of the project.
+ * 
+ * It's used during build time to configure the application accordingly.
+ */
 
 const fs = require('fs');
 const path = require('path');
 
-// Function to detect repository type
+/**
+ * Detects the repository type from the .repository-type file
+ * @returns {'private'|'public'|'sandbox'} Repository type
+ */
 function detectRepositoryType() {
-  // Check if .repository-type file exists
-  const repoTypePath = path.join('.', '.repository-type');
+  const repoTypePath = path.join(__dirname, '.repository-type');
   
-  if (fs.existsSync(repoTypePath)) {
-    const content = fs.readFileSync(repoTypePath, 'utf8').trim();
-    const match = content.match(/repository:\s*(\w+)/);
-    
-    if (match && match[1]) {
-      return match[1]; // Extract repository type
+  try {
+    if (fs.existsSync(repoTypePath)) {
+      const content = fs.readFileSync(repoTypePath, 'utf8');
+      const match = content.match(/repository:\s*(\w+)/);
+      
+      if (match && match[1]) {
+        const repoType = match[1].toLowerCase();
+        
+        if (['private', 'public', 'sandbox'].includes(repoType)) {
+          console.log(`Repository type detected: ${repoType}`);
+          return repoType;
+        } else {
+          console.warn(`Invalid repository type in .repository-type: ${repoType}. Using default 'private'.`);
+        }
+      } else {
+        console.warn('Invalid .repository-type file format. Using default: private');
+      }
+    } else {
+      console.log('No .repository-type file found. Using default: private');
     }
+  } catch (error) {
+    console.error('Error reading .repository-type file:', error);
   }
   
-  // Default to private if not found
+  // Default to private if we can't determine the repository type
   return 'private';
 }
 
-// Check Git branch as fallback
+/**
+ * Detects the current Git branch
+ * @returns {string} Current branch name or null if not in a Git repository
+ */
 function detectGitBranch() {
   try {
-    // Use git command to get current branch
     const { execSync } = require('child_process');
     const branch = execSync('git rev-parse --abbrev-ref HEAD').toString().trim();
-    
-    if (branch === 'public') return 'public';
-    if (branch === 'sandbox') return 'sandbox';
-    return 'private'; // Default to private (main branch)
+    console.log(`Current Git branch: ${branch}`);
+    return branch;
   } catch (error) {
-    return 'private'; // Default to private if Git command fails
+    console.warn('Unable to detect Git branch:', error.message);
+    return null;
   }
 }
 
-// Get repository type
-const repoType = detectRepositoryType() || detectGitBranch();
-
-console.log('==========================================');
-console.log(`Repository Type: ${repoType.toUpperCase()}`);
-console.log('==========================================');
-
-// Show feature availability
-console.log('\nFeature Availability:');
-
-// Define feature availability (similar to the version-config.ts file)
-const FEATURE_FLAGS = {
-  ADVANCED_REPORTING: {
-    title: "Advanced Reporting",
-    description: "Advanced reporting and analytics features",
-    availability: {
-      private: true,
-      public: false,
-      sandbox: true
-    }
-  },
-  EXPERIMENTAL_UI: {
-    title: "Experimental UI",
-    description: "New experimental user interface components",
-    availability: {
-      private: true,
-      public: false,
-      sandbox: true
-    }
-  },
-  PRIVACY_AGREEMENTS: {
-    title: "Privacy Agreements",
-    description: "Privacy agreement tracking and management",
-    availability: {
-      private: true,
-      public: true,
-      sandbox: true
-    }
-  },
-  AUDIT_LOGGING: {
-    title: "Audit Logging",
-    description: "Detailed audit logging of all system actions",
-    availability: {
-      private: true,
-      public: true,
-      sandbox: true
-    }
-  },
-  BETA_FEATURES: {
-    title: "Beta Features",
-    description: "Upcoming features in beta testing",
-    availability: {
-      private: true,
-      public: false,
-      sandbox: true
+// When run directly, output the repository type
+if (require.main === module) {
+  const repoType = detectRepositoryType();
+  const branch = detectGitBranch();
+  
+  console.log(`Repository Type: ${repoType}`);
+  if (branch) {
+    console.log(`Git Branch: ${branch}`);
+    
+    // Simple validation - these should generally match
+    // main branch -> private repo
+    // public branch -> public repo
+    // sandbox branch -> sandbox repo
+    const expectedBranchMap = {
+      'private': 'main',
+      'public': 'public',
+      'sandbox': 'sandbox'
+    };
+    
+    if (branch !== expectedBranchMap[repoType]) {
+      console.warn(`WARNING: You may be on the wrong branch! Repository type is '${repoType}' but branch is '${branch}'`);
+      console.warn(`Expected branch for '${repoType}' repository is '${expectedBranchMap[repoType]}'`);
     }
   }
+}
+
+module.exports = {
+  detectRepositoryType,
+  detectGitBranch
 };
-
-// Show feature availability for the current repository type
-Object.entries(FEATURE_FLAGS).forEach(([key, feature]) => {
-  const isAvailable = feature.availability[repoType] === true;
-  const status = isAvailable ? '✅ ENABLED' : '❌ DISABLED';
-  console.log(`- ${feature.title}: ${status}`);
-});
-
-console.log('\nRepository structure is correctly set up!');

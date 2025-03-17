@@ -7,29 +7,33 @@ on:
   workflow_dispatch:
 
 jobs:
-  detect-repository-type:
+  build:
     runs-on: ubuntu-latest
-    outputs:
-      repo-type: ${{ steps.detect-type.outputs.type }}
     steps:
       - uses: actions/checkout@v3
       
-      - name: Detect repository type
-        id: detect-type
+      - name: Verify branch and repository type
         run: |
-          if [ -f ".repository-type" ]; then
-            REPO_TYPE=$(grep -oP 'repository:\s*\K\w+' .repository-type || echo "private")
-          else
-            REPO_TYPE="private"
+          # Check if we're on the main branch
+          BRANCH=$(git rev-parse --abbrev-ref HEAD)
+          if [ "$BRANCH" != "main" ] && [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "Error: This workflow should only run on the main branch"
+            exit 1
           fi
-          echo "type=$REPO_TYPE" >> $GITHUB_OUTPUT
-          echo "Detected repository type: $REPO_TYPE"
-  
-  build:
-    needs: detect-repository-type
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
+          
+          # Check repository type marker
+          if [ -f ".repository-type" ]; then
+            REPO_TYPE=$(grep -oP 'repository:\s*\K\w+' .repository-type)
+            if [ "$REPO_TYPE" != "private" ]; then
+              echo "Error: Repository type should be 'private', but found '$REPO_TYPE'"
+              exit 1
+            fi
+          else
+            echo "Error: Missing .repository-type file"
+            exit 1
+          fi
+          
+          echo "Verified: This is the main branch with correct repository type"
       
       - name: Use Node.js
         uses: actions/setup-node@v3
@@ -42,15 +46,13 @@ jobs:
       
       - name: Update version configuration
         run: |
-          REPO_TYPE="${{ needs.detect-repository-type.outputs.repo-type }}"
           BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
           BUILD_NUMBER=${{ github.run_number }}
           GIT_COMMIT=${{ github.sha }}
           
-          echo "Updating version-config.ts for repository type: $REPO_TYPE"
-          
-          sed -i "s/repository: \"[^\"]*\"/repository: \"$REPO_TYPE\"/" client/src/lib/version-config.ts
-          sed -i "s/environment: \"[^\"]*\"/environment: \"production\"/" client/src/lib/version-config.ts
+          # Ensure repository type is set to private
+          sed -i 's/repository: "[^"]*"/repository: "private"/' client/src/lib/version-config.ts
+          sed -i 's/environment: "[^"]*"/environment: "production"/' client/src/lib/version-config.ts
           sed -i "s/buildDate: \"[^\"]*\"/buildDate: \"$BUILD_DATE\"/" client/src/lib/version-config.ts
           sed -i "s/buildNumber: \"[^\"]*\"/buildNumber: \"$BUILD_NUMBER\"/" client/src/lib/version-config.ts
           sed -i "s/gitCommit: \"[^\"]*\"/gitCommit: \"$GIT_COMMIT\"/" client/src/lib/version-config.ts
@@ -61,11 +63,11 @@ jobs:
       - name: Upload build artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: build-files
+          name: production-build
           path: dist/
   
   deploy:
-    needs: [detect-repository-type, build]
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -73,34 +75,24 @@ jobs:
       - name: Download build artifacts
         uses: actions/download-artifact@v3
         with:
-          name: build-files
+          name: production-build
           path: dist/
       
-      - name: Set up deployment configuration
+      - name: Deploy to production environment
         run: |
-          REPO_TYPE="${{ needs.detect-repository-type.outputs.repo-type }}"
-          echo "Configuring deployment for repository type: $REPO_TYPE"
+          echo "Deploying to production environment..."
+          # Add your production deployment commands here
           
-          if [ "$REPO_TYPE" = "public" ]; then
-            echo "Setting up public deployment"
-            # Add any public-specific deployment configuration
-          elif [ "$REPO_TYPE" = "sandbox" ]; then
-            echo "Setting up sandbox deployment"
-            # Add any sandbox-specific deployment configuration
-          else
-            echo "Setting up private deployment"
-            # Add any private-specific deployment configuration
-          fi
-      
-      - name: Deploy to production
+      - name: Update documentation
         run: |
-          echo "Deploying application to production environment"
-          # Add your deployment commands here
-          # This could be deploying to a cloud service, server, etc.
+          echo "Updating production documentation..."
+          # Add commands to update production-specific documentation
           
-      - name: Update deployment status
+      - name: Deploy notification
         run: |
-          echo "Deployment completed successfully"
+          echo "Production deployment completed"
           echo "Version: $(grep -oP 'version: "\K[^"]+' client/src/lib/version-config.ts)"
-          echo "Repository: ${{ needs.detect-repository-type.outputs.repo-type }}"
           echo "Build date: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          
+          # You could add a notification step here (Slack, email, etc.)
+          # to inform team members of a new production build

@@ -1,117 +1,112 @@
-# Setting Up GitHub Actions for Automated Demo Deployment
+# GitHub Actions Setup Guide
 
-This guide explains how to set up GitHub Actions to automatically deploy your inventory management system's interactive demo to GitHub Pages.
+This guide explains how to set up GitHub Actions for automating deployments across the three repository types: private, public, and sandbox.
 
-## Required Files
+## Prerequisites
 
-The following files needed for GitHub Actions deployment have already been created in this project:
+Before setting up GitHub Actions, ensure you have:
 
-1. `.github/workflows/pages.yml` - The GitHub Actions workflow definition
-2. `deploy-live-demo.sh` - The script that generates the demo content
+1. Created all three repositories on GitHub:
+   - `inventory-management-system` (private repository)
+   - `inventory-management-system-public` (public repository)
+   - `inventory-management-system-sandbox` (sandbox repository)
 
-## Setup Instructions
+2. Generated a GitHub Personal Access Token with appropriate permissions:
+   - `repo` (full control of private repositories)
+   - `workflow` (to update GitHub Action workflows)
+   - `admin:org` (if using organization teams)
 
-### Step 1: Add the Files to Your Repository
+## Repository Structure
 
-You need to add these files to your GitHub repository. Here's how:
+The application is distributed across three repositories with different access levels:
 
-1. Clone your repository (if you haven't already):
-   ```bash
-   git clone https://github.com/codistech/inventory-management-system.git
-   cd inventory-management-system
-   ```
+- **Private Repository**: Contains all features, intended for internal use
+- **Public Repository**: Contains limited features, intended for public distribution
+- **Sandbox Repository**: Contains all features for testing purposes
 
-2. Create the `.github/workflows` directory if it doesn't exist:
-   ```bash
-   mkdir -p .github/workflows
-   ```
+## Workflow Files
 
-3. Copy the `pages.yml` file from this Replit project to your local repository:
-   - Create a file at `.github/workflows/pages.yml` with the content below
-   
-   ```yaml
-   name: Deploy to GitHub Pages
+GitHub Actions workflows are defined in YAML files in the `.github/workflows/` directory:
 
-   on:
-     push:
-       branches: [ main ]
-     workflow_dispatch:
+- `deploy.yml` - Deploys the private repository to production
+- `deploy-sandbox.yml` - Deploys the sandbox repository to test environment
+- `pages.yml` - Publishes documentation to GitHub Pages
 
-   jobs:
-     deploy:
-       runs-on: ubuntu-latest
-       steps:
-         - uses: actions/checkout@v2
-         
-         - name: Setup Node.js
-           uses: actions/setup-node@v2
-           with:
-             node-version: '16'
-         
-         - name: Create gh-pages content
-           run: |
-             chmod +x ./deploy-live-demo.sh
-             ./deploy-live-demo.sh
-         
-         - name: Deploy to GitHub Pages
-           uses: JamesIves/github-pages-deploy-action@4.1.5
-           with:
-             branch: gh-pages
-             folder: gh-pages
-   ```
+## Setting Up GitHub Secrets
 
-4. Copy the `deploy-live-demo.sh` script from this Replit project to your local repository:
-   - Create a file named `deploy-live-demo.sh` in the root of your repository
-   - Make sure the script is executable: `chmod +x deploy-live-demo.sh`
+For each repository, you need to set up the following secrets:
 
-### Step 2: Commit and Push the Files
+1. Go to your repository settings
+2. Navigate to Secrets > Actions
+3. Click "New repository secret"
+4. Add the following secrets:
+   - `DEPLOY_TOKEN`: GitHub Personal Access Token with repo and workflow permissions
+   - `DB_CONNECTION_STRING`: Database connection string for the respective environment
 
-1. Add the files to git:
-   ```bash
-   git add .github/workflows/pages.yml deploy-live-demo.sh
-   ```
+## Customizing Workflows
 
-2. Commit the changes:
-   ```bash
-   git commit -m "Add GitHub Actions workflow for demo deployment"
-   ```
+### Production Deployment (deploy.yml)
 
-3. Push to GitHub:
-   ```bash
-   git push origin main
-   ```
+This workflow runs on the private repository whenever changes are pushed to the `main` branch:
 
-### Step 3: Configure GitHub Pages
+1. Checks that the repository type is set to "private"
+2. Builds the application with production settings
+3. Deploys to the production environment
 
-1. Go to your repository on GitHub
-2. Navigate to Settings > Pages
-3. Under "Source", select "GitHub Actions" (it may automatically select this)
-4. The GitHub Actions workflow will automatically deploy to the gh-pages branch
+### Sandbox Deployment (deploy-sandbox.yml)
 
-### Step 4: Run the Workflow
+This workflow runs on the sandbox repository whenever changes are pushed to the `sandbox` branch:
 
-The workflow will run automatically when you push changes to the main branch. You can also run it manually:
+1. Checks that the repository type is set to "sandbox"
+2. Builds the application with all features enabled
+3. Deploys to the testing environment
 
-1. Go to your repository on GitHub
-2. Click on the "Actions" tab
-3. Select the "Deploy to GitHub Pages" workflow
-4. Click "Run workflow" and select the main branch
+### Documentation Deployment (pages.yml)
 
-## Verify Deployment
+This workflow publishes documentation to GitHub Pages:
 
-After the workflow completes successfully:
+1. Copies files from the `docs/` directory
+2. Creates an HTML index page customized for the repository type
+3. Publishes to the `gh-pages` branch
 
-1. Go to Settings > Pages to see the URL of your deployed site
-2. Your interactive demo will be available at:
-   ```
-   https://codistech.github.io/inventory-management-system/demo.html
-   ```
+## Manual Deployment
+
+To manually trigger a deployment:
+
+1. Go to the Actions tab in your repository
+2. Select the desired workflow
+3. Click "Run workflow"
+4. Select the branch you want to deploy
+5. Click "Run workflow"
+
+## Repository Synchronization Strategy
+
+When developing features:
+
+1. Develop in the private repository's `main` branch
+2. Use the `sync-repositories.sh` script to synchronize changes to other repositories
+3. Feature flags will automatically adjust available features based on repository type
 
 ## Troubleshooting
 
-If you encounter issues:
+Common issues:
 
-1. Check the Actions tab for workflow run details and error messages
-2. Ensure your repository is public or has GitHub Pages enabled for private repositories
-3. Verify that the workflow file (.github/workflows/pages.yml) is in the correct location
-4. Make sure the deploy-live-demo.sh script is executable and in the root directory
+1. **Workflow fails due to repository type mismatch**
+   - Ensure the `.repository-type` file contains the correct repository type
+   - Example: `repository: private` for the private repository
+
+2. **Authentication failures**
+   - Check that the `DEPLOY_TOKEN` secret is set correctly
+   - Ensure the token has not expired
+   - Verify the token has necessary permissions
+
+3. **Build failures**
+   - Check the build logs for specific errors
+   - Ensure all dependencies are correctly installed
+   - Verify that environmental variables are set correctly
+
+## Additional Resources
+
+- [GitHub Actions Documentation](https://docs.github.com/en/actions)
+- [Workflow Syntax Reference](https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions)
+- [Setting up GitHub Pages with Actions](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site#publishing-with-a-custom-github-actions-workflow)

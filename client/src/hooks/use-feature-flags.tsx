@@ -1,10 +1,18 @@
-import { createContext, ReactNode, useContext } from "react";
+import { 
+  createContext, 
+  ReactNode, 
+  useContext, 
+  useEffect, 
+  useMemo, 
+  useState 
+} from "react";
+
 import { 
   FeatureFlag, 
   FEATURE_FLAGS, 
   getRepositoryType, 
-  RepositoryType,
-  isFeatureEnabled as checkFeatureEnabled
+  isFeatureEnabled, 
+  RepositoryType 
 } from "@/lib/version-config";
 
 type FeatureFlagsContextType = {
@@ -38,10 +46,38 @@ type FeatureFlagsContextType = {
 const FeatureFlagsContext = createContext<FeatureFlagsContextType | null>(null);
 
 export function FeatureFlagsProvider({ children }: { children: ReactNode }) {
-  const repoType = getRepositoryType();
+  const [repoType, setRepoType] = useState<RepositoryType>(getRepositoryType());
+  
+  // Ensure repository type is up to date
+  useEffect(() => {
+    setRepoType(getRepositoryType());
+    
+    // This would be needed if repository type could change at runtime,
+    // but for now it's set at build time
+    const checkRepoType = () => {
+      const currentType = getRepositoryType();
+      if (currentType !== repoType) {
+        setRepoType(currentType);
+      }
+    };
+    
+    // Check repository type on focus, which helps during development
+    window.addEventListener("focus", checkRepoType);
+    
+    return () => {
+      window.removeEventListener("focus", checkRepoType);
+    };
+  }, [repoType]);
+  
+  // Get all enabled features based on the repository type
+  const enabledFeatures = useMemo(() => {
+    return Object.keys(FEATURE_FLAGS).filter(
+      feature => isFeatureEnabled(feature as FeatureFlag)
+    ) as FeatureFlag[];
+  }, [repoType]);
   
   const isEnabled = (feature: FeatureFlag): boolean => {
-    return checkFeatureEnabled(feature);
+    return isFeatureEnabled(feature);
   };
   
   const getFeatureConfig = (feature: FeatureFlag) => {
@@ -50,35 +86,29 @@ export function FeatureFlagsProvider({ children }: { children: ReactNode }) {
   
   const isFeatureAvailableInRepo = (feature: FeatureFlag, repo: RepositoryType): boolean => {
     const config = FEATURE_FLAGS[feature];
-    return config ? config.availability[repo] : false;
+    return config ? config.availability[repo] === true : false;
   };
   
   const getAllFeatures = () => {
     return Object.entries(FEATURE_FLAGS).map(([key, config]) => ({
       key: key as FeatureFlag,
-      title: config.title,
-      description: config.description,
-      availability: config.availability,
-      enabled: isEnabled(key as FeatureFlag),
+      ...config,
+      enabled: isFeatureEnabled(key as FeatureFlag),
       repoType
     }));
   };
   
-  const enabledFeatures = Object.keys(FEATURE_FLAGS).filter(
-    key => isEnabled(key as FeatureFlag)
-  ) as FeatureFlag[];
-
+  const contextValue: FeatureFlagsContextType = {
+    isEnabled,
+    getFeatureConfig,
+    getAllFeatures,
+    enabledFeatures,
+    repoType,
+    isFeatureAvailableInRepo
+  };
+  
   return (
-    <FeatureFlagsContext.Provider
-      value={{
-        isEnabled,
-        getFeatureConfig,
-        getAllFeatures,
-        enabledFeatures,
-        repoType,
-        isFeatureAvailableInRepo
-      }}
-    >
+    <FeatureFlagsContext.Provider value={contextValue}>
       {children}
     </FeatureFlagsContext.Provider>
   );
@@ -97,13 +127,18 @@ export function useFeatureFlags() {
  */
 export function FeatureFlagGuard({ 
   feature, 
-  children,
-  fallback = null
+  children, 
+  fallback = null 
 }: { 
   feature: FeatureFlag; 
   children: ReactNode;
   fallback?: ReactNode; 
 }) {
   const { isEnabled } = useFeatureFlags();
-  return isEnabled(feature) ? <>{children}</> : <>{fallback}</>;
+  
+  if (isEnabled(feature)) {
+    return <>{children}</>;
+  }
+  
+  return <>{fallback}</>;
 }
