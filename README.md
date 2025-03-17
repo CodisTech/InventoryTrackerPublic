@@ -72,7 +72,7 @@ This Inventory Management System is an advanced tool designed to streamline equi
 
 1. Clone the repository
    ```
-   git clone https://github.com/yourusername/inventory-management-system.git
+   git clone https://github.com/codistech/inventory-management-system.git
    cd inventory-management-system
    ```
 
