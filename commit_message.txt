@@ -1,9 +1,7 @@
-refactor: rebrand from CODIS to Inventory Management System
+Deploy Inventory Management System with Live Demo
 
-- Created new logo SVG files (inventory-logo-dark.svg, inventory-logo-light.svg)
-- Updated app-header.tsx and auth-page.tsx to reference new logo files
-- Replaced "CODIS" text references with "Inventory Management System"
-- Updated copyright information in application footer
-- Updated Docker documentation with consistent container naming conventions
-- Updated volume names and database container references in documentation
-- Maintained consistent branding across user interface components
+This commit includes:
+- Complete inventory management system with user authentication
+- Interactive demo for GitHub Pages
+- GitHub Actions workflow for automated deployment
+- Comprehensive documentation and setup guides
