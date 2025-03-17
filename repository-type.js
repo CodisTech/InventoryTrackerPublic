@@ -1,1 +1,1 @@
-window.__REPOSITORY_TYPE__ = "private";
+window.__REPOSITORY_TYPE__ = "public";
