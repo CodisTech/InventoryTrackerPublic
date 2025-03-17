@@ -326,20 +326,46 @@ const MultiItemCheckoutModal: React.FC<MultiItemCheckoutModalProps> = ({
       // Create a transaction for each selected item
       for (const selectedItem of selectedItems) {
         const item = items.find(i => i.id === selectedItem.id);
-        if (!item) continue;
+        if (!item) {
+          console.error(`Item with ID ${selectedItem.id} not found`);
+          continue;
+        }
         
-        const transaction = {
-          itemId: selectedItem.id,
-          userId: selectedPerson.id,
-          administratorId: selectedAdministrator, // Add administrator ID
-          type: "check-out" as const,
-          quantity: selectedItem.quantity,
-          notes,
-        };
-        
-        const response = await apiRequest("POST", "/api/transactions", transaction);
-        const savedTransaction = await response.json();
-        transactions.push(savedTransaction);
+        try {
+          // Create the transaction object with the required fields
+          const now = new Date();
+          const transaction = {
+            itemId: selectedItem.id,
+            userId: selectedPerson.id,
+            administratorId: selectedAdministrator,
+            type: "check-out" as const,
+            quantity: selectedItem.quantity,
+            notes,
+            timestamp: now.toISOString(),
+            dueDate: new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString() // 24 hours from now
+          };
+          
+          console.log(`Sending transaction for item ${item.name}:`, transaction);
+          
+          const response = await apiRequest("POST", "/api/transactions", { data: transaction });
+          
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error(`Transaction failed for item ${item.name}:`, errorData);
+            throw new Error(errorData.message || `Failed to check out ${item.name}`);
+          }
+          
+          const savedTransaction = await response.json();
+          console.log(`Transaction successful for item ${item.name}:`, savedTransaction);
+          transactions.push(savedTransaction);
+        } catch (error) {
+          console.error(`Error processing transaction for item ${item.name}:`, error);
+          toast({
+            title: `Failed to check out ${item.name}`,
+            description: error instanceof Error ? error.message : "An unexpected error occurred",
+            variant: "destructive",
+          });
+        }
       }
       
       // Success message

@@ -144,19 +144,86 @@ export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
 
 // Extended schemas with related data
 export const inventoryItemWithCategorySchema = z.object({
-  ...inventoryItems.$inferInsert,
-  category: z.object(categories.$inferInsert),
-  checkedOutBy: z.object(users.$inferInsert).nullable(),
+  id: z.number(),
+  itemCode: z.string(),
+  name: z.string(),
+  description: z.string().nullable().optional(),
+  categoryId: z.number(),
+  totalQuantity: z.number().default(1),
+  availableQuantity: z.number().default(1),
+  minStockLevel: z.number().default(5).optional(),
+  status: z.string().default("available"),
+  createdAt: z.date().or(z.string()).optional(),
+  checkoutAlertDays: z.number().default(7).optional(),
+  category: z.object({
+    id: z.number().optional(),
+    name: z.string()
+  }),
+  checkedOutBy: z.object({
+    id: z.number().optional(),
+    username: z.string(),
+    password: z.string(),
+    fullName: z.string(),
+    role: z.string().optional(),
+    isAuthorized: z.boolean().optional()
+  }).nullable(),
 });
 
 export type InventoryItemWithCategory = z.infer<typeof inventoryItemWithCategorySchema>;
 
 export const transactionWithDetailsSchema = z.object({
-  ...transactions.$inferInsert,
-  item: z.object(inventoryItems.$inferInsert),
-  user: z.object(users.$inferInsert),
-  person: z.object(personnel.$inferInsert).optional(),
-  administrator: z.object(users.$inferInsert).optional(),
+  id: z.number().optional(),
+  itemId: z.number(),
+  userId: z.number(),
+  administratorId: z.number().optional(),
+  type: z.string(),
+  quantity: z.number().default(1),
+  timestamp: z.date().or(z.string()).optional(),
+  dueDate: z.date().or(z.string()).optional(),
+  returnDate: z.date().or(z.string()).optional(),
+  notes: z.string().optional(),
+  isOverdue: z.boolean().default(false).optional(),
+  item: z.object({
+    id: z.number().optional(),
+    itemCode: z.string(),
+    name: z.string(),
+    description: z.string().nullable().optional(),
+    categoryId: z.number(),
+    totalQuantity: z.number().optional(),
+    availableQuantity: z.number().optional(),
+    minStockLevel: z.number().optional(),
+    status: z.string().optional(),
+    createdAt: z.date().or(z.string()).optional(),
+    checkoutAlertDays: z.number().optional()
+  }),
+  user: z.object({
+    id: z.number().optional(),
+    username: z.string(),
+    password: z.string(),
+    fullName: z.string(),
+    role: z.string().optional(),
+    isAuthorized: z.boolean().optional()
+  }),
+  person: z.object({
+    id: z.number().optional(),
+    firstName: z.string(),
+    lastName: z.string(),
+    division: z.string(),
+    department: z.string(),
+    jDial: z.string().nullable().optional(),
+    rank: z.string().nullable().optional(),
+    lcpoName: z.string().nullable().optional(),
+    dateAdded: z.date().or(z.string()).optional(),
+    isActive: z.boolean().optional()
+  }).optional(),
+  administrator: z.object({
+    id: z.number().optional(),
+    username: z.string(),
+    password: z.string(),
+    fullName: z.string(),
+    role: z.string().optional(),
+    isAuthorized: z.boolean().optional()
+  }).optional(),
 });
 
 export type TransactionWithDetails = z.infer<typeof transactionWithDetailsSchema>;

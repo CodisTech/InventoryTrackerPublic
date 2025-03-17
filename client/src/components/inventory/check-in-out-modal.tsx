@@ -85,12 +85,15 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
         if (selectedItem.checkedOutBy) {
           setOperationType("check-in");
           // If we're checking in, find the user who has this item checked out
-          if (selectedItem.checkedOutBy) {
+          if (selectedItem.checkedOutBy && selectedItem.checkedOutBy.id !== undefined) {
             setUserId(selectedItem.checkedOutBy.id.toString());
             // Create a Person object for the user who has the item
-            const personWithItem = {
+            const personWithItem: Person = {
               id: selectedItem.checkedOutBy.id,
-              fullName: selectedItem.checkedOutBy.fullName
+              fullName: selectedItem.checkedOutBy.fullName,
+              division: selectedItem.checkedOutBy.division || "",
+              department: selectedItem.checkedOutBy.department || "",
+              jDial: selectedItem.checkedOutBy.jDial || null
             };
             setSelectedPerson(personWithItem);
           }
@@ -346,7 +349,7 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
     // For check-in operations, verify that the selected person actually has this item checked out
     if (operationType === "check-in") {
       const item = items.find(i => i.id.toString() === itemId);
-      if (item && (!item.checkedOutBy || item.checkedOutBy.id.toString() !== userId)) {
+      if (item && (!item.checkedOutBy || !item.checkedOutBy.id || item.checkedOutBy.id.toString() !== userId)) {
         toast({
           title: "Invalid check-in",
           description: `${selectedPerson?.fullName || "This person"} does not have this item checked out.`,
