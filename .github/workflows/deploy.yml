@@ -1,35 +1,106 @@
-name: Deploy to GitHub Pages
+name: Deploy to Production
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
-  build-and-deploy:
+  detect-repository-type:
+    runs-on: ubuntu-latest
+    outputs:
+      repo-type: ${{ steps.detect-type.outputs.type }}
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Detect repository type
+        id: detect-type
+        run: |
+          if [ -f ".repository-type" ]; then
+            REPO_TYPE=$(grep -oP 'repository:\s*\K\w+' .repository-type || echo "private")
+          else
+            REPO_TYPE="private"
+          fi
+          echo "type=$REPO_TYPE" >> $GITHUB_OUTPUT
+          echo "Detected repository type: $REPO_TYPE"
+  
+  build:
+    needs: detect-repository-type
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Setup Node.js
+      - uses: actions/checkout@v3
+      
+      - name: Use Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '20'
+          node-version: '20.x'
           cache: 'npm'
-
+      
       - name: Install dependencies
         run: npm ci
-
-      - name: Create GitHub Pages static files
+      
+      - name: Update version configuration
         run: |
-          mkdir -p gh-pages
-          cp gh-pages-index.html gh-pages/index.html
-          touch gh-pages/.nojekyll
-          echo "# Inventory Management System - GitHub Pages Preview" > gh-pages/README.md
-
-      - name: Deploy to GitHub Pages
-        uses: JamesIves/github-pages-deploy-action@v4
+          REPO_TYPE="${{ needs.detect-repository-type.outputs.repo-type }}"
+          BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          BUILD_NUMBER=${{ github.run_number }}
+          GIT_COMMIT=${{ github.sha }}
+          
+          echo "Updating version-config.ts for repository type: $REPO_TYPE"
+          
+          sed -i "s/repository: \"[^\"]*\"/repository: \"$REPO_TYPE\"/" client/src/lib/version-config.ts
+          sed -i "s/environment: \"[^\"]*\"/environment: \"production\"/" client/src/lib/version-config.ts
+          sed -i "s/buildDate: \"[^\"]*\"/buildDate: \"$BUILD_DATE\"/" client/src/lib/version-config.ts
+          sed -i "s/buildNumber: \"[^\"]*\"/buildNumber: \"$BUILD_NUMBER\"/" client/src/lib/version-config.ts
+          sed -i "s/gitCommit: \"[^\"]*\"/gitCommit: \"$GIT_COMMIT\"/" client/src/lib/version-config.ts
+      
+      - name: Build
+        run: npm run build
+      
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
         with:
-          folder: gh-pages
-          branch: gh-pages
+          name: build-files
+          path: dist/
+  
+  deploy:
+    needs: [detect-repository-type, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build-files
+          path: dist/
+      
+      - name: Set up deployment configuration
+        run: |
+          REPO_TYPE="${{ needs.detect-repository-type.outputs.repo-type }}"
+          echo "Configuring deployment for repository type: $REPO_TYPE"
+          
+          if [ "$REPO_TYPE" = "public" ]; then
+            echo "Setting up public deployment"
+            # Add any public-specific deployment configuration
+          elif [ "$REPO_TYPE" = "sandbox" ]; then
+            echo "Setting up sandbox deployment"
+            # Add any sandbox-specific deployment configuration
+          else
+            echo "Setting up private deployment"
+            # Add any private-specific deployment configuration
+          fi
+      
+      - name: Deploy to production
+        run: |
+          echo "Deploying application to production environment"
+          # Add your deployment commands here
+          # This could be deploying to a cloud service, server, etc.
+          
+      - name: Update deployment status
+        run: |
+          echo "Deployment completed successfully"
+          echo "Version: $(grep -oP 'version: "\K[^"]+' client/src/lib/version-config.ts)"
+          echo "Repository: ${{ needs.detect-repository-type.outputs.repo-type }}"
+          echo "Build date: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"

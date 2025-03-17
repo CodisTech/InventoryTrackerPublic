@@ -1,0 +1,98 @@
+name: Deploy to Sandbox
+
+on:
+  push:
+    branches:
+      - sandbox
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Verify sandbox branch
+        run: |
+          # Check if we're on the sandbox branch
+          BRANCH=$(git rev-parse --abbrev-ref HEAD)
+          if [ "$BRANCH" != "sandbox" ]; then
+            echo "Error: This workflow should only run on the sandbox branch"
+            exit 1
+          fi
+          
+          # Check repository type marker
+          if [ -f ".repository-type" ]; then
+            REPO_TYPE=$(grep -oP 'repository:\s*\K\w+' .repository-type)
+            if [ "$REPO_TYPE" != "sandbox" ]; then
+              echo "Error: Repository type should be 'sandbox', but found '$REPO_TYPE'"
+              exit 1
+            fi
+          else
+            echo "Error: Missing .repository-type file"
+            exit 1
+          fi
+          
+          echo "Verified: This is the sandbox branch with correct repository type"
+      
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Update version configuration
+        run: |
+          BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          BUILD_NUMBER=${{ github.run_number }}
+          GIT_COMMIT=${{ github.sha }}
+          
+          # Ensure repository type is set to sandbox
+          sed -i 's/repository: "[^"]*"/repository: "sandbox"/' client/src/lib/version-config.ts
+          sed -i 's/environment: "[^"]*"/environment: "sandbox"/' client/src/lib/version-config.ts
+          sed -i "s/buildDate: \"[^\"]*\"/buildDate: \"$BUILD_DATE\"/" client/src/lib/version-config.ts
+          sed -i "s/buildNumber: \"[^\"]*\"/buildNumber: \"$BUILD_NUMBER\"/" client/src/lib/version-config.ts
+          sed -i "s/gitCommit: \"[^\"]*\"/gitCommit: \"$GIT_COMMIT\"/" client/src/lib/version-config.ts
+      
+      - name: Build
+        run: npm run build
+      
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: sandbox-build
+          path: dist/
+  
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: sandbox-build
+          path: dist/
+      
+      - name: Deploy to sandbox environment
+        run: |
+          echo "Deploying to sandbox environment..."
+          # Add your sandbox deployment commands here
+          
+      - name: Update documentation
+        run: |
+          echo "Updating sandbox documentation..."
+          # Add commands to update sandbox-specific documentation
+          
+      - name: Deploy notification
+        run: |
+          echo "Sandbox deployment completed"
+          echo "Version: $(grep -oP 'version: "\K[^"]+' client/src/lib/version-config.ts)"
+          echo "Build date: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          
+          # You could add a notification step here (Slack, email, etc.)
+          # to inform team members of a new sandbox build

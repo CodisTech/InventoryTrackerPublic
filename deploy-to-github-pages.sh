@@ -1,82 +1,261 @@
 #!/bin/bash
 
-# Colors for output
-GREEN='\033[0;32m'
-CYAN='\033[0;36m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-NC='\033[0m' # No Color
+# Deploy documentation to GitHub Pages
+# This script generates documentation and deploys it to GitHub Pages
 
-# GitHub username and repository name
-GITHUB_USERNAME="codistech"
-REPO_NAME="inventory-management-system"
+set -e  # Exit on any error
 
-echo -e "${CYAN}====== GitHub Pages Deployment Script ======${NC}"
-echo -e "${YELLOW}This script will deploy the GitHub Pages demo to your repository.${NC}"
-echo
+# Variables
+TEMP_DIR="gh-pages-temp"
+GH_PAGES_DIR="gh-pages"
+DOCS_DIR="docs"
 
-# Check if user provided username as argument
-if [ "$1" != "" ]; then
-    GITHUB_USERNAME=$1
-    echo -e "${GREEN}Using GitHub username: ${GITHUB_USERNAME}${NC}"
+# Create temporary directory
+echo "Creating temporary directory..."
+mkdir -p "$TEMP_DIR"
+
+# Copy documentation
+echo "Copying documentation files..."
+cp -r "$DOCS_DIR"/* "$TEMP_DIR"/
+
+# Copy screenshots for documentation
+if [ -d "screenshots" ]; then
+  echo "Copying screenshots..."
+  mkdir -p "$TEMP_DIR/screenshots"
+  cp -r screenshots/* "$TEMP_DIR/screenshots"/
 fi
 
-# Check if GitHub username is still default
-if [ "$GITHUB_USERNAME" == "your-username" ]; then
-    echo -e "${RED}ERROR: You need to edit this script to set your GitHub username!${NC}"
-    echo -e "Edit this file and change 'your-username' to your actual GitHub username"
-    echo -e "Or run the script with your username as an argument: ./deploy-to-github-pages.sh your-username"
-    exit 1
-fi
+# Create index.html
+echo "Creating index.html..."
+cat > "$TEMP_DIR/index.html" << EOF
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inventory Management System Documentation</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    h1 {
+      color: #2c3e50;
+      border-bottom: 2px solid #eee;
+      padding-bottom: 10px;
+    }
+    h2 {
+      color: #3498db;
+      margin-top: 30px;
+    }
+    a {
+      color: #3498db;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .header img {
+      max-width: 200px;
+      margin-bottom: 10px;
+    }
+    .documentation-list {
+      background-color: #f8f9fa;
+      border-radius: 5px;
+      padding: 20px;
+    }
+    .documentation-list ul {
+      list-style-type: none;
+      padding-left: 0;
+    }
+    .documentation-list li {
+      margin-bottom: 10px;
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+    }
+    .documentation-list li:last-child {
+      border-bottom: none;
+    }
+    .footer {
+      margin-top: 50px;
+      text-align: center;
+      font-size: 0.9em;
+      color: #7f8c8d;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Inventory Management System</h1>
+    <p>Documentation and Resources</p>
+  </div>
 
-# Update the GitHub Pages demo with the correct username
-echo -e "${CYAN}Updating GitHub Pages demo with your username...${NC}"
-sed -i "s|your-username|${GITHUB_USERNAME}|g" gh-pages/index.html
+  <div class="documentation-list">
+    <h2>Documentation</h2>
+    <ul>
+      <li><a href="REPOSITORY_STRUCTURE.md">Repository Structure</a></li>
+      <li><a href="API.md">API Documentation</a></li>
+      <li><a href="DATABASE.md">Database Schema</a></li>
+      <li><a href="USER_GUIDE.md">User Guide</a></li>
+    </ul>
+  </div>
 
-# Make sure the gh-pages directory exists
-if [ ! -d "gh-pages" ]; then
-    echo -e "${RED}ERROR: gh-pages directory not found!${NC}"
-    exit 1
-fi
+  <div class="documentation-list">
+    <h2>Screenshots</h2>
+    <div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;">
+      <div>
+        <h3>Dashboard</h3>
+        <img src="screenshots/dashboard.png" alt="Dashboard Screenshot" style="max-width: 300px;">
+      </div>
+      <div>
+        <h3>Inventory</h3>
+        <img src="screenshots/inventory.png" alt="Inventory Screenshot" style="max-width: 300px;">
+      </div>
+      <div>
+        <h3>Transactions</h3>
+        <img src="screenshots/transactions.png" alt="Transactions Screenshot" style="max-width: 300px;">
+      </div>
+    </div>
+  </div>
 
-# Create temporary directory for deployment
-TEMP_DIR="temp-gh-pages-deploy"
-rm -rf $TEMP_DIR
-mkdir $TEMP_DIR
+  <div class="footer">
+    <p>Inventory Management System &copy; 2025</p>
+  </div>
+</body>
+</html>
+EOF
 
-# Copy gh-pages content to temporary directory
-echo -e "${CYAN}Preparing files for deployment...${NC}"
-cp -r gh-pages/* $TEMP_DIR/
-cp gh-pages/.nojekyll $TEMP_DIR/ 2>/dev/null || touch $TEMP_DIR/.nojekyll
+# Create .nojekyll file to bypass Jekyll processing
+touch "$TEMP_DIR/.nojekyll"
 
-# Initialize git repository in temporary directory
-cd $TEMP_DIR
-git init
-git add .
-git config --local user.email "deployment@example.com"
-git config --local user.name "Deployment Script"
-git commit -m "Deploy to GitHub Pages"
+# Create a simple README
+cat > "$TEMP_DIR/README.md" << EOF
+# Inventory Management System Documentation
 
-# Push to GitHub
-echo -e "${CYAN}Pushing to GitHub Pages...${NC}"
-echo -e "${YELLOW}You may be asked for your GitHub credentials.${NC}"
-git branch -M main
-git remote add origin https://github.com/${GITHUB_USERNAME}/${REPO_NAME}.git
+This repository contains documentation for the Inventory Management System.
 
-# Push to GitHub (this will prompt for credentials)
-if git push -f origin main; then
-    echo -e "${GREEN}Successfully pushed to GitHub!${NC}"
-    echo -e "${GREEN}Your GitHub Pages site will be available at:${NC}"
-    echo -e "${CYAN}https://${GITHUB_USERNAME}.github.io/${REPO_NAME}/${NC}"
-    echo -e "${YELLOW}It may take a few minutes for the site to be published.${NC}"
-    echo -e "${YELLOW}Don't forget to enable GitHub Pages in your repository settings:${NC}"
-    echo -e "${CYAN}https://github.com/${GITHUB_USERNAME}/${REPO_NAME}/settings/pages${NC}"
-    echo -e "${YELLOW}Set the Source to 'main' branch and save.${NC}"
-else
-    echo -e "${RED}Failed to push to GitHub. Please check your credentials and repository permissions.${NC}"
-fi
+- [Repository Structure](REPOSITORY_STRUCTURE.md)
+- [API Documentation](API.md)
+- [Database Schema](DATABASE.md)
+- [User Guide](USER_GUIDE.md)
+EOF
+
+# Create a demo page
+cat > "$TEMP_DIR/demo.html" << EOF
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inventory Management System - Live Demo</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      text-align: center;
+      padding: 50px 20px;
+    }
+    h1 {
+      color: #2c3e50;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .btn {
+      display: inline-block;
+      background-color: #3498db;
+      color: white;
+      padding: 12px 24px;
+      text-decoration: none;
+      border-radius: 4px;
+      font-weight: bold;
+      margin: 10px;
+    }
+    .btn:hover {
+      background-color: #2980b9;
+    }
+    .repo-info {
+      background-color: #f8f9fa;
+      border-radius: 5px;
+      padding: 20px;
+      margin: 30px 0;
+      text-align: left;
+    }
+    .repo-type {
+      display: inline-block;
+      padding: 5px 10px;
+      border-radius: 3px;
+      color: white;
+      font-weight: bold;
+      margin-right: 10px;
+    }
+    .private {
+      background-color: #e74c3c;
+    }
+    .public {
+      background-color: #2ecc71;
+    }
+    .sandbox {
+      background-color: #f39c12;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Inventory Management System</h1>
+    <h2>Live Demo Environments</h2>
+    
+    <div class="repo-info">
+      <h3><span class="repo-type private">PRIVATE</span> Main Repository</h3>
+      <p>Full-featured development environment with all features enabled.</p>
+      <p><strong>Features:</strong> All features, including experimental ones</p>
+      <p><strong>Access:</strong> Restricted to authorized team members</p>
+      <a href="#" class="btn">Access Private Demo</a>
+    </div>
+    
+    <div class="repo-info">
+      <h3><span class="repo-type sandbox">SANDBOX</span> Sandbox Repository</h3>
+      <p>Testing environment for experimental features.</p>
+      <p><strong>Features:</strong> All features, including experimental ones</p>
+      <p><strong>Access:</strong> Available to beta testers and development team</p>
+      <a href="#" class="btn">Access Sandbox Demo</a>
+    </div>
+    
+    <div class="repo-info">
+      <h3><span class="repo-type public">PUBLIC</span> Public Repository</h3>
+      <p>Public-facing version with stable features only.</p>
+      <p><strong>Features:</strong> Limited feature set (stable features only)</p>
+      <p><strong>Access:</strong> Available to anyone</p>
+      <a href="#" class="btn">Access Public Demo</a>
+    </div>
+    
+    <p>For more information, visit the <a href="index.html">documentation</a>.</p>
+  </div>
+</body>
+</html>
+EOF
+
+# Copy to the final gh-pages directory
+echo "Copying to gh-pages directory..."
+mkdir -p "$GH_PAGES_DIR"
+cp -r "$TEMP_DIR"/* "$GH_PAGES_DIR"/
+cp "$TEMP_DIR/.nojekyll" "$GH_PAGES_DIR"/
 
 # Clean up
-cd ..
-rm -rf $TEMP_DIR
-echo -e "${GREEN}Deployment process completed!${NC}"
+echo "Cleaning up..."
+rm -rf "$TEMP_DIR"
+
+echo "GitHub Pages files prepared successfully!"
+echo "Files are available in the '$GH_PAGES_DIR' directory."
+echo "You can now deploy to GitHub Pages with:"
+echo "  git subtree push --prefix $GH_PAGES_DIR origin gh-pages"
