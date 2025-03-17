@@ -281,8 +281,14 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
 
   const transactionMutation = useMutation({
     mutationFn: async (data: any) => {
-      const res = await apiRequest("POST", "/api/transactions", data);
-      return await res.json();
+      try {
+        console.log('Sending transaction data:', data);
+        const res = await apiRequest("POST", "/api/transactions", { data });
+        return await res.json();
+      } catch (error) {
+        console.error('Transaction mutation error:', error);
+        throw error;
+      }
     },
     onSuccess: (transaction) => {
       const selectedItemName = items.find(i => i.id.toString() === itemId)?.name || "Item";
@@ -306,9 +312,10 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
       }
     },
     onError: (error: Error) => {
+      console.error('Transaction error:', error);
       toast({
         title: "Transaction failed",
-        description: error.message,
+        description: error.message || "There was an error processing the transaction. Please try again.",
         variant: "destructive",
       });
     },
@@ -356,6 +363,7 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
     }
 
     // Create the transaction object with the selected quantity and administrator
+    const now = new Date();
     const transaction: any = {
       itemId: parseInt(itemId),
       userId: parseInt(userId),
@@ -363,6 +371,14 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
       type: operationType,
       quantity: quantity, // Use the quantity from state
       notes,
+      // Include proper date fields as ISO strings based on operation type
+      timestamp: now.toISOString(),
+      ...(operationType === 'check-out' && {
+        dueDate: new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString() // 24 hours from now
+      }),
+      ...(operationType === 'check-in' && {
+        returnDate: now.toISOString()
+      })
     };
 
     // Process the transaction
