@@ -63,12 +63,12 @@ const MultiItemCheckoutModal: React.FC<MultiItemCheckoutModalProps> = ({
   });
   
   // Fetch admin users
-  const { data: users = [] } = useQuery({
+  const { data: users = [] } = useQuery<any[]>({
     queryKey: ["/api/users"],
   });
   
   // Filter only admin and superadmin users
-  const adminUsers = users.filter(user => 
+  const adminUsers = users.filter((user: any) => 
     user.role === "admin" || user.role === "superadmin"
   );
 
@@ -233,7 +233,7 @@ const MultiItemCheckoutModal: React.FC<MultiItemCheckoutModalProps> = ({
           
           <div class="section">
             <div class="section-title">Administrator Information</div>
-            <p><strong>Administrator:</strong> ${adminUsers.find(admin => admin.id === selectedAdministrator)?.fullName || "Unknown"}</p>
+            <p><strong>Administrator:</strong> ${adminUsers.find((admin: any) => admin.id === selectedAdministrator)?.fullName || "Unknown"}</p>
           </div>
           
           <div class="section">
@@ -272,7 +272,7 @@ const MultiItemCheckoutModal: React.FC<MultiItemCheckoutModalProps> = ({
           
           <div class="signatures">
             <div class="signature-line">
-              Checked Out By (${adminUsers.find(admin => admin.id === selectedAdministrator)?.fullName || "Administrator"})
+              Checked Out By (${adminUsers.find((admin: any) => admin.id === selectedAdministrator)?.fullName || "Administrator"})
             </div>
             <div class="signature-line">
               Received By (${selectedPerson?.fullName || "User"})
@@ -407,7 +407,7 @@ const MultiItemCheckoutModal: React.FC<MultiItemCheckoutModalProps> = ({
         item.name.toLowerCase().includes(search) ||
         item.itemCode.toLowerCase().includes(search) ||
         item.category.name.toLowerCase().includes(search) ||
-        item.notes?.toLowerCase().includes(search)
+        item.description?.toLowerCase().includes(search)
       );
     });
 
@@ -622,7 +622,7 @@ const MultiItemCheckoutModal: React.FC<MultiItemCheckoutModalProps> = ({
                   <SelectValue placeholder="Select administrator" />
                 </SelectTrigger>
                 <SelectContent>
-                  {adminUsers.map((admin) => (
+                  {adminUsers.map((admin: any) => (
                     <SelectItem key={admin.id} value={admin.id.toString()}>
                       <div className="flex items-center">
                         <UserCheck className="h-4 w-4 mr-2 text-primary" />

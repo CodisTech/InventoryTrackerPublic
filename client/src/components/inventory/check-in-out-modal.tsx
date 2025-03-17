@@ -91,9 +91,9 @@ const CheckInOutModal: React.FC<CheckInOutModalProps> = ({
             const personWithItem: Person = {
               id: selectedItem.checkedOutBy.id,
               fullName: selectedItem.checkedOutBy.fullName,
-              division: selectedItem.checkedOutBy.division || "",
-              department: selectedItem.checkedOutBy.department || "",
-              jDial: selectedItem.checkedOutBy.jDial || null
+              division: "", // Default values since checkedOutBy might not have these properties
+              department: "",
+              jDial: null
             };
             setSelectedPerson(personWithItem);
           }
