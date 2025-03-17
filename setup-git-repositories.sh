@@ -1,70 +1,37 @@
 #!/bin/bash
-# Script to set up Git repositories for all three versions
-# Usage: ./setup-git-repositories.sh
 
-# Check if git is initialized
-if [ ! -d ".git" ]; then
-  echo "Initializing git repository..."
-  git init
-else
-  echo "Git repository already initialized."
-fi
+# Ensure the script stops on first error
+set -e
 
-# Configure git user if not already done
-if [ -z "$(git config user.name)" ]; then
-  echo "Setting git user name..."
-  git config user.name "Inventory Manager"
-fi
+echo "Setting up Git repositories..."
 
-if [ -z "$(git config user.email)" ]; then
-  echo "Setting git user email..."
-  git config user.email "inventory@example.com"
-fi
+# Function to create a GitHub repository
+create_repository() {
+    local name=$1
+    local visibility=$2
+    local description=$3
 
-# Get remote origin
-REMOTE_URL=$(git remote get-url origin 2>/dev/null || echo "")
+    echo "Creating $visibility repository: $name"
+    
+    # Create the repository using GitHub API
+    curl -X POST -H "Authorization: token $GITHUB_TOKEN" \
+         -H "Accept: application/vnd.github.v3+json" \
+         https://api.github.com/user/repos \
+         -d "{\"name\":\"$name\",\"private\":$([[ $visibility == "private" ]] && echo "true" || echo "false"),\"description\":\"$description\"}"
+    
+    echo "Repository $name created successfully"
+}
 
-if [ -z "$REMOTE_URL" ]; then
-  echo "No remote origin set up."
-  echo "You can set up a remote origin with:"
-  echo "  git remote add origin <repository-url>"
-  echo ""
-  echo "For example:"
-  echo "  git remote add origin https://github.com/username/inventory-system.git"
-else
-  echo "Remote origin already set to: $REMOTE_URL"
-fi
+# Create the public repository
+create_repository "InventoryTrackerPublic" "public" "Public version of Inventory Management System with limited features"
 
-# Create branches for each repository type if they don't exist
-echo "Setting up repository branches..."
+# Create the sandbox repository
+create_repository "InventoryTrackerSandbox" "private" "Sandbox environment for testing Inventory Management System features"
 
-# Main branch (private repository)
-git checkout -b main 2>/dev/null || git checkout main
-echo "private" > .repository-type
-git add .repository-type
-git commit -m "Set repository type to private" || echo "No changes to commit for private repository"
+echo "Repositories created successfully!"
 
-# Public branch
-git checkout -b public 2>/dev/null || git checkout public
-echo "public" > .repository-type
-git add .repository-type
-git commit -m "Set repository type to public" || echo "No changes to commit for public repository"
+# Now run the sync script to push code to all repositories
+echo "Syncing code to all repositories..."
+./sync-repositories.sh "Initial setup for all repository types"
 
-# Sandbox branch
-git checkout -b sandbox 2>/dev/null || git checkout sandbox
-echo "sandbox" > .repository-type
-git add .repository-type
-git commit -m "Set repository type to sandbox" || echo "No changes to commit for sandbox repository"
-
-# Return to main branch
-git checkout main
-
-echo ""
-echo "Git repository setup complete!"
-echo "Branch structure:"
-echo "  main    - Private repository (all features)"
-echo "  public  - Public repository (limited features)"
-echo "  sandbox - Sandbox repository (testing environment)"
-echo ""
-echo "To push changes to all branches, use ./sync-repositories.sh \"Commit message\""
-echo "To change repository type, use node change-repository-type.js <private|public|sandbox>"
+echo "Setup complete! All repositories have been created and synchronized."

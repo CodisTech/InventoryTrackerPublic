@@ -1,42 +1,77 @@
-// GitHub Pages deployment script
+/**
+ * GitHub Repository Setup Script
+ * This script creates the public and sandbox repositories on GitHub
+ * and pushes the code with proper repository type configurations.
+ */
+
 import { execSync } from 'child_process';
-import fs from 'fs';
-import path from 'path';
+import fetch from 'node-fetch';
 
-// Repository name - update this to match your GitHub repository name
-const REPO_NAME = 'inventory-management-system';
+async function createRepository(name, isPrivate, description) {
+  const githubToken = process.env.GITHUB_TOKEN;
+  
+  if (!githubToken) {
+    throw new Error('GITHUB_TOKEN environment variable is not set');
+  }
 
-// Build the application
-console.log('Building the application...');
-execSync('npm run build', { stdio: 'inherit' });
+  console.log(`Creating repository: ${name} (${isPrivate ? 'private' : 'public'})`);
+  
+  try {
+    const response = await fetch('https://api.github.com/user/repos', {
+      method: 'POST',
+      headers: {
+        'Authorization': `token ${githubToken}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name,
+        private: isPrivate,
+        description,
+        auto_init: false
+      })
+    });
 
-// Create a CNAME file if you have a custom domain
-// fs.writeFileSync('./dist/CNAME', 'yourdomain.com');
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(`Failed to create repository: ${error.message}`);
+    }
 
-// Create a simple .nojekyll file to disable Jekyll processing
-fs.writeFileSync('./dist/.nojekyll', '');
+    const repo = await response.json();
+    console.log(`Repository ${name} created successfully: ${repo.html_url}`);
+    return repo;
+  } catch (error) {
+    console.error(`Error creating repository ${name}:`, error.message);
+    throw error;
+  }
+}
 
-// Create or update the 404.html file to handle client-side routing
-const notFoundContent = fs.readFileSync('./dist/index.html', 'utf8');
-fs.writeFileSync('./dist/404.html', notFoundContent);
+async function setupRepositories() {
+  try {
+    // Create public repository
+    await createRepository(
+      'InventoryTrackerPublic',
+      false,
+      'Public version of Inventory Management System with limited features'
+    );
 
-// Create a deployment script
-console.log('Creating deployment script...');
-const deployScript = `#!/bin/bash
-cd dist
-git init
-git add .
-git commit -m "Deploy to GitHub Pages"
-git branch -M gh-pages
-git remote add origin git@github.com:yourusername/${REPO_NAME}.git
-git push -f origin gh-pages
-cd ..
-`;
+    // Create sandbox repository
+    await createRepository(
+      'InventoryTrackerSandbox',
+      true,
+      'Sandbox environment for testing Inventory Management System features'
+    );
 
-fs.writeFileSync('deploy.sh', deployScript);
-execSync('chmod +x deploy.sh', { stdio: 'inherit' });
+    // Run the sync script to push code to all repositories
+    console.log('\nSyncing code to all repositories...');
+    execSync('./sync-repositories.sh "Initial setup for all repository types"', { stdio: 'inherit' });
 
-console.log('Deployment preparation complete!');
-console.log('To deploy to GitHub Pages:');
-console.log('1. Update the repository URL in the deploy.sh script');
-console.log('2. Run: ./deploy.sh');
+    console.log('\nSetup complete! All repositories have been created and synchronized.');
+  } catch (error) {
+    console.error('Failed to set up repositories:', error.message);
+    process.exit(1);
+  }
+}
+
+// Run the setup
+setupRepositories();
