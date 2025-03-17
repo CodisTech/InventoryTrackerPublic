@@ -20,8 +20,11 @@ import { promisify } from "util";
 import { scrypt, randomBytes } from "crypto";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Authentication routes
+  const { ensureAuthenticated, csrfProtection } = setupAuth(app);
+  
   // Add password change endpoint for superadmins
-  app.post("/api/change-password", async (req, res, next) => {
+  app.post("/api/change-password", ensureAuthenticated, csrfProtection, async (req, res, next) => {
     try {
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "Unauthorized" });
@@ -69,8 +72,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       next(err);
     }
   });
-  // Authentication routes
-  const { ensureAuthenticated, csrfProtection } = setupAuth(app);
   
   // Health check endpoint for Docker (no authentication required)
   app.get("/api/health", async (_req, res) => {
@@ -111,7 +112,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/categories", ensureAuthenticated, async (req, res, next) => {
+  app.post("/api/categories", ensureAuthenticated, csrfProtection, async (req, res, next) => {
     try {
       const validatedData = insertCategorySchema.parse(req.body);
       const existingCategory = await storage.getCategoryByName(validatedData.name);
@@ -161,7 +162,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/inventory", ensureAuthenticated, async (req, res, next) => {
+  app.post("/api/inventory", ensureAuthenticated, csrfProtection, async (req, res, next) => {
     try {
       const validatedData = insertInventoryItemSchema.parse(req.body);
       
@@ -229,7 +230,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/transactions", ensureAuthenticated, async (req, res, next) => {
+  app.post("/api/transactions", ensureAuthenticated, csrfProtection, async (req, res, next) => {
     try {
       // Ensure quantity is always set with a default value if not provided
       const dataWithDefaults = {
@@ -307,7 +308,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/users", ensureAuthenticated, async (req, res, next) => {
+  app.post("/api/users", ensureAuthenticated, csrfProtection, async (req, res, next) => {
     try {
       const validatedData = insertUserSchema.parse(req.body);
       
@@ -342,7 +343,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/users/:id", ensureAuthenticated, async (req, res, next) => {
+  app.patch("/api/users/:id", ensureAuthenticated, csrfProtection, async (req, res, next) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
