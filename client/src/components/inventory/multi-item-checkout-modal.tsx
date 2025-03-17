@@ -68,7 +68,7 @@ const MultiItemCheckoutModal: React.FC<MultiItemCheckoutModalProps> = ({
   });
   
   // Filter only admin and superadmin users
-  const adminUsers = users.filter((user: any) => 
+  const adminUsers = users.filter((user) => 
     user.role === "admin" || user.role === "superadmin"
   );
 
@@ -233,7 +233,7 @@ const MultiItemCheckoutModal: React.FC<MultiItemCheckoutModalProps> = ({
           
           <div class="section">
             <div class="section-title">Administrator Information</div>
-            <p><strong>Administrator:</strong> ${adminUsers.find((admin: any) => admin.id === selectedAdministrator)?.fullName || "Unknown"}</p>
+            <p><strong>Administrator:</strong> ${adminUsers.find((admin) => admin.id === selectedAdministrator)?.fullName || "Unknown"}</p>
           </div>
           
           <div class="section">
@@ -272,7 +272,7 @@ const MultiItemCheckoutModal: React.FC<MultiItemCheckoutModalProps> = ({
           
           <div class="signatures">
             <div class="signature-line">
-              Checked Out By (${adminUsers.find((admin: any) => admin.id === selectedAdministrator)?.fullName || "Administrator"})
+              Checked Out By (${adminUsers.find((admin) => admin.id === selectedAdministrator)?.fullName || "Administrator"})
             </div>
             <div class="signature-line">
               Received By (${selectedPerson?.fullName || "User"})
@@ -622,7 +622,7 @@ const MultiItemCheckoutModal: React.FC<MultiItemCheckoutModalProps> = ({
                   <SelectValue placeholder="Select administrator" />
                 </SelectTrigger>
                 <SelectContent>
-                  {adminUsers.map((admin: any) => (
+                  {adminUsers.map((admin) => (
                     <SelectItem key={admin.id} value={admin.id.toString()}>
                       <div className="flex items-center">
                         <UserCheck className="h-4 w-4 mr-2 text-primary" />
