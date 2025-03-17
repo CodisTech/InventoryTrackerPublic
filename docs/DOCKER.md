@@ -13,8 +13,8 @@ This guide explains how to deploy the Inventory Management System using Docker a
 
 1. Clone the repository
    ```
-   git clone https://github.com/CodisTech/InventoryTracker.git
-   cd InventoryTracker
+   git clone https://github.com/yourusername/inventory-management-system.git
+   cd inventory-management-system
    ```
 
 2. Start the containers
@@ -37,7 +37,7 @@ services:
     ports:
       - "5000:5000"
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/codis
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/inventory
       - NODE_ENV=production
     depends_on:
       - db
@@ -50,7 +50,7 @@ services:
     environment:
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_USER=postgres
-      - POSTGRES_DB=codis
+      - POSTGRES_DB=inventory
     ports:
       - "5432:5432"
     restart: unless-stopped
@@ -65,7 +65,7 @@ The following environment variables can be adjusted in the docker-compose.yml fi
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| DATABASE_URL | PostgreSQL connection URL | postgresql://postgres:postgres@db:5432/codis |
+| DATABASE_URL | PostgreSQL connection URL | postgresql://postgres:postgres@db:5432/inventory |
 | NODE_ENV | Application environment | production |
 | PORT | Application port | 5000 |
 | SESSION_SECRET | Secret for session encryption | (auto-generated) |
@@ -139,13 +139,13 @@ docker-compose up -d
 ### Backing Up Data
 
 ```bash
-docker exec -t codis_db_1 pg_dumpall -c -U postgres > backup_$(date +%Y-%m-%d_%H-%M-%S).sql
+docker exec -t inventory_db_1 pg_dumpall -c -U postgres > backup_$(date +%Y-%m-%d_%H-%M-%S).sql
 ```
 
 ### Restoring Data
 
 ```bash
-cat backup_file.sql | docker exec -i codis_db_1 psql -U postgres
+cat backup_file.sql | docker exec -i inventory_db_1 psql -U postgres
 ```
 
 ## Monitoring
@@ -188,4 +188,4 @@ docker-compose up -d
 
 ## Support
 
-For Docker-related deployment issues, please contact support@codistech.com.
+For Docker-related deployment issues, please open an issue in the GitHub repository.

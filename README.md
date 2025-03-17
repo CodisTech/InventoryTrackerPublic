@@ -1,6 +1,6 @@
 # Inventory Management System
 
-![Inventory Tracker Logo](client/src/assets/images/codis-logo.svg)
+![Inventory Tracker Logo](client/src/assets/images/inventory-logo.svg)
 
 ## Overview
 
