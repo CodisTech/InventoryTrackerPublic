@@ -25,7 +25,7 @@ async function fetchCsrfToken(): Promise<string> {
     
     const data = await res.json();
     csrfToken = data.csrfToken;
-    return csrfToken;
+    return csrfToken as string;
   } catch (error) {
     console.error('CSRF token fetch error:', error);
     throw error;
@@ -36,7 +36,7 @@ export async function apiRequest(
   method: string,
   url: string,
   options?: { 
-    data?: unknown | undefined,
+    data?: any,
     skipCsrf?: boolean 
   }
 ): Promise<Response> {
