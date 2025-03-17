@@ -4,6 +4,7 @@ import { Express, Request, Response, NextFunction } from "express";
 import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
+import csrf from "csurf";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
 
@@ -51,14 +52,15 @@ export function setupAuth(app: Express) {
   
   const sessionSettings: session.SessionOptions = {
     secret: sessionSecret,
-    resave: true, // Changed to true to ensure session is saved back to the store
-    saveUninitialized: true, // Changed to true to create sessions for non-logged-in users
+    resave: false, // Changed to false for performance - only save when modified
+    saveUninitialized: false, // Changed to false for security - don't create unnecessary sessions
     store: storage.sessionStore,
     cookie: {
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      httpOnly: true,
-      sameSite: 'lax'
+      secure: process.env.NODE_ENV === "production", // HTTPS only in production
+      maxAge: 4 * 60 * 60 * 1000, // Reduced from 24 to 4 hours for security
+      httpOnly: true, // Prevents client-side JS from reading the cookie
+      sameSite: 'strict', // Stronger protection against CSRF
+      path: '/', // Limit cookie to this path only
     }
   };
   
@@ -75,6 +77,9 @@ export function setupAuth(app: Express) {
   app.use(session(sessionSettings));
   app.use(passport.initialize());
   app.use(passport.session());
+  
+  // Setup CSRF protection
+  const csrfProtection = csrf({ cookie: false }); // Use session instead of cookies for CSRF
 
   passport.use(
     new LocalStrategy(async (username, password, done) => {
@@ -220,5 +225,10 @@ export function setupAuth(app: Express) {
     res.status(401).json({ message: "Unauthorized" });
   };
 
-  return { ensureAuthenticated };
+  // CSRF token endpoint - only accessible to authenticated users
+  app.get('/api/csrf-token', ensureAuthenticated, csrfProtection, (req, res) => {
+    res.json({ csrfToken: req.csrfToken() });
+  });
+
+  return { ensureAuthenticated, csrfProtection };
 }
