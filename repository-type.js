@@ -1,1 +1,1 @@
-window.__REPOSITORY_TYPE__ = "sandbox";
+window.__REPOSITORY_TYPE__ = "private";
