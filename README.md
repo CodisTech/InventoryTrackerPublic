@@ -6,6 +6,50 @@
 
 This Inventory Management System is an advanced tool designed to streamline equipment tracking, check-in/out processes, and user interactions. It's built with a focus on user experience, data integrity, and intuitive design, making it perfect for organizations that need to track valuable equipment and manage user access.
 
+## 🚀 Live Demo
+
+**View the interactive demo:** [https://codistech.github.io/InventoryTracker/demo.html](https://codistech.github.io/InventoryTracker/demo.html)
+
+Experience our inventory management system firsthand through our interactive demo. The demo showcases the user interface and core functionalities, allowing you to explore the system's capabilities before deployment.
+
+## 📸 Visual Overview
+
+### Dashboard
+![Dashboard](screenshots/dashboard.svg)
+The Dashboard provides an at-a-glance overview of your inventory status, recent activities, and alerts for low stock and overdue items. Key metrics are displayed prominently for quick assessment of inventory health.
+
+### Inventory Management
+![Inventory](screenshots/inventory.svg)
+The Inventory page offers comprehensive tools for managing your equipment inventory, with features for filtering, sorting, and detailed item information. Color-coded status indicators provide immediate visual feedback on item availability.
+
+### Transaction History
+![Transactions](screenshots/transactions.svg)
+The Transactions view allows you to track all equipment check-ins and check-outs with detailed personnel information, timestamps, and status updates. Comprehensive filtering options help you find specific transactions quickly.
+
+## 🔄 User Workflows
+
+### Equipment Check-Out Process
+1. Log in with your user credentials
+2. Navigate to the Inventory section
+3. Search or browse for the required equipment
+4. Select the item and click "Check Out"
+5. Fill in the required information (purpose, expected return date)
+6. Confirm the transaction and receive a digital receipt
+
+### Equipment Check-In Process
+1. Log in with your user credentials
+2. Navigate to the "Checked Out" section
+3. Locate the item to be returned
+4. Click "Check In" and confirm the condition of the returned item
+5. Complete the transaction with optional notes
+
+### Administrative Operations
+1. Log in with admin or superadmin credentials
+2. Access the admin dashboard for system-wide metrics
+3. Manage users, departments, and permissions
+4. Generate reports for compliance and inventory management
+5. Configure system settings and integration options
+
 ## Key Features
 
 - **User Management**
@@ -72,8 +116,8 @@ This Inventory Management System is an advanced tool designed to streamline equi
 
 1. Clone the repository
    ```
-   git clone https://github.com/codistech/inventory-management-system.git
-   cd inventory-management-system
+   git clone https://github.com/codistech/InventoryTracker.git
+   cd InventoryTracker
    ```
 
 2. Install dependencies
@@ -134,7 +178,7 @@ The project includes configuration for GitHub Pages to showcase an interactive d
    git add .
    git commit -m "GitHub Pages Interactive Demo"
    git branch -M gh-pages
-   git remote add origin https://github.com/codistech/inventory-management-system.git
+   git remote add origin https://github.com/codistech/InventoryTracker.git
    git push -u origin gh-pages --force
    ```
 
@@ -144,7 +188,7 @@ The project includes configuration for GitHub Pages to showcase an interactive d
 
 3. Your interactive demo will be available at:
    ```
-   https://codistech.github.io/inventory-management-system/demo.html
+   https://codistech.github.io/InventoryTracker/demo.html
    ```
 
 4. For detailed deployment instructions, see:
