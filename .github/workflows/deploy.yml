@@ -5,94 +5,98 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment for deployment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+          - development
 
 jobs:
-  build:
+  detect-repository-type:
     runs-on: ubuntu-latest
+    outputs:
+      repository-type: ${{ steps.detect.outputs.repository-type }}
     steps:
-      - uses: actions/checkout@v3
-      
-      - name: Verify branch and repository type
+      - name: Check out repository
+        uses: actions/checkout@v3
+        
+      - name: Detect repository type
+        id: detect
         run: |
-          # Check if we're on the main branch
-          BRANCH=$(git rev-parse --abbrev-ref HEAD)
-          if [ "$BRANCH" != "main" ] && [ "$GITHUB_REF" != "refs/heads/main" ]; then
-            echo "Error: This workflow should only run on the main branch"
-            exit 1
-          fi
-          
-          # Check repository type marker
-          if [ -f ".repository-type" ]; then
-            REPO_TYPE=$(grep -oP 'repository:\s*\K\w+' .repository-type)
-            if [ "$REPO_TYPE" != "private" ]; then
-              echo "Error: Repository type should be 'private', but found '$REPO_TYPE'"
-              exit 1
-            fi
+          if [ -f .repository-type ]; then
+            REPO_TYPE=$(cat .repository-type)
+          elif [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            REPO_TYPE="private"
+          elif [ "${{ github.ref }}" = "refs/heads/public" ]; then
+            REPO_TYPE="public"
+          elif [ "${{ github.ref }}" = "refs/heads/sandbox" ]; then
+            REPO_TYPE="sandbox"
           else
-            echo "Error: Missing .repository-type file"
-            exit 1
+            REPO_TYPE="private"
           fi
-          
-          echo "Verified: This is the main branch with correct repository type"
+          echo "repository-type=$REPO_TYPE" >> $GITHUB_OUTPUT
+          echo "Detected repository type: $REPO_TYPE"
+  
+  build-and-deploy:
+    needs: detect-repository-type
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'production' }}
+    
+    env:
+      REPOSITORY_TYPE: ${{ needs.detect-repository-type.outputs.repository-type }}
+    
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
       
-      - name: Use Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '20.x'
+          node-version: '18'
           cache: 'npm'
       
       - name: Install dependencies
         run: npm ci
       
-      - name: Update version configuration
+      - name: Create repository type marker
         run: |
-          BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-          BUILD_NUMBER=${{ github.run_number }}
-          GIT_COMMIT=${{ github.sha }}
-          
-          # Ensure repository type is set to private
-          sed -i 's/repository: "[^"]*"/repository: "private"/' client/src/lib/version-config.ts
-          sed -i 's/environment: "[^"]*"/environment: "production"/' client/src/lib/version-config.ts
-          sed -i "s/buildDate: \"[^\"]*\"/buildDate: \"$BUILD_DATE\"/" client/src/lib/version-config.ts
-          sed -i "s/buildNumber: \"[^\"]*\"/buildNumber: \"$BUILD_NUMBER\"/" client/src/lib/version-config.ts
-          sed -i "s/gitCommit: \"[^\"]*\"/gitCommit: \"$GIT_COMMIT\"/" client/src/lib/version-config.ts
+          echo "${{ env.REPOSITORY_TYPE }}" > .repository-type
+          echo "window.__REPOSITORY_TYPE__ = '${{ env.REPOSITORY_TYPE }}';" > repository-type.js
       
-      - name: Build
-        run: npm run build
-      
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: production-build
-          path: dist/
-  
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Download build artifacts
-        uses: actions/download-artifact@v3
-        with:
-          name: production-build
-          path: dist/
-      
-      - name: Deploy to production environment
+      - name: Build application
         run: |
-          echo "Deploying to production environment..."
-          # Add your production deployment commands here
-          
-      - name: Update documentation
+          npm run build
+        env:
+          NODE_ENV: production
+          REPOSITORY_TYPE: ${{ env.REPOSITORY_TYPE }}
+      
+      - name: Run tests
+        run: npm test
+      
+      - name: Prepare deployment
         run: |
-          echo "Updating production documentation..."
-          # Add commands to update production-specific documentation
-          
-      - name: Deploy notification
+          echo "Preparing deployment for ${{ env.REPOSITORY_TYPE }} repository"
+          echo "Building version: $(node -p "require('./package.json').version")"
+          echo "Build date: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          echo "Commit: ${{ github.sha }}"
+      
+      - name: Deploy to hosting
+        # This step would be customized based on your hosting provider
+        # For example, deploying to Vercel, Netlify, AWS, etc.
         run: |
-          echo "Production deployment completed"
-          echo "Version: $(grep -oP 'version: "\K[^"]+' client/src/lib/version-config.ts)"
-          echo "Build date: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-          
-          # You could add a notification step here (Slack, email, etc.)
-          # to inform team members of a new production build
+          echo "Deploying to ${{ github.event.inputs.environment || 'production' }} environment"
+          echo "Repository type: ${{ env.REPOSITORY_TYPE }}"
+          # Replace with your actual deployment commands
+          # e.g., netlify deploy --prod
+          # or    vercel --prod
+      
+      - name: Update deployment status
+        run: |
+          echo "Deployment completed successfully at $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          echo "Environment: ${{ github.event.inputs.environment || 'production' }}"
+          echo "Repository type: ${{ env.REPOSITORY_TYPE }}"

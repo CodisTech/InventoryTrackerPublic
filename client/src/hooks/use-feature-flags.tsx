@@ -1,18 +1,10 @@
-import { 
-  createContext, 
-  ReactNode, 
-  useContext, 
-  useEffect, 
-  useMemo, 
-  useState 
-} from "react";
-
-import { 
-  FeatureFlag, 
-  FEATURE_FLAGS, 
-  getRepositoryType, 
-  isFeatureEnabled, 
-  RepositoryType 
+import { createContext, useContext, ReactNode } from "react";
+import {
+  FEATURE_FLAGS,
+  FeatureFlag,
+  RepositoryType,
+  getRepositoryType,
+  isFeatureEnabled,
 } from "@/lib/version-config";
 
 type FeatureFlagsContextType = {
@@ -43,60 +35,43 @@ type FeatureFlagsContextType = {
   isFeatureAvailableInRepo: (feature: FeatureFlag, repo: RepositoryType) => boolean;
 };
 
-const FeatureFlagsContext = createContext<FeatureFlagsContextType | null>(null);
+const FeatureFlagsContext = createContext<FeatureFlagsContextType | undefined>(undefined);
 
 export function FeatureFlagsProvider({ children }: { children: ReactNode }) {
-  const [repoType, setRepoType] = useState<RepositoryType>(getRepositoryType());
+  const repoType = getRepositoryType();
   
-  // Ensure repository type is up to date
-  useEffect(() => {
-    setRepoType(getRepositoryType());
-    
-    // This would be needed if repository type could change at runtime,
-    // but for now it's set at build time
-    const checkRepoType = () => {
-      const currentType = getRepositoryType();
-      if (currentType !== repoType) {
-        setRepoType(currentType);
-      }
-    };
-    
-    // Check repository type on focus, which helps during development
-    window.addEventListener("focus", checkRepoType);
-    
-    return () => {
-      window.removeEventListener("focus", checkRepoType);
-    };
-  }, [repoType]);
-  
-  // Get all enabled features based on the repository type
-  const enabledFeatures = useMemo(() => {
-    return Object.keys(FEATURE_FLAGS).filter(
-      feature => isFeatureEnabled(feature as FeatureFlag)
-    ) as FeatureFlag[];
-  }, [repoType]);
-  
+  // Check if a feature is enabled based on current repository
   const isEnabled = (feature: FeatureFlag): boolean => {
     return isFeatureEnabled(feature);
   };
   
+  // Get configuration for a specific feature
   const getFeatureConfig = (feature: FeatureFlag) => {
     return FEATURE_FLAGS[feature];
   };
   
+  // Check if a feature is available in a specific repository type
   const isFeatureAvailableInRepo = (feature: FeatureFlag, repo: RepositoryType): boolean => {
     const config = FEATURE_FLAGS[feature];
-    return config ? config.availability[repo] === true : false;
+    return config?.availability[repo] || false;
   };
   
+  // Get a list of all features with their enabled status
   const getAllFeatures = () => {
     return Object.entries(FEATURE_FLAGS).map(([key, config]) => ({
       key: key as FeatureFlag,
-      ...config,
-      enabled: isFeatureEnabled(key as FeatureFlag),
-      repoType
+      title: config.title,
+      description: config.description,
+      availability: config.availability,
+      enabled: isEnabled(key as FeatureFlag),
+      repoType,
     }));
   };
+  
+  // List of enabled features
+  const enabledFeatures = Object.keys(FEATURE_FLAGS).filter(
+    (key) => isEnabled(key as FeatureFlag)
+  ) as FeatureFlag[];
   
   const contextValue: FeatureFlagsContextType = {
     isEnabled,
@@ -104,7 +79,7 @@ export function FeatureFlagsProvider({ children }: { children: ReactNode }) {
     getAllFeatures,
     enabledFeatures,
     repoType,
-    isFeatureAvailableInRepo
+    isFeatureAvailableInRepo,
   };
   
   return (
@@ -116,9 +91,11 @@ export function FeatureFlagsProvider({ children }: { children: ReactNode }) {
 
 export function useFeatureFlags() {
   const context = useContext(FeatureFlagsContext);
+  
   if (!context) {
     throw new Error("useFeatureFlags must be used within a FeatureFlagsProvider");
   }
+  
   return context;
 }
 
@@ -127,7 +104,7 @@ export function useFeatureFlags() {
  */
 export function FeatureFlagGuard({ 
   feature, 
-  children, 
+  children,
   fallback = null 
 }: { 
   feature: FeatureFlag; 

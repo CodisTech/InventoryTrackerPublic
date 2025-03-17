@@ -1,93 +1,103 @@
 /**
- * Repository Type Detector
+ * Repository Type Detection Script
+ *
+ * This script determines which repository type is being used:
+ * - private: Full access repository with all features
+ * - public: Limited public repository with restricted features
+ * - sandbox: Testing repository with all features enabled for evaluation
  * 
- * This script detects which repository type (private, public, sandbox) the code is running in
- * by checking the .repository-type file at the root of the project.
- * 
- * It's used during build time to configure the application accordingly.
+ * The detection is based on:
+ * 1. Reading the .repository-type file (if present)
+ * 2. Checking git remote URLs
+ * 3. Looking for specific environment variables
  */
 
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 
 /**
- * Detects the repository type from the .repository-type file
- * @returns {'private'|'public'|'sandbox'} Repository type
+ * Detects the repository type based on available information
+ * Returns: "private" | "public" | "sandbox"
  */
 function detectRepositoryType() {
-  const repoTypePath = path.join(__dirname, '.repository-type');
-  
   try {
-    if (fs.existsSync(repoTypePath)) {
-      const content = fs.readFileSync(repoTypePath, 'utf8');
-      const match = content.match(/repository:\s*(\w+)/);
-      
-      if (match && match[1]) {
-        const repoType = match[1].toLowerCase();
-        
-        if (['private', 'public', 'sandbox'].includes(repoType)) {
-          console.log(`Repository type detected: ${repoType}`);
-          return repoType;
-        } else {
-          console.warn(`Invalid repository type in .repository-type: ${repoType}. Using default 'private'.`);
-        }
-      } else {
-        console.warn('Invalid .repository-type file format. Using default: private');
+    // Method 1: Look for the .repository-type file
+    if (fs.existsSync('.repository-type')) {
+      const repoType = fs.readFileSync('.repository-type', 'utf8').trim();
+      if (['private', 'public', 'sandbox'].includes(repoType)) {
+        console.log(`[INFO] Repository type detected from .repository-type: ${repoType}`);
+        return repoType;
       }
-    } else {
-      console.log('No .repository-type file found. Using default: private');
     }
+    
+    // Method 2: Check for environment variables
+    if (process.env.REPOSITORY_TYPE && 
+        ['private', 'public', 'sandbox'].includes(process.env.REPOSITORY_TYPE)) {
+      console.log(`[INFO] Repository type detected from environment: ${process.env.REPOSITORY_TYPE}`);
+      return process.env.REPOSITORY_TYPE;
+    }
+    
+    // Method 3: Detect from git branch
+    const gitBranch = detectGitBranch();
+    if (gitBranch) {
+      if (gitBranch === 'main') {
+        console.log('[INFO] Repository type detected from git branch: private (main)');
+        return 'private';
+      }
+      if (gitBranch === 'public') {
+        console.log('[INFO] Repository type detected from git branch: public');
+        return 'public';
+      }
+      if (gitBranch === 'sandbox') {
+        console.log('[INFO] Repository type detected from git branch: sandbox');
+        return 'sandbox';
+      }
+    }
+    
+    // Default fallback to private
+    console.log('[INFO] Repository type not detected, using default: private');
+    return 'private';
   } catch (error) {
-    console.error('Error reading .repository-type file:', error);
+    console.error('[ERROR] Failed to detect repository type:', error.message);
+    return 'private'; // Default fallback
   }
-  
-  // Default to private if we can't determine the repository type
-  return 'private';
 }
 
 /**
- * Detects the current Git branch
- * @returns {string} Current branch name or null if not in a Git repository
+ * Detects the current git branch
+ * Returns: string | null
  */
 function detectGitBranch() {
   try {
-    const { execSync } = require('child_process');
-    const branch = execSync('git rev-parse --abbrev-ref HEAD').toString().trim();
-    console.log(`Current Git branch: ${branch}`);
+    // Try to get the branch name from git
+    const branch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf8' }).trim();
     return branch;
   } catch (error) {
-    console.warn('Unable to detect Git branch:', error.message);
+    console.warn('[WARNING] Failed to detect git branch:', error.message);
     return null;
   }
 }
 
-// When run directly, output the repository type
-if (require.main === module) {
-  const repoType = detectRepositoryType();
-  const branch = detectGitBranch();
-  
-  console.log(`Repository Type: ${repoType}`);
-  if (branch) {
-    console.log(`Git Branch: ${branch}`);
-    
-    // Simple validation - these should generally match
-    // main branch -> private repo
-    // public branch -> public repo
-    // sandbox branch -> sandbox repo
-    const expectedBranchMap = {
-      'private': 'main',
-      'public': 'public',
-      'sandbox': 'sandbox'
-    };
-    
-    if (branch !== expectedBranchMap[repoType]) {
-      console.warn(`WARNING: You may be on the wrong branch! Repository type is '${repoType}' but branch is '${branch}'`);
-      console.warn(`Expected branch for '${repoType}' repository is '${expectedBranchMap[repoType]}'`);
-    }
-  }
+// Run the detection
+const repositoryType = detectRepositoryType();
+
+// Write the result to a file for other scripts
+fs.writeFileSync('.repository-type', repositoryType);
+
+// Write a JavaScript snippet to inject at build time
+const jsSnippet = `window.__REPOSITORY_TYPE__ = "${repositoryType}";`;
+fs.writeFileSync('repository-type.js', jsSnippet);
+
+// Output for vite.config or other build tools
+if (process.env.NODE_ENV === 'development') {
+  console.log(`Repository type: ${repositoryType}`);
+  // Also write to a temporary file for dev server to read
+  fs.writeFileSync('.repository-type.dev', repositoryType);
 }
 
 module.exports = {
+  repositoryType,
   detectRepositoryType,
   detectGitBranch
 };

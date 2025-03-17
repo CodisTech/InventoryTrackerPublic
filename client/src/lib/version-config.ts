@@ -23,7 +23,7 @@ export type FeatureFlag = keyof typeof FEATURE_FLAGS;
 export const FEATURE_FLAGS = {
   ADVANCED_REPORTING: {
     title: "Advanced Reporting",
-    description: "Enhanced reporting capabilities with charts, exports, and custom filters",
+    description: "Enables detailed analytics and reporting features",
     availability: {
       private: true,
       public: false,
@@ -32,55 +32,46 @@ export const FEATURE_FLAGS = {
   },
   EXPERIMENTAL_UI: {
     title: "Experimental UI",
-    description: "Preview of upcoming UI enhancements and features",
+    description: "Enables experimental UI components and layouts",
     availability: {
       private: true,
       public: false,
-      sandbox: true
-    }
-  },
-  MULTI_CHECKOUT: {
-    title: "Multi-Item Checkout",
-    description: "Check out multiple items at once to a single person",
-    availability: {
-      private: true,
-      public: true,
-      sandbox: true
-    }
-  },
-  BULK_IMPORT: {
-    title: "Bulk Import",
-    description: "Import inventory items or personnel from CSV files",
-    availability: {
-      private: true,
-      public: true,
-      sandbox: true
-    }
-  },
-  PRIVACY_AGREEMENT: {
-    title: "Privacy Agreements",
-    description: "Track user acceptance of privacy policies",
-    availability: {
-      private: true,
-      public: true,
-      sandbox: true
-    }
-  },
-  EULA_TRACKING: {
-    title: "EULA Tracking",
-    description: "Track user acceptance of end-user license agreements",
-    availability: {
-      private: true,
-      public: true,
       sandbox: true
     }
   },
   BETA_FEATURES: {
     title: "Beta Features",
-    description: "Early access to beta features under development",
+    description: "Enables beta features that are still under development",
     availability: {
       private: true,
       public: false,
+      sandbox: true
+    }
+  },
+  CORE_FEATURES: {
+    title: "Core Features",
+    description: "Essential inventory management functionality",
+    availability: {
+      private: true,
+      public: true,
+      sandbox: true
+    }
+  },
+  ENHANCED_SECURITY: {
+    title: "Enhanced Security",
+    description: "Additional security features",
+    availability: {
+      private: true,
+      public: true,
+      sandbox: true
+    }
+  },
+  USER_MANAGEMENT: {
+    title: "User Management",
+    description: "Comprehensive user and permission management",
+    availability: {
+      private: true,
+      public: true,
       sandbox: true
     }
   }
@@ -107,11 +98,10 @@ export type VersionInfo = {
  */
 export const versionInfo: VersionInfo = {
   version: "1.0.0",
-  repository: "private", // Will be replaced during build for each repository
+  repository: "private", // Default to private, will be overridden by detection
   environment: "development",
-  buildDate: "",
-  buildNumber: "",
-  gitCommit: ""
+  buildDate: new Date().toISOString(),
+  gitCommit: "development"
 };
 
 /**
@@ -125,17 +115,7 @@ export function getDisplayVersion(): string {
  * Get a detailed version string including build information
  */
 export function getDetailedVersion(): string {
-  const parts = [`v${versionInfo.version}`, versionInfo.repository];
-  
-  if (versionInfo.buildNumber) {
-    parts.push(`build ${versionInfo.buildNumber}`);
-  }
-  
-  if (versionInfo.gitCommit) {
-    parts.push(`commit ${versionInfo.gitCommit.substring(0, 7)}`);
-  }
-  
-  return parts.join(' • ');
+  return `v${versionInfo.version} (${versionInfo.environment})`;
 }
 
 /**
@@ -156,6 +136,32 @@ export function isSandbox(): boolean {
  * Get the current repository type
  */
 export function getRepositoryType(): RepositoryType {
+  // In the client-side code, we'll rely on the value set at build time
+  // This value could be overridden using environment variables during build
+  // or by using the detection script (check-repository-type.js)
+  
+  try {
+    // For local development, check if we have a repository type in localStorage
+    const storedRepoType = localStorage.getItem("repository-type");
+    
+    if (storedRepoType && ["private", "public", "sandbox"].includes(storedRepoType)) {
+      return storedRepoType as RepositoryType;
+    }
+    
+    // If we have a window.__REPOSITORY_TYPE__ global (injected at build time)
+    if (
+      typeof window !== "undefined" && 
+      (window as any).__REPOSITORY_TYPE__ &&
+      ["private", "public", "sandbox"].includes((window as any).__REPOSITORY_TYPE__)
+    ) {
+      return (window as any).__REPOSITORY_TYPE__ as RepositoryType;
+    }
+  } catch (e) {
+    // If localStorage isn't available or there's another error, just use the default
+    console.error("Error fetching repository type:", e);
+  }
+  
+  // Use the default from versionInfo if no other source is available
   return versionInfo.repository;
 }
 
@@ -163,9 +169,12 @@ export function getRepositoryType(): RepositoryType {
  * Check if a feature flag is enabled in the current repository
  */
 export function isFeatureEnabled(feature: FeatureFlag): boolean {
+  const repo = getRepositoryType();
   const featureConfig = FEATURE_FLAGS[feature];
-  if (!featureConfig) return false;
   
-  const repoType = getRepositoryType();
-  return featureConfig.availability[repoType] === true;
+  if (!featureConfig) {
+    return false;
+  }
+  
+  return featureConfig.availability[repo] || false;
 }
