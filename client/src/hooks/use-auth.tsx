@@ -34,6 +34,12 @@ export enum Permission {
   TRANSFER_OWNERSHIP = "transfer_ownership"
 }
 
+// For role elevation password check
+type ElevationData = {
+  password: string;
+  targetRole: UserRole;
+};
+
 type AuthContextType = {
   user: SelectUser | null;
   isLoading: boolean;
@@ -42,7 +48,8 @@ type AuthContextType = {
   loginMutation: UseMutationResult<SelectUser, Error, LoginData>;
   logoutMutation: UseMutationResult<void, Error, void>;
   registerMutation: UseMutationResult<SelectUser, Error, InsertUser>;
-  switchRoleMutation: UseMutationResult<void, Error, UserRole>;
+  validateAdminPasswordMutation: UseMutationResult<{isValid: boolean}, Error, ElevationData>;
+  switchRoleMutation: UseMutationResult<void, Error, {role: UserRole, password?: string}>;
   hasPermission: (permission: Permission) => boolean;
   getUserRole: () => UserRole | null;
   getHighestRole: () => UserRole | null;
@@ -136,21 +143,75 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
   
-  // Switch role mutation - this just updates the activeRole state locally
-  // since we're doing client-side role switching without server updates
-  const switchRoleMutation = useMutation({
-    mutationFn: async (newRole: UserRole) => {
-      // We're not actually making a server request here,
-      // but we'll keep the async pattern for consistency
+  // Validate admin password before allowing role elevation
+  const validateAdminPasswordMutation = useMutation({
+    mutationFn: async (data: ElevationData) => {
+      const res = await apiRequest("POST", "/api/validate-admin-password", { data });
+      return await res.json();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Validation failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Define the type for the role switch data
+  type RoleSwitchData = {
+    role: UserRole;
+    password?: string;
+  };
+
+  // Switch role mutation - now checks if admin password is required for elevation
+  const switchRoleMutation = useMutation<void, Error, RoleSwitchData>({
+    mutationFn: async (data: RoleSwitchData) => {
+      const { role, password } = data;
+      
+      // Check if we're trying to elevate privileges
+      const isElevatingPrivileges = 
+        (activeRole === USER_ROLES.STANDARD_USER && 
+          (role === USER_ROLES.ADMIN || role === USER_ROLES.SUPER_ADMIN)) ||
+        (activeRole === USER_ROLES.ADMIN && role === USER_ROLES.SUPER_ADMIN);
+      
+      // If elevating privileges, validate admin password
+      if (isElevatingPrivileges) {
+        if (!password) {
+          throw new Error("Admin password is required for role elevation");
+        }
+        
+        // Validate the admin password
+        const res = await apiRequest("POST", "/api/validate-admin-password", { 
+          data: { password, targetRole: role } 
+        });
+        const validationResult = await res.json();
+        
+        if (!validationResult.isValid) {
+          throw new Error("Invalid admin password");
+        }
+      }
+      
+      // If validation passed or not needed, return success
       return Promise.resolve();
     },
-    onSuccess: (_, newRole) => {
-      setActiveRole(newRole);
+    onSuccess: (_, data) => {
+      setActiveRole(data.role);
       
       // Invalidate relevant queries that might depend on user permissions
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
       
-      // No need to invalidate user data since the actual user record isn't changing
+      toast({
+        title: "Role switched",
+        description: `Your permissions have been updated.`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Role switch failed",
+        description: error.message,
+        variant: "destructive",
+      });
     }
   });
 
@@ -215,6 +276,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loginMutation,
         logoutMutation,
         registerMutation,
+        validateAdminPasswordMutation,
         switchRoleMutation,
         hasPermission,
         getUserRole,

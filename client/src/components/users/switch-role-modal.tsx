@@ -14,6 +14,19 @@ import {
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { FormControl, FormField, FormItem, FormLabel, FormMessage, Form } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+// Form validation schema
+const formSchema = z.object({
+  role: z.nativeEnum(USER_ROLES),
+  password: z.string().optional(),
+});
+
+type FormValues = z.infer<typeof formSchema>;
 
 interface SwitchRoleModalProps {
   isOpen: boolean;
@@ -23,15 +36,35 @@ interface SwitchRoleModalProps {
 export default function SwitchRoleModal({ isOpen, onClose }: SwitchRoleModalProps) {
   const { user, activeRole, getHighestRole, switchRoleMutation } = useAuth();
   const { toast } = useToast();
-  const [selectedRole, setSelectedRole] = React.useState<UserRole | null>(activeRole);
-
-  // Reset selected role when modal opens
+  
+  // Initialize form with default values
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      role: activeRole || USER_ROLES.STANDARD_USER,
+      password: "",
+    },
+  });
+  
+  // Reset form when modal opens
   React.useEffect(() => {
-    if (isOpen) {
-      setSelectedRole(activeRole);
+    if (isOpen && activeRole) {
+      form.reset({
+        role: activeRole,
+        password: "",
+      });
     }
-  }, [isOpen, activeRole]);
-
+  }, [isOpen, activeRole, form]);
+  
+  // Check if role elevation would require a password
+  const isElevatingPrivileges = (targetRole: UserRole): boolean => {
+    if (!activeRole) return false;
+    
+    return (activeRole === USER_ROLES.STANDARD_USER && 
+        (targetRole === USER_ROLES.ADMIN || targetRole === USER_ROLES.SUPER_ADMIN)) ||
+      (activeRole === USER_ROLES.ADMIN && targetRole === USER_ROLES.SUPER_ADMIN);
+  };
+  
   // Get available roles based on the highest role the user has
   const getAvailableRoles = (): UserRole[] => {
     if (!user) return [];
@@ -50,17 +83,29 @@ export default function SwitchRoleModal({ isOpen, onClose }: SwitchRoleModalProp
     }
   };
 
-  const handleSwitchRole = () => {
-    if (!selectedRole || selectedRole === activeRole) {
+  const onSubmit = (data: FormValues) => {
+    if (data.role === activeRole) {
       onClose();
       return;
     }
+    
+    // Check if password is required but not provided
+    if (isElevatingPrivileges(data.role) && !data.password) {
+      form.setError('password', { 
+        type: 'manual', 
+        message: 'Admin password is required for role elevation' 
+      });
+      return;
+    }
 
-    switchRoleMutation.mutate(selectedRole, {
+    switchRoleMutation.mutate({
+      role: data.role,
+      password: data.password
+    }, {
       onSuccess: () => {
         toast({
           title: "Role switched",
-          description: `You are now operating as a ${getRoleDisplayName(selectedRole)}`,
+          description: `You are now operating as a ${getRoleDisplayName(data.role)}`,
         });
         onClose();
       },
@@ -93,6 +138,10 @@ export default function SwitchRoleModal({ isOpen, onClose }: SwitchRoleModalProp
     }
   };
 
+  // Watch the role value to show/hide password field
+  const watchedRole = form.watch('role');
+  const needsPassword = isElevatingPrivileges(watchedRole);
+  
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
@@ -103,43 +152,84 @@ export default function SwitchRoleModal({ isOpen, onClose }: SwitchRoleModalProp
           </DialogDescription>
         </DialogHeader>
 
-        <div className="py-4">
-          <RadioGroup 
-            value={selectedRole || ""} 
-            onValueChange={(value) => setSelectedRole(value as UserRole)}
-          >
-            {getAvailableRoles().map((role) => (
-              <div key={role} className="flex items-start space-x-2 space-y-2">
-                <RadioGroupItem value={role} id={role} />
-                <div className="space-y-1">
-                  <Label
-                    htmlFor={role}
-                    className="font-semibold"
-                  >
-                    {getRoleDisplayName(role)}
-                    {role === activeRole ? " (Current)" : ""}
-                  </Label>
-                  <p className="text-sm text-muted-foreground">
-                    {getRoleDescription(role)}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </RadioGroup>
-        </div>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="role"
+              render={({ field }) => (
+                <FormItem className="space-y-3">
+                  <FormLabel>Role</FormLabel>
+                  <FormControl>
+                    <RadioGroup 
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      className="flex flex-col space-y-2"
+                    >
+                      {getAvailableRoles().map((role) => (
+                        <div key={role} className="flex items-start space-x-2">
+                          <RadioGroupItem value={role} id={role} />
+                          <div className="space-y-1">
+                            <Label
+                              htmlFor={role}
+                              className="font-semibold"
+                            >
+                              {getRoleDisplayName(role)}
+                              {role === activeRole ? " (Current)" : ""}
+                            </Label>
+                            <p className="text-sm text-muted-foreground">
+                              {getRoleDescription(role)}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </RadioGroup>
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+            
+            {/* Show password field only if needed */}
+            {needsPassword && (
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-semibold">Admin Password</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="password"
+                        placeholder="Enter admin password"
+                        {...field}
+                      />
+                    </FormControl>
+                    <p className="text-sm text-muted-foreground">
+                      Admin password is required for elevating role privileges.
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            onClick={handleSwitchRole}
-            disabled={switchRoleMutation.isPending || selectedRole === activeRole}
-          >
-            {switchRoleMutation.isPending ? "Switching..." : "Switch Role"}
-          </Button>
-        </DialogFooter>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={
+                  switchRoleMutation.isPending || 
+                  form.watch('role') === activeRole ||
+                  (needsPassword && !form.watch('password'))
+                }
+              >
+                {switchRoleMutation.isPending ? "Switching..." : "Switch Role"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );
