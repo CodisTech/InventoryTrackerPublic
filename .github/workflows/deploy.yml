@@ -21,14 +21,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build
-        run: npm run build
-        env:
-          VITE_API_URL: ${{ secrets.VITE_API_URL || '' }}
-          NODE_ENV: 'production'
+      - name: Create GitHub Pages static files
+        run: |
+          mkdir -p gh-pages
+          cp gh-pages-index.html gh-pages/index.html
+          touch gh-pages/.nojekyll
+          echo "# Inventory Management System - GitHub Pages Preview" > gh-pages/README.md
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          folder: dist
+          folder: gh-pages
           branch: gh-pages

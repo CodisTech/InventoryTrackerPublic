@@ -116,6 +116,34 @@ This Inventory Management System is an advanced tool designed to streamline equi
    npm start
    ```
 
+#### GitHub Pages Deployment
+
+The project includes configuration for GitHub Pages to showcase the application:
+
+1. Run the test deployment script
+   ```
+   ./test-github-deploy.sh
+   ```
+
+2. Create a GitHub repository and push the gh-pages directory
+   ```
+   cd gh-pages
+   git init
+   git add .
+   git commit -m "Initial GitHub Pages deployment"
+   git remote add origin https://github.com/your-username/inventory-management-system.git
+   git push -u origin main
+   ```
+
+3. Enable GitHub Pages in your repository settings, selecting the main branch
+
+4. Your GitHub Pages site will be available at:
+   ```
+   https://your-username.github.io/inventory-management-system/
+   ```
+
+Note: The GitHub Pages deployment provides a static showcase of the application UI. For full functionality, deploy the application with a backend server.
+
 ## Default Credentials
 
 The system comes with pre-configured accounts for testing:
